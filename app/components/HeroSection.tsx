@@ -11,7 +11,7 @@ export default function HeroSection() {
   });
 
   useEffect(() => {
-    const targetDate = new Date("2026-08-15T09:00:00+05:30").getTime();
+    const targetDate = new Date("2026-09-01T09:00:00+05:30").getTime();
 
     const interval = setInterval(() => {
       const now = new Date().getTime();
@@ -34,18 +34,18 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <>
-      <section
-        id="hero"
-        className="hero-container"
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          background: "transparent",
-          zIndex: 1,
-        }}
-      >
+    <section
+      id="hero"
+      className="hero-container"
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        background: "transparent",
+        zIndex: 1,
+      }}
+    >
       {/* Hero Content Area */}
       <div
         className="hero-content"
@@ -59,19 +59,20 @@ export default function HeroSection() {
         <div style={{ maxWidth: "560px" }}>
           {/* Main Headline */}
           <h1
+            className="hero-title"
             style={{
-              fontSize: "clamp(40px, 5.5vw, 68px)",
+              fontSize: "clamp(32px, 8vw, 68px)",
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: "-1.5px",
               marginBottom: "22px",
+              color: "#ffffff",
             }}
           >
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline" }}>
               <span
                 style={{
-                  color: "#FF6000",
-                  textShadow: "0 0 35px rgba(255, 96, 0, 0.35)",
+                  color: "#ffffff",
                   marginRight: "12px",
                 }}
               >
@@ -79,10 +80,7 @@ export default function HeroSection() {
               </span>
               <span
                 style={{
-                  background:
-                    "linear-gradient(90deg, #F8D3C5 0%, #F6C8AF 12%, #4ADE80 40%, #22C55E 65%, #A7F3D0 85%, #E2FBE8 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
+                  color: "#ffffff",
                   display: "inline-block",
                 }}
               >
@@ -92,8 +90,7 @@ export default function HeroSection() {
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", marginTop: "4px" }}>
               <span
                 style={{
-                  color: "#FF6000",
-                  textShadow: "0 0 35px rgba(255, 96, 0, 0.35)",
+                  color: "#ffffff",
                   marginRight: "12px",
                 }}
               >
@@ -101,20 +98,27 @@ export default function HeroSection() {
               </span>
               <span
                 style={{
-                  background:
-                    "linear-gradient(90deg, #00C853 0%, #22C55E 40%, #86EFAC 55%, #FED7AA 80%, #FEE2D5 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
+                  color: "#ffffff",
+                  marginRight: "12px",
                   display: "inline-block",
                 }}
               >
                 India
+              </span>
+              <span
+                style={{
+                  color: "#ffffff",
+                  display: "inline-block",
+                }}
+              >
+                2026
               </span>
             </div>
           </h1>
 
           {/* Subtitle */}
           <p
+            className="hero-subtitle"
             style={{
               fontSize: "15.5px",
               color: "#9ca3af",
@@ -124,11 +128,12 @@ export default function HeroSection() {
               fontWeight: 400,
             }}
           >
-            Join us this August to connect, collaborate, and contribute to open source projects that are shaping the future of technology.
+            Join us this September to connect, collaborate, and contribute to open source projects that are shaping the future of technology.
           </p>
 
           {/* CTA Buttons */}
           <div
+            className="hero-cta-group"
             style={{
               display: "flex",
               alignItems: "center",
@@ -140,8 +145,9 @@ export default function HeroSection() {
             {/* Register Now Button */}
             <Link
               href="#register"
+              className="hero-register-btn"
               style={{
-                background: "#FF6000",
+                background: "#FF7518",
                 color: "#ffffff",
                 padding: "13px 30px",
                 borderRadius: "10px",
@@ -160,7 +166,7 @@ export default function HeroSection() {
                 (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 25px rgba(255, 96, 0, 0.55)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "#FF6000";
+                (e.currentTarget as HTMLElement).style.background = "#FF7518";
                 (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                 (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(255, 96, 0, 0.4)";
               }}
@@ -170,6 +176,7 @@ export default function HeroSection() {
 
             {/* Countdown Box */}
             <div
+              className="hero-countdown-box"
               style={{
                 background: "rgba(8, 8, 8, 0.9)",
                 border: "1.5px solid #FF6500",
@@ -196,46 +203,9 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Divider */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-              maxWidth: "380px",
-              marginBottom: "24px",
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                height: "1.5px",
-                background: "linear-gradient(90deg, rgba(255, 96, 0, 0.2) 0%, rgba(255, 96, 0, 0) 100%)",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                gap: "6px",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "rgba(255, 96, 0, 0.5)", boxShadow: "0 0 4px rgba(255, 96, 0, 0.3)" }} />
-              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "rgba(34, 197, 94, 0.5)", boxShadow: "0 0 6px rgba(34, 197, 94, 0.3)" }} />
-              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "rgba(255, 96, 0, 0.5)", boxShadow: "0 0 4px rgba(255, 96, 0, 0.3)" }} />
-            </div>
-            <div
-              style={{
-                flex: 1,
-                height: "1.5px",
-                background: "linear-gradient(90deg, rgba(34, 197, 94, 0) 0%, rgba(34, 197, 94, 0.2) 100%)",
-              }}
-            />
-          </div>
-
           {/* Date Label */}
           <div
+            className="hero-date-box"
             style={{
               display: "flex",
               alignItems: "center",
@@ -247,7 +217,7 @@ export default function HeroSection() {
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#FF6000"
+              stroke="#FF7518"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -256,9 +226,9 @@ export default function HeroSection() {
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
-              <circle cx="8" cy="15" r="1" fill="#FF6000" />
-              <circle cx="12" cy="15" r="1" fill="#FF6000" />
-              <circle cx="16" cy="15" r="1" fill="#FF6000" />
+              <circle cx="8" cy="15" r="1" fill="#FF7518" />
+              <circle cx="12" cy="15" r="1" fill="#FF7518" />
+              <circle cx="16" cy="15" r="1" fill="#FF7518" />
             </svg>
             <span
               style={{
@@ -268,28 +238,11 @@ export default function HeroSection() {
                 letterSpacing: "0.2px",
               }}
             >
-              August 15, 2025
+              September 1, 2026
             </span>
           </div>
         </div>
       </div>
-
-
-      </section>
-      <style>{`
-        .hero-container {
-          min-height: 100vh;
-        }
-        @media (max-width: 768px) {
-          .hero-container {
-            min-height: auto;
-            padding-top: 20px;
-          }
-          .hero-content {
-            padding-bottom: 20px !important;
-          }
-        }
-      `}</style>
-    </>
+    </section>
   );
 }

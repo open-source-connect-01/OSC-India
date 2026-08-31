@@ -11,12 +11,6 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main style={{ background: "#000000", minHeight: "100vh" }}>
-      <style>{`
-        @media (max-width: 768px) {
-          .hero-bg-outer { height: 1000px !important; }
-          .hero-bg-inner { height: 800px !important; }
-        }
-      `}</style>
       <Navbar />
 
       {/* Unified Hero + About Us (Stats) Container with continuous background */}
@@ -29,7 +23,7 @@ export default function Home() {
       >
         {/* Full span background image starting from Hero top and extending into About Us */}
         <div
-          className="hero-bg-outer"
+          className="hero-bg-container"
           style={{
             position: "absolute",
             top: 0,
@@ -67,6 +61,7 @@ export default function Home() {
 
           {/* Smooth overlay across the full span for clear contrast */}
           <div
+            className="hero-bg-overlay"
             style={{
               position: "absolute",
               inset: 0,

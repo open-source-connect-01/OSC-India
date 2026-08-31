@@ -5,7 +5,7 @@ export default function WhatsNewSection() {
     {
       num: "01",
       tag: "NEW IN 2026",
-      tagColor: "#FF6000",
+      tagColor: "#FF7518",
       title: "AI Code Review Assistant",
       desc: "Get intelligent suggestions and automated feedback before opening a pull request.",
       icon: (
@@ -39,7 +39,7 @@ export default function WhatsNewSection() {
     {
       num: "03",
       tag: "NEW IN 2026",
-      tagColor: "#FF6000",
+      tagColor: "#FF7518",
       title: "Quality-first Leaderboard",
       desc: "Rankings based on impact, consistency and the quality of your contributions.",
       icon: (
@@ -68,7 +68,7 @@ export default function WhatsNewSection() {
     {
       num: "05",
       tag: "NEW IN 2026",
-      tagColor: "#FF6000",
+      tagColor: "#FF7518",
       title: "Smarter Project Discovery",
       desc: "Find projects matched to your skill level, preferred tech stack, and interests.",
       icon: (
@@ -116,14 +116,14 @@ export default function WhatsNewSection() {
               width: "6px",
               height: "6px",
               borderRadius: "50%",
-              background: "#FF6000",
-              boxShadow: "0 0 8px #FF6000",
+              background: "#FF7518",
+              boxShadow: "0 0 8px #FF7518",
             }}
           />
           <span
             style={{
               fontSize: "12.5px",
-              color: "#FF6000",
+              color: "#FF7518",
               fontWeight: 700,
               letterSpacing: "1.5px",
               textTransform: "uppercase",
@@ -144,8 +144,8 @@ export default function WhatsNewSection() {
           }}
         >
           <span style={{ color: "#ffffff" }}>What&apos;s New in </span>
-          <span style={{ color: "#22C55E" }}>OSCI </span>
-          <span style={{ color: "#FF6000" }}>2026</span>
+          <span style={{ color: "#ffffff" }}>OSCI </span>
+          <span style={{ color: "#ffffff" }}>2026</span>
         </h2>
 
         <p
@@ -354,21 +354,6 @@ export default function WhatsNewSection() {
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 640px) {
-          .whats-new-indicator {
-            display: none !important;
-          }
-          .whats-new-card {
-            padding: 18px 16px !important;
-            gap: 14px !important;
-          }
-          .whats-new-section {
-            padding-top: 20px !important;
-            padding-bottom: 20px !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }

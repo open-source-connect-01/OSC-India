@@ -7,7 +7,7 @@ export default function StatsSection() {
       number: "500+",
       label: "Contributors",
       sublabel: "From across the globe",
-      color: "#FF6000",
+      color: "#FF7518",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -45,7 +45,7 @@ export default function StatsSection() {
       number: "25+",
       label: "Cities",
       sublabel: "United by code and community",
-      color: "#FF6000",
+      color: "#FF7518",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="10" />
@@ -93,14 +93,14 @@ export default function StatsSection() {
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                background: "#FF6000",
-                boxShadow: "0 0 8px #FF6000",
+                background: "#FF7518",
+                boxShadow: "0 0 8px #FF7518",
               }}
             />
             <span
               style={{
                 fontSize: "12.5px",
-                color: "#FF6000",
+                color: "#FF7518",
                 fontWeight: 700,
                 letterSpacing: "1.5px",
                 textTransform: "uppercase",
@@ -121,8 +121,7 @@ export default function StatsSection() {
           >
             <span style={{ color: "#ffffff" }}>Building the</span>
             <br />
-            <span style={{ color: "#FF6000" }}>Future </span>
-            <span style={{ color: "#22C55E" }}>Together</span>
+            <span style={{ color: "#ffffff" }}>Future Together</span>
           </h2>
 
           <p
@@ -143,7 +142,7 @@ export default function StatsSection() {
             <Link
               href="#projects"
               style={{
-                background: "#FF6000",
+                background: "#FF7518",
                 color: "#ffffff",
                 padding: "12px 24px",
                 borderRadius: "4px",
@@ -160,7 +159,7 @@ export default function StatsSection() {
                 (e.currentTarget as HTMLElement).style.background = "#e65600";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "#FF6000";
+                (e.currentTarget as HTMLElement).style.background = "#FF7518";
               }}
             >
               Know more about us
@@ -211,11 +210,10 @@ export default function StatsSection() {
 
         {/* Right 2x2 Stats Grid with Sharp Corner L-Brackets */}
         <div
-          className="stats-cards-grid"
+          className="stats-inner-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "20px",
+            gap: "24px",
           }}
         >
           {stats.map((stat, i) => (
@@ -326,20 +324,6 @@ export default function StatsSection() {
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 900px) {
-          .stats-grid-container {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
-          .stats-cards-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .stats-section {
-            padding-top: 20px !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,10 +21,10 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: "About us", href: "#about" },
-    { label: "Projects", href: "#projects" },
-    { label: "Timeline", href: "#timeline" },
-    { label: "Leaderboard", href: "#leaderboard" },
+    { label: "About us", href: "/about" },
+    { label: "Projects", href: "/projects" },
+    { label: "Team", href: "/team" },
+    { label: "Timeline", href: "/timeline" },
   ];
 
   return (
@@ -43,6 +45,7 @@ export default function Navbar() {
       }}
     >
       <div
+        className="navbar-inner"
         style={{
           width: "100%",
           padding: "0 40px",
@@ -53,9 +56,10 @@ export default function Navbar() {
         }}
       >
         {/* Logo */}
-        <Link href="/" style={{ textDecoration: "none", justifySelf: "start" }}>
+        <Link href="/" className="logo-link" style={{ textDecoration: "none", justifySelf: "start" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span
+              className="hidden sm:inline-block"
               style={{
                 fontWeight: 700,
                 fontSize: "15px",
@@ -63,7 +67,18 @@ export default function Navbar() {
                 letterSpacing: "-0.2px",
               }}
             >
-              Open Source Connect India
+              Open Source Connect India 2026
+            </span>
+            <span
+              className="inline-block sm:hidden"
+              style={{
+                fontWeight: 700,
+                fontSize: "15px",
+                color: "#ffffff",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              OSC India
             </span>
           </div>
         </Link>
@@ -78,27 +93,53 @@ export default function Navbar() {
           }}
           className="desktop-nav"
         >
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              style={{
-                color: "#9ca3af",
-                textDecoration: "none",
-                fontSize: "14px",
-                fontWeight: 500,
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                ((e.target as HTMLElement).style.color = "#ffffff")
-              }
-              onMouseLeave={(e) =>
-                ((e.target as HTMLElement).style.color = "#9ca3af")
-              }
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="nav-link-item"
+                style={{
+                  position: "relative",
+                  textDecoration: "none",
+                  padding: "8px 0",
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    color: isActive ? "#ffffff" : "#9ca3af",
+                    fontSize: "14px",
+                    fontWeight: isActive ? 600 : 500,
+                    transition: "color 0.2s ease",
+                  }}
+                >
+                  {link.label}
+                </span>
+                {/* Orange Underline */}
+                <span
+                  className="nav-underline"
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "2.5px",
+                    background: "var(--orange)",
+                    borderRadius: "2px",
+                    transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                    transformOrigin: "center",
+                    transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease",
+                    opacity: isActive ? 1 : 0,
+                    boxShadow: isActive ? "0 0 8px rgba(255, 117, 24, 0.5)" : "none",
+                  }}
+                />
+              </Link>
+            );
+          })}
         </div>
 
         {/* CTA */}
@@ -107,7 +148,7 @@ export default function Navbar() {
           className="desktop-cta"
         >
           <Link
-            href="#"
+            href="/sign-in"
             style={{
               color: "#d1d5db",
               textDecoration: "none",
@@ -115,12 +156,12 @@ export default function Navbar() {
               fontWeight: 500,
               padding: "6px 14px",
               borderRadius: "6px",
-              border: "1px solid #FF6000",
+              border: "1px solid #FF7518",
               background: "rgba(255,255,255,0.03)",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.borderColor = "#FF6000";
+              (e.target as HTMLElement).style.borderColor = "#FF7518";
               (e.target as HTMLElement).style.color = "#ffffff";
             }}
             onMouseLeave={(e) => {
@@ -143,6 +184,7 @@ export default function Navbar() {
             color: "#fff",
             cursor: "pointer",
             padding: "4px",
+            justifySelf: "end",
           }}
           aria-label="Toggle menu"
         >
@@ -187,31 +229,50 @@ export default function Navbar() {
           style={{
             background: "rgba(10,10,10,0.96)",
             backdropFilter: "blur(16px)",
-            padding: "16px 24px 24px",
+            padding: "16px 20px 24px",
           }}
           className="mobile-menu"
         >
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              style={{
-                display: "block",
-                color: "#9ca3af",
-                textDecoration: "none",
-                fontSize: "15px",
-                fontWeight: 500,
-                padding: "10px 0",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
-              }}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  color: isActive ? "#ffffff" : "#9ca3af",
+                  textDecoration: "none",
+                  fontSize: "15px",
+                  fontWeight: isActive ? 600 : 500,
+                  padding: "12px 8px",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  borderLeft: isActive ? "3px solid var(--orange)" : "3px solid transparent",
+                  paddingLeft: isActive ? "12px" : "8px",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <span>{link.label}</span>
+                {isActive && (
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      backgroundColor: "var(--orange)",
+                      boxShadow: "0 0 8px var(--orange)",
+                    }}
+                  />
+                )}
+              </Link>
+            );
+          })}
           <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
             <Link
-              href="#"
+              href="/sign-in"
               style={{
                 color: "#ffffff",
                 textDecoration: "none",
@@ -228,13 +289,6 @@ export default function Navbar() {
         </div>
       )}
 
-      <style>{`
-        @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .desktop-cta { display: none !important; }
-          .mobile-menu-btn { display: block !important; }
-        }
-      `}</style>
     </nav>
   );
 }
