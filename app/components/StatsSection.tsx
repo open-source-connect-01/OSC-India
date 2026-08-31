@@ -211,6 +211,7 @@ export default function StatsSection() {
 
         {/* Right 2x2 Stats Grid with Sharp Corner L-Brackets */}
         <div
+          className="stats-cards-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -330,6 +331,9 @@ export default function StatsSection() {
           .stats-grid-container {
             grid-template-columns: 1fr !important;
             gap: 40px !important;
+          }
+          .stats-cards-grid {
+            grid-template-columns: 1fr !important;
           }
           .stats-section {
             padding-top: 20px !important;

@@ -11,6 +11,12 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main style={{ background: "#000000", minHeight: "100vh" }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .hero-bg-outer { height: 1000px !important; }
+          .hero-bg-inner { height: 800px !important; }
+        }
+      `}</style>
       <Navbar />
 
       {/* Unified Hero + About Us (Stats) Container with continuous background */}
@@ -23,6 +29,7 @@ export default function Home() {
       >
         {/* Full span background image starting from Hero top and extending into About Us */}
         <div
+          className="hero-bg-outer"
           style={{
             position: "absolute",
             top: 0,
@@ -36,6 +43,7 @@ export default function Home() {
         >
           {/* Inner container to constrain image scaling to its native Figma size */}
           <div
+            className="hero-bg-inner"
             style={{
               position: "absolute",
               top: 0,
