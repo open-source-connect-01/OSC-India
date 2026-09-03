@@ -22,18 +22,53 @@ export default async function DashboardPage() {
   const admin = createAdminClient();
 
   // Fetch unified profile from profiles table
-  const { data: profile } = await admin
+  let { data: profile } = await admin
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+
+  const fullName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "Contributor";
+  const avatar = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+  const githubUsername =
+    profile?.github ||
+    user.user_metadata?.user_name ||
+    user.user_metadata?.preferred_username ||
+    null;
+
+  // Auto-provision profile if missing or synchronize github handle
+  if (!profile) {
+    const { data: created } = await admin
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        full_name: fullName,
+        email: user.email,
+        avatar_url: avatar,
+        github: githubUsername,
+        role: "contributor",
+        is_admin: false,
+        score: 0,
+        merged_prs: 0,
+        projects_count: 0,
+        badges_created: 0,
+        tech_stack: [],
+        updated_at: new Date().toISOString(),
+      })
+      .select("*")
+      .maybeSingle();
+    if (created) profile = created;
+  } else if (!profile.github && githubUsername) {
+    await admin
+      .from("profiles")
+      .update({ github: githubUsername, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+  }
 
   const roleName = profile?.role
     ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1)
     : "Contributor";
-  const fullName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "Contributor";
-  const username = profile?.github || user.user_metadata?.user_name || user.email?.split("@")[0] || "user";
-  const avatar = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  const username = githubUsername || user.email?.split("@")[0] || "user";
   const totalPoints = profile?.score || 0;
   const mergedPRs = profile?.merged_prs || 0;
   const projectsCount = profile?.projects_count || 0;
@@ -42,8 +77,8 @@ export default async function DashboardPage() {
   const isSuperAdmin = profile?.is_admin || profile?.role === "admin";
 
   // Lazy Background GitHub Sync (Workflow 2 from plan.md)
-  if (profile?.github && profile?.role === "contributor") {
-    syncGitHubContribution(user.id, profile.github).catch((err) => {
+  if (githubUsername && (profile?.role === "contributor" || !profile?.role)) {
+    syncGitHubContribution(user.id, githubUsername).catch((err) => {
       console.error("Lazy background sync error:", err);
     });
   }
@@ -170,7 +205,7 @@ export default async function DashboardPage() {
 
             {/* Tech Stack */}
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-              <TechStack initialStack={[]} providerAccountId={profile?.github} />
+              <TechStack initialStack={profile?.tech_stack || []} providerAccountId={githubUsername} />
             </div>
           </div>
         </div>
@@ -189,7 +224,7 @@ export default async function DashboardPage() {
         </div>
 
         <div style={{ width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "clamp(16px, 4vw, 32px)", marginBottom: "48px", overflowX: "auto" }}>
-          <ActivityMatrix providerAccountId={profile?.github} />
+          <ActivityMatrix providerAccountId={githubUsername} />
         </div>
       </main>
 
