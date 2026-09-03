@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { fetchNavProfile } from "./navActions";
+import { fetchNavProfile, signOutAction } from "./navActions";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -37,6 +37,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "About us", href: "/about" },
     { label: "Projects", href: "/projects" },
+    { label: "Leaderboard", href: "/leaderboard" },
     { label: "Team", href: "/team" },
     { label: "Timeline", href: "/timeline" },
   ];
@@ -143,9 +144,30 @@ export default function Navbar() {
                   
                   <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", margin: "4px 0" }} />
                   
-                  <Link href="/api/auth/signout" style={{ padding: "10px 12px", color: "#ef4444", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(239,68,68,0.1)] transition-colors">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setDropdownOpen(false);
+                      await signOutAction();
+                    }}
+                    style={{
+                      width: "100%",
+                      background: "none",
+                      border: "none",
+                      padding: "10px 12px",
+                      color: "#ef4444",
+                      fontSize: "13px",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    className="hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+                  >
                     Sign Out
-                  </Link>
+                  </button>
                 </div>
               )}
             </>
