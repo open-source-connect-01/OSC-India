@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+
 import { usePathname } from "next/navigation";
 import { fetchNavProfile, signOutAction } from "./navActions";
 
@@ -74,7 +74,9 @@ export default function Navbar() {
           className="logo-link"
           style={{ textDecoration: "none", justifySelf: "start", display: "flex", alignItems: "center" }}
         >
-          <Image src="/logo.png" alt="Open Source Connect India" width={186} height={48} priority className="navbar-logo" />
+          {/* Using plain img avoids Next.js Image width/height prop vs CSS mismatch warning */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Open Source Connect India" className="navbar-logo" />
         </Link>
 
         {/* Desktop Nav */}
@@ -256,10 +258,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-      `}} />
     </nav>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
+
 
 export default function Footer() {
   return (
@@ -20,13 +20,8 @@ export default function Footer() {
             {/* Brand Section */}
             <div style={{ marginBottom: "32px" }}>
               <Link href="/" style={{ textDecoration: "none", display: "inline-block", marginBottom: "16px" }}>
-                <Image
-                  src="/logo.png"
-                  alt="Open Source Connect India"
-                  width={186}
-                  height={48}
-                  className="navbar-logo"
-                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Open Source Connect India" className="navbar-logo" />
               </Link>
               <p
                 style={{
