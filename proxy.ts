@@ -1,23 +1,67 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export function proxy(request: NextRequest) {
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+export async function proxy(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // For now, we skip auth checks until next-auth is properly configured.
-  // Once NextAuth is set up, you can use session cookies here to check auth state.
-  if (isDashboardRoute) {
-    // TODO: Check for auth session cookie and redirect to /sign-in if not logged in
-    // const sessionToken = request.cookies.get('next-auth.session-token') || request.cookies.get('__Secure-next-auth.session-token');
-    // if (!sessionToken) {
-    //   return NextResponse.redirect(new URL('/sign-in', request.url));
-    // }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy-key";
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
+
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isProtectedUserRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/badge");
+
+  // Only check session on protected routes to maximize edge performance
+  if (isAdminRoute || isProtectedUserRoute) {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Not authenticated -> Redirect to /sign-in
+    if (!user) {
+      const redirectUrl = new URL("/sign-in", request.url);
+      redirectUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // 2. Admin Route Protection -> Verify is_admin or admin role
+    if (isAdminRoute) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin, role")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile || (!profile.is_admin && profile.role !== "admin")) {
+        // Non-admin user attempting to access /admin -> Bounce to home
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+    }
   }
 
-  return NextResponse.next();
+  return response;
 }
 
-// Optionally, don't invoke Proxy on some paths
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+  matcher: [
+    "/admin/:path*",
+    "/dashboard/:path*",
+    "/badge/:path*",
+  ],
+};

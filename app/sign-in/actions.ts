@@ -1,7 +1,11 @@
 "use server";
 
-import { signIn } from "@/auth";
+import { signInWithOAuth } from "@/lib/supabase/auth";
 
-export async function signInWithGithub() {
-  await signIn("github", { redirectTo: "/dashboard" });
+export async function signInWithGithub(nextUrl = "/dashboard") {
+  await signInWithOAuth("github", nextUrl);
+}
+
+export async function signInWithGoogle(nextUrl = "/dashboard") {
+  await signInWithOAuth("google", nextUrl);
 }

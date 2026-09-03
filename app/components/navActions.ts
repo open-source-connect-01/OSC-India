@@ -1,34 +1,39 @@
 "use server";
 
-import { auth, signOut } from "@/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { redirect } from "next/navigation";
 
 export async function signOutAction() {
-  await signOut({ redirectTo: "/" });
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
 }
 
 export async function fetchNavProfile() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url")
-    .eq("user_id", session.user.id)
-    .maybeSingle();
+  
+  // 1. Check Supabase Auth
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: userData } = await supabase
-    .from("users")
-    .select("roles ( name )")
-    .eq("id", session.user.id)
-    .maybeSingle();
+  if (user) {
+    const admin = createAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, full_name, email, avatar_url, role, is_admin, github")
+      .eq("id", user.id)
+      .maybeSingle();
 
-  return {
-    name: profile?.full_name || session.user.name || "User",
-    email: session.user.email,
-    avatar: profile?.avatar_url || session.user.image,
-    role: (userData as any)?.roles?.name || "Contributor",
-  };
+    return {
+      id: user.id,
+      name: profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "User",
+      email: user.email,
+      avatar: profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      role: profile?.role || "contributor",
+      isAdmin: Boolean(profile?.is_admin || profile?.role === "admin"),
+      github: profile?.github || user.user_metadata?.user_name || null,
+    };
+  }
+
+  return null;
 }
-

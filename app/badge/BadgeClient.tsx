@@ -65,10 +65,26 @@ function CheckIcon({ className, style }: { className?: string; style?: React.CSS
 
 import { useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas";
+import { incrementBadgeCount } from "@/lib/supabase/database";
 
-function BadgeContent({ initialRole, initialName, initialAvatar }: { initialRole?: string, initialName?: string, initialAvatar?: string }) {
+export interface BadgeContentProps {
+  userId?: string;
+  initialRole?: string;
+  initialName?: string;
+  initialAvatar?: string;
+  initialBadgesCreated?: number;
+}
+
+function BadgeContent({
+  userId,
+  initialRole,
+  initialName,
+  initialAvatar,
+  initialBadgesCreated = 0,
+}: BadgeContentProps) {
   const searchParams = useSearchParams();
   const person = searchParams.get("person")?.toLowerCase() || initialRole?.toLowerCase() || "contributor";
+  const [badgesCount, setBadgesCount] = useState(initialBadgesCreated);
   
   let roleText = "CONTRIBUTOR";
   let roleColor = "var(--orange)";
@@ -116,6 +132,11 @@ function BadgeContent({ initialRole, initialName, initialAvatar }: { initialRole
   };
 
   const handleDownload = async () => {
+    if (userId && badgesCount >= 3) {
+      alert("Maximum badge creation limit reached (3 badges per account).");
+      return;
+    }
+
     if (badgeRef.current) {
       try {
         const canvas = await html2canvas(badgeRef.current, {
@@ -128,6 +149,14 @@ function BadgeContent({ initialRole, initialName, initialAvatar }: { initialRole
         link.download = `OSCI-Badge-${name || roleText}.png`;
         link.href = url;
         link.click();
+
+        // Increment server-side badge count if logged in
+        if (userId) {
+          const res = await incrementBadgeCount(userId);
+          if (res.success && res.count !== undefined) {
+            setBadgesCount(res.count);
+          }
+        }
       } catch (err) {
         console.error("Failed to generate badge:", err);
       }
@@ -564,11 +593,30 @@ function BadgeContent({ initialRole, initialName, initialAvatar }: { initialRole
                 <button 
                   type="button"
                   onClick={handleDownload}
-                  style={{ flex: '1 1 120px', background: 'var(--orange)', color: 'white', padding: '16px', borderRadius: '12px', fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', boxShadow: '0 8px 20px rgba(255, 96, 0, 0.2)' }}
-                  className="hover:bg-[var(--orange-dark)] transition-colors"
+                  disabled={badgesCount >= 3}
+                  style={{
+                    flex: '1 1 120px',
+                    background: badgesCount >= 3 ? '#3f3f46' : 'var(--orange)',
+                    color: badgesCount >= 3 ? '#9ca3af' : 'white',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    boxShadow: badgesCount >= 3 ? 'none' : '0 8px 20px rgba(255, 96, 0, 0.2)',
+                    cursor: badgesCount >= 3 ? 'not-allowed' : 'pointer',
+                  }}
+                  className={badgesCount >= 3 ? "" : "hover:bg-[var(--orange-dark)] transition-colors"}
                 >
-                  DOWNLOAD
+                  {badgesCount >= 3 ? "LIMIT REACHED (3/3)" : "DOWNLOAD"}
                 </button>
+              </div>
+
+              {/* Badge Limit Indicator */}
+              <div style={{ textAlign: "center", fontSize: "12px", color: badgesCount >= 3 ? "#ef4444" : "#9ca3af", marginTop: "4px" }}>
+                {badgesCount >= 3
+                  ? "⚠️ Account limit reached: You have already created 3/3 badges."
+                  : `Badge creation limit: ${badgesCount}/3 generated`}
               </div>
 
             </form>
