@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { saveTechStack } from "../dashboard/actions";
 
 interface TechStackProps {
   initialStack: string[];
@@ -68,10 +67,15 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
         return;
       }
 
-      // 4. Save to database via server action
-      const res = await saveTechStack(topLanguages);
-      if (res.error) {
-        setError(res.error);
+      // 4. Save to database via API route
+      const saveRes = await fetch("/api/profile/tech-stack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ languages: topLanguages }),
+      });
+      const resData = await saveRes.json();
+      if (!saveRes.ok || resData.error) {
+        setError(resData.error || "Failed to save tech stack");
       } else {
         setStack(topLanguages);
       }

@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { fetchNavProfile, signOutAction } from "./navActions";
+import { getClientProfile, signOutClient } from "@/lib/auth/client";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,12 +16,12 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchNavProfile().then((res) => setProfile(res || null));
+    getClientProfile().then((res) => setProfile(res || null));
 
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        fetchNavProfile().then((res) => setProfile(res || null));
+        getClientProfile().then((res) => setProfile(res || null));
       } else if (event === "SIGNED_OUT") {
         setProfile(null);
       }
@@ -169,7 +169,7 @@ export default function Navbar() {
                     type="button"
                     onClick={async () => {
                       setDropdownOpen(false);
-                      await signOutAction();
+                      await signOutClient("/");
                     }}
                     style={{
                       width: "100%",
@@ -257,7 +257,7 @@ export default function Navbar() {
                   type="button"
                   onClick={async () => {
                     setMobileOpen(false);
-                    await signOutAction();
+                    await signOutClient("/");
                   }}
                   style={{
                     background: "none",

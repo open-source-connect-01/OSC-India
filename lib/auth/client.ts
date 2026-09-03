@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/client";
 
+export interface ClientProfilePayload {
+  id: string;
+  name: string;
+  email: string | undefined;
+  avatar: string | null;
+  role: string;
+  isAdmin: boolean;
+  github: string | null;
+}
+
 /**
  * Initiates client-side OAuth flow with GitHub or Google
  */
@@ -119,4 +129,57 @@ export async function getClientUser() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
+}
+
+/**
+ * Retrieves the current user's profile directly via Supabase client
+ * Eliminates Server Action roundtrips and prevents UnrecognizedActionError
+ */
+export async function getClientProfile(): Promise<ClientProfilePayload | null> {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return null;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, avatar_url, role, is_admin, github")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const fullName =
+      profile?.full_name ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "User";
+
+    const github =
+      profile?.github ||
+      user.user_metadata?.user_name ||
+      user.user_metadata?.preferred_username ||
+      null;
+
+    const avatar =
+      profile?.avatar_url ||
+      user.user_metadata?.avatar_url ||
+      user.user_metadata?.picture ||
+      null;
+
+    const role = profile?.role || "contributor";
+    const isAdmin = Boolean(profile?.is_admin || profile?.role === "admin");
+
+    return {
+      id: user.id,
+      name: fullName,
+      email: user.email,
+      avatar,
+      role,
+      isAdmin,
+      github,
+    };
+  } catch (err) {
+    console.error("getClientProfile error:", err);
+    return null;
+  }
 }

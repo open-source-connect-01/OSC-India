@@ -65,7 +65,6 @@ function CheckIcon({ className, style }: { className?: string; style?: React.CSS
 
 import { useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas";
-import { incrementBadgeCount } from "@/lib/supabase/database";
 
 export interface BadgeContentProps {
   userId?: string;
@@ -150,11 +149,12 @@ function BadgeContent({
         link.href = url;
         link.click();
 
-        // Increment server-side badge count if logged in
+        // Increment server-side badge count if logged in via API route
         if (userId) {
-          const res = await incrementBadgeCount(userId);
-          if (res.success && res.count !== undefined) {
-            setBadgesCount(res.count);
+          const res = await fetch("/api/badge/increment", { method: "POST" });
+          const resData = await res.json();
+          if (res.ok && resData.success && resData.count !== undefined) {
+            setBadgesCount(resData.count);
           }
         }
       } catch (err) {

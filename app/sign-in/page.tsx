@@ -5,8 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { fetchNavProfile } from "../components/navActions";
-import { signInWithOAuth, signInWithPassword, signOutClient } from "@/lib/auth/client";
+import { signInWithOAuth, signInWithPassword, signOutClient, getClientProfile } from "@/lib/auth/client";
 
 function EyeIcon({ className }: { className?: string }) {
   return (
@@ -39,7 +38,7 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetchNavProfile().then((res) => setProfile(res || null));
+    getClientProfile().then((res) => setProfile(res || null));
   }, []);
 
   const handleOAuthSignIn = async (provider: "github" | "google") => {

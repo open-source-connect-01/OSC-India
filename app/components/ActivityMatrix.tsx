@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchFullActivityGraph } from "../dashboard/actions";
 
 interface Contribution {
   date: string;
@@ -59,9 +58,12 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
         }
       }
 
-      // 2. Fetch full contribution graph via Native Server Action
-      const graphRes = await fetchFullActivityGraph(githubUsername);
-      if (graphRes.error || !graphRes.contributions) throw new Error(graphRes.error || "Failed to fetch contribution graph.");
+      // 2. Fetch full contribution graph via API Route
+      const res = await fetch(`/api/github-activity?username=${encodeURIComponent(githubUsername)}`);
+      const graphRes = await res.json();
+      if (!res.ok || graphRes.error || !graphRes.contributions) {
+        throw new Error(graphRes.error || "Failed to fetch contribution graph.");
+      }
 
       const parsedEvents = graphRes.contributions;
       

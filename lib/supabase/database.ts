@@ -1,5 +1,3 @@
-"use server";
-
 import { createClient } from "./server";
 import { createAdminClient } from "./admin";
 
