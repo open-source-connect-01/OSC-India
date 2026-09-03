@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   merged_prs INTEGER DEFAULT 0,
   projects_count INTEGER DEFAULT 0,
   badges_created INTEGER DEFAULT 0,
+  tech_stack TEXT[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -57,6 +58,10 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'github') THEN
     ALTER TABLE public.profiles ADD COLUMN github TEXT UNIQUE;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'tech_stack') THEN
+    ALTER TABLE public.profiles ADD COLUMN tech_stack TEXT[] DEFAULT '{}';
   END IF;
 END $$;
 

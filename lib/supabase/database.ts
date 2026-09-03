@@ -20,6 +20,7 @@ export interface Profile {
   merged_prs: number;
   projects_count: number;
   badges_created: number;
+  tech_stack?: string[];
   created_at: string;
   updated_at: string;
 }

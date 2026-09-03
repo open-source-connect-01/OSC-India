@@ -1,110 +1,79 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { syncGitHubContribution } from "@/lib/actions/github";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    // 1. Verify Vercel Cron Token (or allow local testing)
-    const authHeader = request.headers.get('authorization');
+    // 1. Verify Vercel Cron Token (or allow authorized triggers)
+    const authHeader = request.headers.get("authorization");
     if (
       process.env.CRON_SECRET &&
       authHeader !== `Bearer ${process.env.CRON_SECRET}`
     ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createAdminClient();
+    const admin = createAdminClient();
 
-    // 2. Fetch active projects from database
-    const { data: projects, error: projectsError } = await supabase
-      .from('projects')
-      .select('id, github_repo_url');
+    // 2. Fetch all active contributor profiles with linked GitHub handles
+    const { data: contributors, error } = await admin
+      .from("profiles")
+      .select("id, github, full_name")
+      .eq("role", "contributor")
+      .not("github", "is", null);
 
-    if (projectsError || !projects) {
-      throw new Error(`Failed to fetch projects: ${projectsError?.message}`);
+    if (error) {
+      throw new Error(`Failed to fetch contributors: ${error.message}`);
     }
 
-    let totalSynced = 0;
+    if (!contributors || contributors.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: "No contributors with linked GitHub accounts found.",
+        synced: 0,
+      });
+    }
 
-    // 3. For each project, fetch recent PRs from GitHub
-    for (const project of projects) {
-      // Parse owner/repo from URL
-      // e.g., https://github.com/OSC-India/platform -> OSC-India/platform
-      const urlParts = project.github_repo_url.split('github.com/');
-      if (urlParts.length !== 2) continue;
-      const repo = urlParts[1]; // "owner/repo"
+    let successCount = 0;
+    const results: any[] = [];
 
-      // GitHub Search API (find merged PRs in the last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const dateString = sevenDaysAgo.toISOString().split('T')[0];
-      
-      const query = encodeURIComponent(`repo:${repo} is:pr is:merged merged:>=${dateString}`);
-      const headers: Record<string, string> = {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'OSC-India-Cron',
-      };
-      
-      // If a PAT is available, use it to increase rate limit
-      if (process.env.GITHUB_PAT) {
-        headers['Authorization'] = `token ${process.env.GITHUB_PAT}`;
-      }
+    // 3. Sequentially sync each contributor with a 500ms delay to respect rate limits
+    for (const contributor of contributors) {
+      if (!contributor.github) continue;
 
-      const res = await fetch(`https://api.github.com/search/issues?q=${query}`, { headers });
-      
-      if (!res.ok) {
-        console.error(`GitHub API error for ${repo}:`, await res.text());
-        continue;
-      }
+      try {
+        const syncResult = await syncGitHubContribution(
+          contributor.id,
+          contributor.github
+        );
 
-      const data = await res.json();
-      const items = data.items || [];
-
-      // 4. Process each merged PR
-      for (const pr of items) {
-        // Skip if author is missing
-        if (!pr.user || !pr.user.id) continue;
-        const githubUserIdStr = pr.user.id.toString();
-
-        // Check if author exists in our database via the `accounts` table
-        const { data: accountData } = await supabase
-          .from('accounts')
-          .select('userId')
-          .eq('provider', 'github')
-          .eq('providerAccountId', githubUserIdStr)
-          .single();
-
-        if (accountData?.userId) {
-          // Calculate points (e.g., 10 points per PR for MVP)
-          const pointsAwarded = 10;
-
-          // Upsert into contributions table using the unique github_url
-          const { error: upsertError } = await supabase
-            .from('contributions')
-            .upsert({
-              user_id: accountData.userId,
-              project_id: project.id,
-              type: 'pr',
-              github_url: pr.html_url,
-              status: 'merged',
-              points_awarded: pointsAwarded,
-              contributed_at: pr.closed_at || pr.created_at,
-            }, { onConflict: 'github_url' });
-
-          if (upsertError) {
-            console.error(`Failed to upsert contribution ${pr.html_url}:`, upsertError);
-          } else {
-            totalSynced++;
-          }
+        if (syncResult.success) {
+          successCount++;
+          results.push({
+            id: contributor.id,
+            github: contributor.github,
+            score: syncResult.score,
+            merged_prs: syncResult.merged_prs,
+          });
         }
+      } catch (syncErr: any) {
+        console.error(`Error syncing user @${contributor.github}:`, syncErr.message);
       }
+
+      // Brief delay to prevent burst rate limits
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    return NextResponse.json({ success: true, message: `Sync complete. Synced ${totalSynced} new contributions.` });
-
+    return NextResponse.json({
+      success: true,
+      totalContributors: contributors.length,
+      syncedSuccessfully: successCount,
+      results,
+    });
   } catch (err: any) {
-    console.error('Cron job error:', err);
+    console.error("GitHub Cron Sync Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
