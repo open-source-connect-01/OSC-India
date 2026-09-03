@@ -227,9 +227,26 @@ export default function Navbar() {
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                   <img src={profile.avatar} alt="Avatar" style={{ width: "24px", height: "24px", borderRadius: "50%" }} /> Dashboard
                 </Link>
-                <Link href="/api/auth/signout" style={{ color: "#ef4444", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px" }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMobileOpen(false);
+                    await signOutAction();
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#ef4444",
+                    fontSize: "16.5px",
+                    fontWeight: 500,
+                    padding: "12px 8px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    width: "100%",
+                  }}
+                >
                   Sign Out
-                </Link>
+                </button>
               </>
             ) : (
               <Link href="/sign-in" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 600, padding: "10px 22px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", textAlign: "center" }}>

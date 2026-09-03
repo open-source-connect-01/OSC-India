@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
 import { signInWithGithub } from "../sign-in/actions";
-import { fetchNavProfile } from "../components/navActions";
+import { fetchNavProfile, signOutAction } from "../components/navActions";
 
 function EyeIcon({ className }: { className?: string }) {
   return (
@@ -79,12 +79,13 @@ export default function SignUpPage() {
                 Go to Dashboard
               </Link>
               
-              <Link 
-                href="/api/auth/signout"
-                className="text-[14px] text-gray-500 hover:text-white transition-colors underline decoration-gray-700 hover:decoration-white underline-offset-4"
+              <button 
+                type="button"
+                onClick={() => signOutAction()}
+                className="text-[14px] text-gray-500 hover:text-white transition-colors underline decoration-gray-700 hover:decoration-white underline-offset-4 bg-transparent border-none cursor-pointer"
               >
                 Sign out and use a different account
-              </Link>
+              </button>
               <style dangerouslySetInnerHTML={{__html: `@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}} />
             </div>
           ) : (
