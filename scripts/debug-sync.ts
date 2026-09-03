@@ -10,7 +10,7 @@ import {
   extractLinkedIssueNumbers,
   DIFFICULTY_POINTS,
   DifficultyLevel,
-} from "../lib/actions/github";
+} from "../lib/utils/github-helpers";
 
 async function run() {
   const username = process.argv[2];
