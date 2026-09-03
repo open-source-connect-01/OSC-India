@@ -44,7 +44,7 @@ export default function SignUpPage() {
       setIsLoading(true);
       const supabase = createClient();
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
           redirectTo: `${origin}/auth/callback?next=/dashboard`,
@@ -53,6 +53,8 @@ export default function SignUpPage() {
       if (error) {
         setErrorMessage(error.message);
         setIsLoading(false);
+      } else if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to initiate GitHub sign-up");
@@ -66,7 +68,7 @@ export default function SignUpPage() {
       setIsLoading(true);
       const supabase = createClient();
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${origin}/auth/callback?next=/dashboard`,
@@ -75,6 +77,8 @@ export default function SignUpPage() {
       if (error) {
         setErrorMessage(error.message);
         setIsLoading(false);
+      } else if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to initiate Google sign-up");
@@ -133,7 +137,6 @@ export default function SignUpPage() {
           {profile === undefined ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
               <div style={{ width: "40px", height: "40px", border: "3px solid rgba(255,117,24,0.2)", borderTopColor: "var(--orange)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-              <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
             </div>
           ) : profile ? (
             <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", animation: "fadeIn 0.5s ease-out" }}>
@@ -168,7 +171,6 @@ export default function SignUpPage() {
               >
                 Sign out and use a different account
               </button>
-              <style dangerouslySetInnerHTML={{__html: `@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}} />
             </div>
           ) : (
             <>

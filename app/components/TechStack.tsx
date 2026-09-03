@@ -108,9 +108,6 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
           <div style={{ color: '#9ca3af', fontSize: '13px' }}>No tech stack synced.</div>
         )}
       </div>
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}} />
     </div>
   );
 }
