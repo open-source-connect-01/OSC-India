@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { fetchNavProfile, signOutAction } from "./navActions";
 
 export default function Navbar() {
@@ -16,6 +17,19 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchNavProfile().then((res) => setProfile(res || null));
+
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        fetchNavProfile().then((res) => setProfile(res || null));
+      } else if (event === "SIGNED_OUT") {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

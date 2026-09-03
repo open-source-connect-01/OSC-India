@@ -33,11 +33,17 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
     setError("");
     
     try {
-      // 1. Fetch GitHub user to get the username
-      const userRes = await fetch(`https://api.github.com/user/${providerAccountId}`);
-      if (!userRes.ok) throw new Error("Failed to fetch GitHub profile.");
-      const userData = await userRes.json();
-      const githubUsername = userData.login;
+      const cleanHandle = providerAccountId.replace(/^@/, "").trim();
+      let githubUsername = cleanHandle;
+
+      // If handle is a numeric ID, resolve to username
+      if (/^\d+$/.test(cleanHandle)) {
+        const userRes = await fetch(`https://api.github.com/user/${cleanHandle}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          githubUsername = userData.login;
+        }
+      }
 
       // 2. Fetch public repos
       const reposRes = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100&type=owner`);

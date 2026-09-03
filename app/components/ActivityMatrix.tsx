@@ -47,11 +47,17 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
     setError("");
 
     try {
-      // 1. Resolve username
-      const userRes = await fetch(`https://api.github.com/user/${providerAccountId}`);
-      if (!userRes.ok) throw new Error("Failed to fetch GitHub profile.");
-      const userData = await userRes.json();
-      const githubUsername = userData.login;
+      const cleanHandle = providerAccountId.replace(/^@/, "").trim();
+      let githubUsername = cleanHandle;
+
+      // If handle is a numeric ID, resolve to username
+      if (/^\d+$/.test(cleanHandle)) {
+        const userRes = await fetch(`https://api.github.com/user/${cleanHandle}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          githubUsername = userData.login;
+        }
+      }
 
       // 2. Fetch full contribution graph via Native Server Action
       const graphRes = await fetchFullActivityGraph(githubUsername);
