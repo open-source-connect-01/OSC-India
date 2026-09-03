@@ -22,7 +22,7 @@ async function run() {
   const handle = normalizeGitHubHandle(username);
   console.log(`\n🔍 Debugging GitHub Sync for handle: "${handle}"`);
 
-  const allowedRepos = getAllAllowedRepoSlugs();
+  const allowedRepos = getAllowedRepoSlugs();
   console.log(`📋 Tracked Competition Repos (${allowedRepos.size}):`);
   allowedRepos.forEach((repo: string) => console.log(`   - ${repo}`));
 

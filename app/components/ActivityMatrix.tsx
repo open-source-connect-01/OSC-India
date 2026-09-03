@@ -72,7 +72,7 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
 
   // Generate the last 25 weeks of days (175 days)
   const today = new Date();
-  const days = [];
+  const days: string[] = [];
   for (let i = 174; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);

@@ -32,10 +32,19 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profile, setProfile] = useState<any>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNavProfile().then((res) => setProfile(res || null));
   }, []);
+
+  const handleEmailSignUp = async (formData: FormData) => {
+    setErrorMessage(null);
+    const res = await signUpWithEmail(formData);
+    if (res?.error) {
+      setErrorMessage(res.error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans">
@@ -98,10 +107,10 @@ export default function SignUpPage() {
 
               {/* OAuth Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-                <form action={signInWithGithub} className="w-full">
+                <form action={async () => { await signInWithGithub(); }} className="w-full">
                   <button 
                     type="submit"
-                    className="flex items-center justify-center gap-3 w-full bg-[#1c1c1f] hover:bg-[#252529] text-white text-[14px] font-medium rounded-lg border border-[rgba(255,255,255,0.05)] transition-colors"
+                    className="flex items-center justify-center gap-3 w-full bg-[#1c1c1f] hover:bg-[#252529] text-white text-[14px] font-medium rounded-lg border border-[rgba(255,255,255,0.05)] transition-colors cursor-pointer"
                     style={{ padding: '14px' }}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -110,7 +119,7 @@ export default function SignUpPage() {
                     Sign up with GitHub
                   </button>
                 </form>
-                <form action={() => signInWithGoogle()} className="w-full">
+                <form action={async () => { await signInWithGoogle(); }} className="w-full">
                   <button 
                     type="submit"
                     className="flex items-center justify-center gap-3 w-full bg-white hover:bg-gray-100 text-gray-900 text-[14px] font-medium rounded-lg transition-colors cursor-pointer"
@@ -134,8 +143,14 @@ export default function SignUpPage() {
                 <div className="flex-1 h-[1px] bg-[rgba(255,255,255,0.06)]" />
               </div>
 
+              {errorMessage && (
+                <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "10px 14px", borderRadius: "10px", fontSize: "13px", marginBottom: "20px" }}>
+                  {errorMessage}
+                </div>
+              )}
+
               {/* Form */}
-              <form action={signUpWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <form action={handleEmailSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
                 {/* Full Name Field */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
