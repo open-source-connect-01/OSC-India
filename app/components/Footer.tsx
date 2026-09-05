@@ -1,8 +1,28 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-
+import { createClient } from "@/lib/supabase/client";
+import { getClientProfile } from "@/lib/auth/client";
 
 export default function Footer() {
+  const [profile, setProfile] = useState<any>(undefined);
+
+  useEffect(() => {
+    getClientProfile().then((res) => setProfile(res || null));
+
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        getClientProfile().then((res) => setProfile(res || null));
+      } else if (event === "SIGNED_OUT") {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
   return (
     <footer
       className="footer-section"
@@ -202,7 +222,7 @@ export default function Footer() {
                   { name: "About Us", href: "/about" },
                   { name: "Projects", href: "/projects" },
                   { name: "Timeline", href: "/timeline" },
-                  { name: "Leaderboard", href: "/leaderboard" }
+                  ...(profile ? [{ name: "Leaderboard", href: "/leaderboard" }] : []),
                 ].map((item) => (
                   <li key={item.name} style={{ marginBottom: "10px" }}>
                     <Link

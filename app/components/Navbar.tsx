@@ -51,7 +51,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "About us", href: "/about" },
     { label: "Projects", href: "/projects" },
-    { label: "Leaderboard", href: "/leaderboard" },
+    ...(profile ? [{ label: "Leaderboard", href: "/leaderboard" }] : []),
     { label: "Team", href: "/team" },
     { label: "Timeline", href: "/timeline" },
   ];
@@ -247,6 +247,9 @@ export default function Navbar() {
               <>
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                   <img src={profile.avatar} alt="Avatar" style={{ width: "24px", height: "24px", borderRadius: "50%" }} /> Dashboard
+                </Link>
+                <Link href="/leaderboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ fontSize: "18px" }}>🏆</span> Leaderboard
                 </Link>
                 {profile.isAdmin && (
                   <Link href="/admin" onClick={() => setMobileOpen(false)} style={{ color: "#ef4444", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>

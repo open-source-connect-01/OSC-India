@@ -27,7 +27,10 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith("/admin");
-  const isProtectedUserRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/badge");
+  const isProtectedUserRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/badge") ||
+    pathname.startsWith("/leaderboard");
 
   // Only check session on protected routes to maximize edge performance
   if (isAdminRoute || isProtectedUserRoute) {
@@ -63,5 +66,6 @@ export const config = {
     "/admin/:path*",
     "/dashboard/:path*",
     "/badge/:path*",
+    "/leaderboard/:path*",
   ],
 };

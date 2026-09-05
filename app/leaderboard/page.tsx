@@ -1,12 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeaderboardUI from "./LeaderboardUI";
+import { redirect } from "next/navigation";
 
 export const revalidate = 30; // Revalidate every 30 seconds
 
 export default async function LeaderboardPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in?next=/leaderboard");
+  }
+
   const searchParams = await props.searchParams;
   const q = (searchParams?.q as string) || "";
 
