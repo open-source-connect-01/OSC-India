@@ -6,8 +6,10 @@ import { getClientProfile } from "@/lib/auth/client";
 
 export default function Footer() {
   const [profile, setProfile] = useState<any>(undefined);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     getClientProfile().then((res) => setProfile(res || null));
 
     const supabase = createClient();
@@ -222,7 +224,7 @@ export default function Footer() {
                   { name: "About Us", href: "/about" },
                   { name: "Projects", href: "/projects" },
                   { name: "Timeline", href: "/timeline" },
-                  ...(profile ? [{ name: "Leaderboard", href: "/leaderboard" }] : []),
+                  ...((mounted && profile) ? [{ name: "Leaderboard", href: "/leaderboard" }] : []),
                 ].map((item) => (
                   <li key={item.name} style={{ marginBottom: "10px" }}>
                     <Link

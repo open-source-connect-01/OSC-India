@@ -83,9 +83,19 @@ export default async function DashboardPage() {
     });
   }
 
+  const profilePayload = {
+    id: user.id,
+    name: fullName,
+    email: user.email,
+    avatar: avatar,
+    role: profile?.role || "contributor",
+    isAdmin: isSuperAdmin,
+    github: githubUsername,
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
-      <Navbar />
+      <Navbar initialProfile={profilePayload} />
       <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
 
       <main className="flex-grow flex flex-col items-center" style={{ margin: "0 auto", maxWidth: "1440px", width: "100%", paddingBottom: "96px", paddingTop: "24px", paddingLeft: "clamp(20px, 5vw, 64px)", paddingRight: "clamp(20px, 5vw, 64px)", overflowX: "hidden", boxSizing: "border-box" }}>

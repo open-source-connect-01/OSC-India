@@ -23,12 +23,22 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
-    const { error } = await admin
+    let { error } = await admin
       .from("profiles")
       .update({ tech_stack: languages, updated_at: new Date().toISOString() })
       .eq("id", user.id);
 
+    // If updated_at column does not exist in schema, retry without it
+    if (error && (error.message?.includes("updated_at") || error.code === "42703")) {
+      const retry = await admin
+        .from("profiles")
+        .update({ tech_stack: languages })
+        .eq("id", user.id);
+      error = retry.error;
+    }
+
     if (error) {
+      console.error("Save tech stack API database error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

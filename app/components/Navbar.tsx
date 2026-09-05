@@ -6,17 +6,25 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getClientProfile, signOutClient } from "@/lib/auth/client";
 
-export default function Navbar() {
+interface NavbarProps {
+  initialProfile?: any;
+}
+
+export default function Navbar({ initialProfile }: NavbarProps = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
-  const [profile, setProfile] = useState<any>(undefined);
+  const [profile, setProfile] = useState<any>(initialProfile);
+  const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getClientProfile().then((res) => setProfile(res || null));
+    setMounted(true);
+    if (!initialProfile) {
+      getClientProfile().then((res) => setProfile(res || null));
+    }
 
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -30,7 +38,7 @@ export default function Navbar() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialProfile]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -48,10 +56,12 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isAuthed = initialProfile !== undefined ? Boolean(profile) : (mounted && Boolean(profile));
+
   const navLinks = [
     { label: "About us", href: "/about" },
     { label: "Projects", href: "/projects" },
-    ...(profile ? [{ label: "Leaderboard", href: "/leaderboard" }] : []),
+    ...(isAuthed ? [{ label: "Leaderboard", href: "/leaderboard" }] : []),
     { label: "Team", href: "/team" },
     { label: "Timeline", href: "/timeline" },
   ];
@@ -121,7 +131,7 @@ export default function Navbar() {
 
         {/* CTA or Avatar Dropdown */}
         <div style={{ display: "flex", alignItems: "center", justifySelf: "end", position: "relative" }} className="desktop-cta" ref={dropdownRef}>
-          {profile === undefined ? (
+          {(!mounted && initialProfile === undefined) || profile === undefined ? (
             <div style={{ width: "80px", height: "38px" }} /> // Invisible placeholder matching button height
           ) : profile ? (
             <>

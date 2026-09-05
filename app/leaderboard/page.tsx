@@ -85,5 +85,21 @@ export default async function LeaderboardPage(props: {
     isFirst: idx === 0,
   }));
 
-  return <LeaderboardUI initialUsers={topUsers} />;
+  const { data: currentProfile } = await admin
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const profilePayload = {
+    id: user.id,
+    name: currentProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Contributor",
+    email: user.email,
+    avatar: currentProfile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+    role: currentProfile?.role || "contributor",
+    isAdmin: Boolean(currentProfile?.is_admin || currentProfile?.role === "admin"),
+    github: currentProfile?.github || user.user_metadata?.user_name || null,
+  };
+
+  return <LeaderboardUI initialUsers={topUsers} initialProfile={profilePayload} />;
 }

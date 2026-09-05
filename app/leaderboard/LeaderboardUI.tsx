@@ -19,7 +19,7 @@ interface LeaderboardUser {
   isFirst: boolean;
 }
 
-export default function LeaderboardUI({ initialUsers }: { initialUsers: LeaderboardUser[] }) {
+export default function LeaderboardUI({ initialUsers, initialProfile }: { initialUsers: LeaderboardUser[]; initialProfile?: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
@@ -85,7 +85,7 @@ export default function LeaderboardUI({ initialUsers }: { initialUsers: Leaderbo
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
-      <Navbar />
+      <Navbar initialProfile={initialProfile} />
       <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
 
       <main className="flex-grow flex flex-col items-center px-6" style={{ margin: "0 auto", maxWidth: "1080px", width: "100%", paddingBottom: "96px", paddingTop: "24px" }}>
