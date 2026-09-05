@@ -500,11 +500,10 @@ img { display: block; max-width: 100%; }
   width: auto !important;
   object-fit: contain;
   display: block;
-  transition: transform 0.2s ease;
 }
 
 .navbar-logo:hover {
-  transform: scale(1.03);
+  transform: none !important;
 }
 
 @media (max-width: 768px) {
