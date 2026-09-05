@@ -55,6 +55,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                   is_admin: newRole === "admin",
                   score: newRole === "contributor" ? p.score : 0,
                   merged_prs: newRole === "contributor" ? p.merged_prs : 0,
+                  projects_count: newRole === "contributor" ? p.projects_count : 0,
                 }
               : p
           )
@@ -346,6 +347,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--orange)", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
                             >
                               +50
+                            </button>
+                            <button
+                              title="+100 Points"
+                              onClick={() => handleScoreAdjust(user.id, 100, "add")}
+                              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--orange)", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                            >
+                              +100
                             </button>
                             <button
                               title="Reset to 0"
