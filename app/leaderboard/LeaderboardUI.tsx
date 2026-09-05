@@ -33,6 +33,9 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
 
   // Debounced search
   useEffect(() => {
+    const currentQ = searchParams.get("q") || "";
+    if (searchQuery === currentQ) return;
+
     const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       if (searchQuery) {
@@ -149,7 +152,7 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
                 }}
               >
                 <div style={{ width: "72px", height: "72px", borderRadius: "50%", border: "2px solid #cbd5e1", overflow: "hidden", background: "#1c1c1f", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {rank2.avatar ? <img src={rank2.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank2.name[0]}</span>}
+                  {rank2.avatar ? <img src={rank2.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank2.name?.[0] || "U"}</span>}
                 </div>
                 <div style={{ color: "#cbd5e1", fontSize: "20px", fontWeight: 800, marginBottom: "4px" }}>🥈 #2</div>
                 <div style={{ fontSize: "16px", fontWeight: 700, textAlign: "center", marginBottom: "2px" }}>{rank2.name}</div>
@@ -180,7 +183,7 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
               >
                 <div style={{ position: "absolute", top: "-18px", fontSize: "28px" }}>👑</div>
                 <div style={{ width: "88px", height: "88px", borderRadius: "50%", border: "3px solid var(--orange)", overflow: "hidden", background: "#1c1c1f", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(255,117,24,0.4)" }}>
-                  {rank1.avatar ? <img src={rank1.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank1.name[0]}</span>}
+                  {rank1.avatar ? <img src={rank1.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank1.name?.[0] || "U"}</span>}
                 </div>
                 <div style={{ color: "var(--orange)", fontSize: "24px", fontWeight: 900, marginBottom: "4px" }}>🥇 #1</div>
                 <div style={{ fontSize: "18px", fontWeight: 800, textAlign: "center", marginBottom: "2px" }}>{rank1.name}</div>
@@ -209,7 +212,7 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
                 }}
               >
                 <div style={{ width: "72px", height: "72px", borderRadius: "50%", border: "2px solid #d97706", overflow: "hidden", background: "#1c1c1f", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {rank3.avatar ? <img src={rank3.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank3.name[0]}</span>}
+                  {rank3.avatar ? <img src={rank3.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{rank3.name?.[0] || "U"}</span>}
                 </div>
                 <div style={{ color: "#d97706", fontSize: "20px", fontWeight: 800, marginBottom: "4px" }}>🥉 #3</div>
                 <div style={{ fontSize: "16px", fontWeight: 700, textAlign: "center", marginBottom: "2px" }}>{rank3.name}</div>
@@ -262,7 +265,7 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
                     {user.avatar ? (
                       <img src={user.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <span style={{ fontSize: "16px" }}>{user.name[0]}</span>
+                      <span style={{ fontSize: "16px" }}>{user.name?.[0] || "U"}</span>
                     )}
                   </div>
 

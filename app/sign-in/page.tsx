@@ -29,7 +29,11 @@ function EyeOffIcon({ className }: { className?: string }) {
 
 function SignInContent() {
   const searchParams = useSearchParams();
-  const nextUrl = searchParams.get("next") || "/dashboard";
+  const rawNext = searchParams.get("next");
+  const nextUrl =
+    rawNext && !rawNext.startsWith("/sign-in") && !rawNext.startsWith("/sign-up")
+      ? rawNext
+      : "/dashboard";
   const urlError = searchParams.get("error");
 
   const [showPassword, setShowPassword] = useState(false);
@@ -97,13 +101,13 @@ function SignInContent() {
           <h1 className="text-[28px] font-bold text-white mb-1 tracking-tight">Welcome back, {profile.name.split(" ")[0]}!</h1>
           <p className="text-[15px] text-gray-400 font-medium mb-8">You are already signed in to your account.</p>
           
-          <Link 
+          <a 
             href={nextUrl}
-            className="w-full bg-[var(--orange)] hover:bg-[var(--orange-dark)] text-white text-[15px] font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/15 flex items-center justify-center"
+            className="w-full bg-[var(--orange)] hover:bg-[var(--orange-dark)] text-white text-[15px] font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/15 flex items-center justify-center no-underline"
             style={{ padding: "16px", marginBottom: "24px" }}
           >
             Go to Dashboard
-          </Link>
+          </a>
           
           <button 
             type="button"

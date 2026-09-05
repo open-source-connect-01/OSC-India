@@ -13,9 +13,15 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (userError || !user) {
+    if (userError) {
+      console.warn("DashboardPage auth verification notice:", userError.message);
+    }
     redirect("/sign-in");
   }
 
@@ -38,31 +44,43 @@ export default async function DashboardPage() {
 
   // Auto-provision profile if missing or synchronize github handle
   if (!profile) {
-    const { data: created } = await admin
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        full_name: fullName,
-        email: user.email,
-        avatar_url: avatar,
-        github: githubUsername,
-        role: "contributor",
-        is_admin: false,
-        score: 0,
-        merged_prs: 0,
-        projects_count: 0,
-        badges_created: 0,
-        tech_stack: [],
-        updated_at: new Date().toISOString(),
-      })
-      .select("*")
-      .maybeSingle();
-    if (created) profile = created;
+    try {
+      const { data: created, error: upsertErr } = await admin
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          full_name: fullName,
+          email: user.email,
+          avatar_url: avatar,
+          github: githubUsername,
+          role: "contributor",
+          is_admin: false,
+          score: 0,
+          merged_prs: 0,
+          projects_count: 0,
+          badges_created: 0,
+          tech_stack: [],
+          updated_at: new Date().toISOString(),
+        })
+        .select("*")
+        .maybeSingle();
+      if (upsertErr) {
+        console.warn("Profile auto-provision warning (schema migration pending):", upsertErr.message);
+      } else if (created) {
+        profile = created;
+      }
+    } catch (err: any) {
+      console.warn("Profile auto-provision error:", err.message);
+    }
   } else if (!profile.github && githubUsername) {
-    await admin
-      .from("profiles")
-      .update({ github: githubUsername, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
+    try {
+      await admin
+        .from("profiles")
+        .update({ github: githubUsername, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+    } catch (err: any) {
+      console.warn("Profile github sync warning:", err.message);
+    }
   }
 
   const roleName = profile?.role
@@ -79,7 +97,7 @@ export default async function DashboardPage() {
   // Lazy Background GitHub Sync (Workflow 2 from plan.md)
   if (githubUsername && (profile?.role === "contributor" || !profile?.role)) {
     syncGitHubContribution(user.id, githubUsername).catch((err) => {
-      console.error("Lazy background sync error:", err);
+      console.warn("Lazy background sync notice:", err);
     });
   }
 

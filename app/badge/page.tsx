@@ -15,11 +15,21 @@ export default async function BadgePage() {
   }
 
   const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, full_name, avatar_url, role, badges_created")
-    .eq("id", user.id)
-    .single();
+  let profile: any = null;
+  try {
+    const { data, error: badgeProfErr } = await admin
+      .from("profiles")
+      .select("id, full_name, avatar_url, role, badges_created")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (badgeProfErr) {
+      console.warn("Notice: BadgePage profile query (schema migration pending):", badgeProfErr.message);
+    } else {
+      profile = data;
+    }
+  } catch (err: any) {
+    console.warn("Notice: BadgePage profile fetch error:", err?.message);
+  }
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-white font-sans">Loading Badge Studio...</div>}>
