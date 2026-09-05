@@ -29,7 +29,15 @@ export default function AboutPage() {
         {/* Two-Card Layout */}
         <div className="about-two-col-grid">
           {/* Card 1: Why We Exist */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "clamp(22px, 4vw, 36px)" }}>
+          <div
+            className="about-card"
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              borderRadius: "16px",
+              padding: "clamp(22px, 4vw, 36px)",
+            }}
+          >
             <h2 style={{ color: "var(--orange)", fontSize: "clamp(18px, 3.5vw, 22px)", fontWeight: 700, marginBottom: "14px" }}>Why We Exist</h2>
             <p style={{ color: "#9ca3af", fontSize: "clamp(13.5px, 2vw, 15px)", lineHeight: "1.7" }}>
               Open-source is the foundation of modern technology but many talented individuals lack access to the right network, guidance, or global visibility. We aim to bridge that gap by creating a platform where knowledge is shared openly, projects are built collaboratively, and contributors are recognized globally.
@@ -37,10 +45,18 @@ export default function AboutPage() {
           </div>
 
           {/* Card 2: Our Vision */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "clamp(22px, 4vw, 36px)" }}>
+          <div
+            className="about-card"
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              borderRadius: "16px",
+              padding: "clamp(22px, 4vw, 36px)",
+            }}
+          >
             <h2 style={{ color: "var(--orange)", fontSize: "clamp(18px, 3.5vw, 22px)", fontWeight: 700, marginBottom: "14px" }}>Our Vision</h2>
             <p style={{ color: "#9ca3af", fontSize: "clamp(13.5px, 2vw, 15px)", lineHeight: "1.7" }}>
-              Our vision is to create the world's most inclusive and collaborative open-source ecosystem by uniting 1 million+ contributors across continents. By strengthening global connections and making contribution accessible to all, we aim to empower people to build innovative, community-driven technologies that solve real human problems.
+              Our vision is to create the world&apos;s most inclusive and collaborative open-source ecosystem by uniting 1 million+ contributors across continents. By strengthening global connections and making contribution accessible to all, we aim to empower people to build innovative, community-driven technologies that solve real human problems.
             </p>
           </div>
         </div>
@@ -70,16 +86,34 @@ export default function AboutPage() {
           <div className="about-philosophy-grid">
             
             {/* Tenet 1 */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "clamp(20px, 3.5vw, 28px)", textAlign: "left" }}>
+            <div
+              className="about-card"
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+                borderRadius: "16px",
+                padding: "clamp(20px, 3.5vw, 28px)",
+                textAlign: "left",
+              }}
+            >
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(255,96,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px", color: "var(--orange)", fontWeight: 800, fontSize: "16px" }}>1</div>
               <h3 style={{ color: "white", fontSize: "clamp(16px, 2.5vw, 18px)", fontWeight: 700, marginBottom: "8px" }}>Sustainable Ecosystems</h3>
               <p style={{ color: "#9ca3af", fontSize: "clamp(13px, 1.8vw, 14px)", lineHeight: "1.65" }}>
-                Rejecting the "abandonware" trend by providing frameworks for projects to survive independently.
+                Rejecting the &quot;abandonware&quot; trend by providing frameworks for projects to survive independently.
               </p>
             </div>
 
             {/* Tenet 2 */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "clamp(20px, 3.5vw, 28px)", textAlign: "left" }}>
+            <div
+              className="about-card"
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+                borderRadius: "16px",
+                padding: "clamp(20px, 3.5vw, 28px)",
+                textAlign: "left",
+              }}
+            >
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(255,96,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px", color: "var(--orange)", fontWeight: 800, fontSize: "16px" }}>2</div>
               <h3 style={{ color: "white", fontSize: "clamp(16px, 2.5vw, 18px)", fontWeight: 700, marginBottom: "8px" }}>Transparent Leadership</h3>
               <p style={{ color: "#9ca3af", fontSize: "clamp(13px, 1.8vw, 14px)", lineHeight: "1.65" }}>
@@ -88,7 +122,16 @@ export default function AboutPage() {
             </div>
 
             {/* Tenet 3 */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "clamp(20px, 3.5vw, 28px)", textAlign: "left" }}>
+            <div
+              className="about-card"
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+                borderRadius: "16px",
+                padding: "clamp(20px, 3.5vw, 28px)",
+                textAlign: "left",
+              }}
+            >
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(255,96,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px", color: "var(--orange)", fontWeight: 800, fontSize: "16px" }}>3</div>
               <h3 style={{ color: "white", fontSize: "clamp(16px, 2.5vw, 18px)", fontWeight: 700, marginBottom: "8px" }}>Responsible Innovation</h3>
               <p style={{ color: "#9ca3af", fontSize: "clamp(13px, 1.8vw, 14px)", lineHeight: "1.65" }}>

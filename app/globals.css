@@ -8,7 +8,7 @@
   --bg: #000000;
   --bg-card: #111111;
   --bg-card2: #161616;
-  --border: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.18);
   --text-muted: #6b7280;
   --text-secondary: #9ca3af;
 }
@@ -435,6 +435,16 @@ img { display: block; max-width: 100%; }
   grid-template-columns: repeat(2, 1fr);
   gap: 24px 16px;
   width: 100%;
+}
+
+.about-card {
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.about-card:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 @media (min-width: 640px) {
