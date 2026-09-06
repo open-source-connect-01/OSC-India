@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useSearchParams } from "next/navigation";
-import { signInWithOAuth, signOutClient, getClientProfile } from "@/lib/auth/client";
+import { signInWithOAuth, signOutClient, getClientProfile, type ClientProfilePayload } from "@/lib/auth/client";
 
 function SignInContent() {
   const searchParams = useSearchParams();
@@ -15,7 +15,7 @@ function SignInContent() {
       : "/dashboard";
   const urlError = searchParams.get("error");
 
-  const [profile, setProfile] = useState<any>(undefined);
+  const [profile, setProfile] = useState<ClientProfilePayload | null | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string | null>(urlError || null);
   const [isLoading, setIsLoading] = useState(false);
 
