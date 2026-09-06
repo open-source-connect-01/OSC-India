@@ -49,6 +49,62 @@ export async function signInWithOAuth(
 }
 
 /**
+ * Links a GitHub identity to the currently authenticated user via Supabase OAuth.
+ * After linking, the auth callback will sync the github handle to profiles.
+ */
+export async function linkGithubAccount(): Promise<{ error?: string }> {
+  try {
+    const supabase = createClient();
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const redirectTo = `${origin}/auth/callback?next=/dashboard`;
+
+    const { data, error } = await supabase.auth.linkIdentity({
+      provider: "github",
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    }
+
+    return {};
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : undefined;
+    return { error: message || "Failed to link GitHub account" };
+  }
+}
+
+/**
+ * Saves a manually entered GitHub username to the user's profile via API.
+ */
+export async function saveGithubUsername(username: string): Promise<{ error?: string }> {
+  try {
+    const res = await fetch("/api/profile/github", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ github: username }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: data.error || "Failed to save GitHub username" };
+    }
+
+    return {};
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : undefined;
+    return { error: message || "Failed to save GitHub username" };
+  }
+}
+
+/**
  * Signs out the current user on the client and redirects to homepage
  */
 export async function signOutClient(redirectTo = "/"): Promise<void> {

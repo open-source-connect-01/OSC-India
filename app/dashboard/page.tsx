@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import ActivityMatrix from "../components/ActivityMatrix";
 import TechStack from "../components/TechStack";
+import GitHubLinkCard from "../components/GitHubLinkCard";
 import { syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +138,13 @@ export default async function DashboardPage() {
             </Link>
           )}
         </div>
+
+        {/* GitHub Link Banner (shown when GitHub not connected) */}
+        {!githubUsername && (
+          <div style={{ width: "100%", marginBottom: "24px" }}>
+            <GitHubLinkCard />
+          </div>
+        )}
 
         {/* Top Grid Area (Profile + Stats) */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full mb-12">
