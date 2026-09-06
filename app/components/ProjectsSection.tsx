@@ -122,16 +122,11 @@ export default function ProjectsSection() {
         </p>
 
         {/* Projects Container with Horizontal Alignment on Mobile */}
-        <div style={{ position: "relative", width: "100%" }}>
+        <div style={{ position: "relative", width: "100%" }} suppressHydrationWarning>
           {/* Projects Cards Container */}
           <div
-            className="projects-cards-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            style={{
-              opacity: 0.35,
-              pointerEvents: "none",
-              userSelect: "none",
-              filter: "blur(1px)",
-            }}
+            className="projects-cards-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-35 pointer-events-none select-none blur-[1px]"
+            suppressHydrationWarning
           >
             {projects.map((project, i) => (
               <div

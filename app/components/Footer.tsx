@@ -249,7 +249,7 @@ export default function Footer() {
                 Join our newsletter for the latest updates and early announcements.
               </p>
 
-              <form onSubmit={handleNewsletterSubmit}>
+              <form onSubmit={handleNewsletterSubmit} suppressHydrationWarning>
                 <div
                   style={{
                     display: "flex",
@@ -259,6 +259,7 @@ export default function Footer() {
                     borderRadius: "12px",
                     padding: "4px 4px 4px 14px",
                   }}
+                  suppressHydrationWarning
                 >
                   <input
                     type="email"
@@ -266,6 +267,7 @@ export default function Footer() {
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
                     required
+                    suppressHydrationWarning
                     style={{
                       flex: 1,
                       background: "transparent",
@@ -280,6 +282,7 @@ export default function Footer() {
                   <button
                     type="submit"
                     aria-label="Subscribe"
+                    suppressHydrationWarning
                     style={{
                       width: "36px",
                       height: "36px",

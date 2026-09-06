@@ -127,12 +127,13 @@ img { display: block; max-width: 100%; }
 
   /* --- Hero Background & Visual Visibility --- */
   .hero-bg-container {
-    height: 720px !important;
+    height: 100% !important;
+    min-height: 420px !important;
   }
   .hero-bg-inner {
     width: 100% !important;
     max-width: 100% !important;
-    height: 480px !important;
+    height: 380px !important;
     top: 0 !important;
     right: 0 !important;
     opacity: 0.88 !important;
@@ -141,29 +142,29 @@ img { display: block; max-width: 100%; }
     background: linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.48) 32%, rgba(0,0,0,0.85) 65%, #000000 100%) !important;
   }
 
-  /* --- Hero Content & Text Contrast --- */
+  /* --- Hero Content & Text --- */
   .hero-container {
     min-height: auto !important;
   }
   .hero-content {
-    padding: 92px 20px 36px !important;
+    padding: 90px 20px 40px !important;
   }
   .hero-title {
     font-size: clamp(30px, 8.5vw, 44px) !important;
     line-height: 1.12 !important;
-    margin-bottom: 72px !important;
+    margin-bottom: 18px !important;
   }
   .hero-subtitle {
     font-size: 14.5px !important;
     line-height: 1.6 !important;
     color: #d1d5db !important;
-    max-width: 360px !important;
+    max-width: 100% !important;
     margin-bottom: 24px !important;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;
   }
   .hero-cta-group {
     gap: 12px !important;
     margin-bottom: 18px !important;
+    flex-wrap: wrap !important;
   }
   .hero-register-btn {
     padding: 11px 22px !important;
@@ -188,7 +189,7 @@ img { display: block; max-width: 100%; }
 
   /* --- Contribute --- */
   .contribute-section {
-    padding: 30px 20px 30px !important;
+    padding: 40px 20px !important;
   }
 
   /* --- What's New --- */
@@ -227,6 +228,11 @@ img { display: block; max-width: 100%; }
     padding: 28px 18px !important;
   }
 
+  /* --- Sponsors --- */
+  .sponsors-section {
+    padding: 60px 20px !important;
+  }
+
   /* --- Footer --- */
   .footer-section {
     padding: 40px 20px 24px !important;
@@ -258,21 +264,25 @@ img { display: block; max-width: 100%; }
 
   /* --- Hero fine-tuning for small screens --- */
   .hero-bg-inner {
-    height: 400px !important;
+    height: 300px !important;
     opacity: 0.82 !important;
   }
   .hero-content {
-    padding: 82px 16px 28px !important;
+    padding: 80px 16px 32px !important;
   }
   .hero-title {
     font-size: clamp(26px, 8vw, 34px) !important;
-    margin-bottom: 210px !important;
+    margin-bottom: 16px !important;
   }
   .hero-subtitle {
     font-size: 13.5px !important;
     line-height: 1.55 !important;
-    max-width: 310px !important;
+    max-width: 100% !important;
     margin-bottom: 20px !important;
+  }
+  .hero-cta-group {
+    flex-direction: row !important;
+    align-items: center !important;
   }
   .hero-register-btn {
     padding: 10px 18px !important;
@@ -288,7 +298,7 @@ img { display: block; max-width: 100%; }
 
   /* --- Stats: single column grid --- */
   .stats-inner-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
   }
   .stats-section {
     padding-left: 16px !important;
@@ -297,7 +307,7 @@ img { display: block; max-width: 100%; }
 
   /* --- Contribute: force single column stacking --- */
   .contribute-section {
-    padding: 24px 16px 24px !important;
+    padding: 32px 16px !important;
   }
 
   /* --- What's New cards: stack number/icon/text vertically --- */
@@ -325,6 +335,11 @@ img { display: block; max-width: 100%; }
     min-width: 240px !important;
   }
 
+  /* --- Sponsors --- */
+  .sponsors-section {
+    padding: 50px 16px !important;
+  }
+
   /* --- Footer --- */
   .footer-section {
     padding: 36px 16px 24px !important;
@@ -333,12 +348,8 @@ img { display: block; max-width: 100%; }
     grid-template-columns: 1fr !important;
     gap: 32px !important;
   }
-
-  /* --- Sponsors --- */
-  .sponsors-section {
-    padding: 50px 16px !important;
-  }
 }
+
 
 /* ===========================
    PROJECTS PAGE
@@ -538,6 +549,13 @@ img { display: block; max-width: 100%; }
 .hero-title-line-1,
 .hero-title-line-2 {
   white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .hero-title-line-1,
+  .hero-title-line-2 {
+    white-space: normal;
+  }
 }
 
 .hero-title-line-2 {
