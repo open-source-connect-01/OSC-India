@@ -8,7 +8,6 @@ import Link from "next/link";
 import ActivityMatrix from "../components/ActivityMatrix";
 import TechStack from "../components/TechStack";
 import GitHubLinkCard from "../components/GitHubLinkCard";
-import { syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
 
@@ -84,30 +83,24 @@ export default async function DashboardPage() {
     }
   }
 
-  const roleName = profile?.role
-    ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1)
-    : "Contributor";
+  const userMeta = user.user_metadata || {};
+  const isOwner = (user.email || "").toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
+  const rawRole = profile?.role || userMeta.role || (isOwner ? "admin" : "contributor");
+  const roleName = rawRole.charAt(0).toUpperCase() + rawRole.slice(1);
   const username = githubUsername || user.email?.split("@")[0] || "user";
-  const totalPoints = profile?.score || 0;
-  const mergedPRs = profile?.merged_prs || 0;
-  const projectsCount = profile?.projects_count || 0;
-  const badgesCreated = profile?.badges_created || 0;
-  const isProjectAdmin = profile?.role === "project-admin";
-  const isSuperAdmin = profile?.is_admin || profile?.role === "admin";
-
-  // Lazy Background GitHub Sync (Workflow 2 from plan.md)
-  if (githubUsername && (profile?.role === "contributor" || !profile?.role)) {
-    syncGitHubContribution(user.id, githubUsername).catch((err) => {
-      console.warn("Lazy background sync notice:", err);
-    });
-  }
+  const totalPoints = profile?.score ?? userMeta.score ?? 0;
+  const mergedPRs = profile?.merged_prs ?? userMeta.merged_prs ?? 0;
+  const projectsCount = profile?.projects_count ?? userMeta.projects_count ?? 0;
+  const badgesCreated = profile?.badges_created ?? userMeta.badges_created ?? 0;
+  const isProjectAdmin = rawRole === "project-admin";
+  const isSuperAdmin = Boolean(profile?.is_admin || userMeta.is_admin || isOwner || rawRole === "admin");
 
   const profilePayload = {
     id: user.id,
     name: fullName,
     email: user.email,
     avatar: avatar,
-    role: profile?.role || "contributor",
+    role: rawRole,
     isAdmin: isSuperAdmin,
     github: githubUsername,
   };

@@ -73,18 +73,31 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
 export async function incrementBadgeCount(userId: string): Promise<{ success: boolean; error?: string; count?: number }> {
   const admin = createAdminClient();
   
-  // 1. Fetch current count
-  const { data: profile, error: fetchErr } = await admin
-    .from("profiles")
-    .select("badges_created")
-    .eq("id", userId)
-    .single();
-
-  if (fetchErr || !profile) {
-    return { success: false, error: "Profile not found" };
+  // 1. Fetch current count from user_metadata or profiles
+  let currentCount = 0;
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    if (userData?.user?.user_metadata) {
+      currentCount = Number(userData.user.user_metadata.badges_created ?? 0);
+    }
+  } catch {
+    // fallback
   }
 
-  const currentCount = profile.badges_created || 0;
+  try {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("badges_created")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profile && profile.badges_created !== undefined && profile.badges_created !== null) {
+      currentCount = Number(profile.badges_created);
+    }
+  } catch {
+    // fallback
+  }
+
   if (currentCount >= 3) {
     return {
       success: false,
@@ -95,13 +108,30 @@ export async function incrementBadgeCount(userId: string): Promise<{ success: bo
 
   // 2. Increment count
   const newCount = currentCount + 1;
-  const { error: updateErr } = await admin
-    .from("profiles")
-    .update({ badges_created: newCount, updated_at: new Date().toISOString() })
-    .eq("id", userId);
 
-  if (updateErr) {
-    return { success: false, error: updateErr.message };
+  // 3. Save to auth user_metadata
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    if (userData?.user) {
+      await admin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...userData.user.user_metadata,
+          badges_created: newCount,
+        },
+      });
+    }
+  } catch (authErr) {
+    console.warn("Notice: saving badges_created to auth metadata:", authErr);
+  }
+
+  // 4. Also try updating profiles table
+  try {
+    await admin
+      .from("profiles")
+      .update({ badges_created: newCount, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+  } catch (dbErr) {
+    console.warn("Notice: saving badges_created to profiles table:", dbErr);
   }
 
   return { success: true, count: newCount };

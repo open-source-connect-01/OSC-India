@@ -13,9 +13,23 @@ export interface Project {
 export const PROJECTS: Project[] = [
   {
     title: "OSC-India Platform",
-    githubRepo: "https://github.com/OSC-India/platform",
+    githubRepo: "https://github.com/open-source-connect-01/OSC-India",
     description: "Official web platform and dashboard for Open Source Connect India.",
     language: "TypeScript",
+    accentColor: "#f97316",
+  },
+  {
+    title: "Open Source Connect",
+    githubRepo: "https://github.com/open-source-connect-01/Open-Source-Connect",
+    description: "Open Source Connect India community and event portal.",
+    language: "TypeScript",
+    accentColor: "#f97316",
+  },
+  {
+    title: "OSCG Old Website",
+    githubRepo: "https://github.com/phicsit-community/OSCG_Old_Website",
+    description: "Original community website archive.",
+    language: "JavaScript",
     accentColor: "#f97316",
   },
   {
@@ -68,7 +82,26 @@ export function getAllowedRepoSlugs(): Set<string> {
     }
   }
 
+  // Explicitly ensure official organizations are included
+  slugs.add("open-source-connect-01/osc-india");
+  slugs.add("open-source-connect-01/open-source-connect");
+  slugs.add("phicsit-community/oscg_old_website");
+
   return slugs;
+}
+
+/**
+ * Checks if a repository slug is tracked for contributions
+ */
+export function isAllowedRepoSlug(slug: string): boolean {
+  if (!slug) return false;
+  const lower = slug.toLowerCase();
+  const allowed = getAllowedRepoSlugs();
+  return (
+    allowed.has(lower) ||
+    lower.startsWith("open-source-connect-01/") ||
+    lower.startsWith("osc-india/")
+  );
 }
 
 export function extractRepoSlug(url: string): string | null {

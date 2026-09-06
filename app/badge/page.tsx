@@ -38,7 +38,7 @@ export default async function BadgePage() {
         initialRole={profile?.role || "contributor"}
         initialName={profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || ""}
         initialAvatar={profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || ""}
-        initialBadgesCreated={profile?.badges_created || 0}
+        initialBadgesCreated={profile?.badges_created ?? user.user_metadata?.badges_created ?? 0}
       />
     </Suspense>
   );
