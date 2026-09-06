@@ -6,15 +6,31 @@ import { syncGitHubContribution } from "./github";
 import { Profile } from "@/lib/supabase/database";
 import { revalidatePath } from "next/cache";
 
+import {
+  verifyAdminSession,
+  validateAdminCredentials,
+  setAdminSessionCookie,
+  clearAdminSessionCookie,
+} from "@/lib/auth/admin-auth";
+
 /**
  * Validates that the current user has super admin privileges.
+ * Supports dedicated admin email/password session or Supabase admin user.
  */
 async function requireSuperAdmin() {
+  const isAdminSession = await verifyAdminSession();
+  if (isAdminSession) {
+    return {
+      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      profile: { id: "admin-session", role: "admin", is_admin: true },
+    };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
   if (authErr || !user) {
-    throw new Error("Unauthorized. You must be signed in.");
+    throw new Error("Unauthorized. Admin authentication required.");
   }
 
   const admin = createAdminClient();
@@ -35,11 +51,19 @@ async function requireSuperAdmin() {
  * Validates that the current user has either Admin or Project Admin privileges.
  */
 async function requireAdminOrProjectAdmin() {
+  const isAdminSession = await verifyAdminSession();
+  if (isAdminSession) {
+    return {
+      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      profile: { id: "admin-session", role: "admin", is_admin: true },
+    };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
   if (authErr || !user) {
-    throw new Error("Unauthorized. You must be signed in.");
+    throw new Error("Unauthorized. Elevated privileges required.");
   }
 
   const admin = createAdminClient();
@@ -237,3 +261,43 @@ export async function syncAllUsers() {
     failed: failedCount,
   };
 }
+
+/**
+ * Authenticates the admin using email and password.
+ * Issues an HMAC-signed HTTP-only session cookie.
+ */
+export async function adminLoginAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password) {
+      return { success: false, error: "Please provide both admin email and password." };
+    }
+
+    const isValid = validateAdminCredentials(email, password);
+    if (!isValid) {
+      return { success: false, error: "Invalid admin email or password." };
+    }
+
+    await setAdminSessionCookie();
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to verify admin credentials.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Destroys the admin session cookie and locks the admin portal.
+ */
+export async function adminLogoutAction(): Promise<{ success: boolean }> {
+  await clearAdminSessionCookie();
+  revalidatePath("/admin");
+  return { success: true };
+}
+

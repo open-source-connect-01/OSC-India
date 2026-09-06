@@ -4,7 +4,7 @@ import React, { useState, useTransition } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, syncSingleUser, syncAllUsers } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
 
 interface AdminUIProps {
   initialProfiles: Profile[];
@@ -158,6 +158,12 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
     document.body.removeChild(link);
   };
 
+  // Admin Logout / Lock
+  const handleAdminLogout = async () => {
+    await adminLogoutAction();
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
       <Navbar />
@@ -175,7 +181,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
             <p style={{ color: "#9ca3af", fontSize: "15px" }}>Manage contributors, verify roles, trigger syncs, and adjust scoring.</p>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <button
               onClick={handleExportCSV}
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "10px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
@@ -190,6 +196,14 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
               className="hover:bg-[var(--orange-dark)] transition-colors shadow-lg shadow-[rgba(255,117,24,0.2)]"
             >
               {bulkSyncing ? "Syncing All Users..." : "⚡ Sync All Users"}
+            </button>
+            <button
+              onClick={handleAdminLogout}
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "10px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              className="hover:bg-[rgba(239,68,68,0.2)] transition-colors"
+              title="Lock Admin Portal & sign out"
+            >
+              🔒 Lock Portal
             </button>
           </div>
         </div>
