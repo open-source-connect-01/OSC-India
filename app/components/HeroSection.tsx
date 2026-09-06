@@ -87,11 +87,11 @@ export default function HeroSection() {
               color: "#9ca3af",
               lineHeight: 1.65,
               marginBottom: "32px",
-              maxWidth: "440px",
+              maxWidth: "480px",
               fontWeight: 400,
             }}
           >
-            Join us this September to connect, collaborate, and contribute to open source projects that are shaping the future of technology.
+            Join India’s open source movement this September to learn, connect, and contribute alongside developers, maintainers, founders, and technology communities.
           </p>
 
           {/* CTA Buttons */}

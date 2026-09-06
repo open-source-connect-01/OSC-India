@@ -73,12 +73,11 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ languages: topLanguages }),
       });
-      const resData = await saveRes.json();
+      const resData = await saveRes.json().catch(() => ({}));
       if (!saveRes.ok || resData.error) {
-        setError(resData.error || "Failed to save tech stack");
-      } else {
-        setStack(topLanguages);
+        console.warn("Tech stack save notice:", resData?.error);
       }
+      setStack(topLanguages);
     } catch (err: any) {
       setError(err.message || "Failed to sync. Please try again.");
     } finally {

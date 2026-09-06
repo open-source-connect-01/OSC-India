@@ -130,3 +130,41 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
   END IF;
 END $$;
+
+-- 10. Backfill existing users from auth.users (automatically assigns admin to sayanghosh1887@gmail.com)
+INSERT INTO public.profiles (
+  id,
+  full_name,
+  email,
+  avatar_url,
+  github,
+  role,
+  is_admin,
+  score,
+  merged_prs,
+  projects_count,
+  badges_created,
+  tech_stack
+)
+SELECT 
+  id,
+  COALESCE(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1)),
+  email,
+  COALESCE(raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'picture', NULL),
+  COALESCE(raw_user_meta_data->>'user_name', raw_user_meta_data->>'preferred_username', NULL),
+  CASE WHEN email = 'sayanghosh1887@gmail.com' THEN 'admin' ELSE 'contributor' END,
+  CASE WHEN email = 'sayanghosh1887@gmail.com' THEN TRUE ELSE FALSE END,
+  0,
+  0,
+  0,
+  0,
+  '{}'
+FROM auth.users
+ON CONFLICT (id) DO UPDATE SET
+  full_name = EXCLUDED.full_name,
+  email = EXCLUDED.email,
+  avatar_url = COALESCE(public.profiles.avatar_url, EXCLUDED.avatar_url),
+  github = COALESCE(public.profiles.github, EXCLUDED.github),
+  role = EXCLUDED.role,
+  is_admin = EXCLUDED.is_admin,
+  updated_at = now();

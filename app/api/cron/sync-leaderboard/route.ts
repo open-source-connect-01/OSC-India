@@ -62,8 +62,8 @@ export async function GET(request: Request) {
         console.error(`Sync error for ${contributor.github}:`, err?.message);
       }
 
-      // Small delay between users to avoid GitHub secondary rate limits
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // 2-second delay between users to avoid GitHub secondary rate limits (per plan.md)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     return NextResponse.json({

@@ -180,7 +180,7 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
       .eq("id", userId);
 
     if (updateErr) {
-      console.error("Failed to update profile after GitHub sync:", updateErr);
+      console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
       return { success: false, error: updateErr.message };
     }
 

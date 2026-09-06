@@ -74,7 +74,7 @@ export default function TimelinePage() {
             const isUpcoming = event.status === "upcoming";
             const lineColor = isUpcoming ? "var(--orange)" : "rgba(255,255,255,0.1)";
             const dotColor = isUpcoming ? "var(--orange)" : "rgba(255,255,255,0.15)";
-            const borderColor = isUpcoming ? "rgba(255, 96, 0, 0.4)" : "rgba(255, 255, 255, 0.05)";
+            const borderColor = isUpcoming ? "rgba(255, 96, 0, 0.4)" : "rgba(255, 255, 255, 0.18)";
 
             return (
               <div 
