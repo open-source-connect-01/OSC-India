@@ -167,21 +167,42 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
     const mergedPrsCount = validPRs.length;
     const projectsCount = contributedRepos.size;
 
-    // 8. Update Supabase profiles table
-    const { error: updateErr } = await admin
-      .from("profiles")
-      .update({
-        github: handle,
-        score: totalScore,
-        merged_prs: mergedPrsCount,
-        projects_count: projectsCount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
+    // 8. Update Supabase Auth user_metadata (unconditional resilience)
+    try {
+      const { data: userData } = await admin.auth.admin.getUserById(userId);
+      if (userData?.user) {
+        await admin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...userData.user.user_metadata,
+            github: handle,
+            score: totalScore,
+            merged_prs: mergedPrsCount,
+            projects_count: projectsCount,
+          },
+        });
+      }
+    } catch (authErr) {
+      console.warn("Notice: saving synced metrics to auth metadata:", authErr);
+    }
 
-    if (updateErr) {
-      console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
-      return { success: false, error: updateErr.message };
+    // 9. Update Supabase profiles table
+    try {
+      const { error: updateErr } = await admin
+        .from("profiles")
+        .update({
+          github: handle,
+          score: totalScore,
+          merged_prs: mergedPrsCount,
+          projects_count: projectsCount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (updateErr) {
+        console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
+      }
+    } catch (dbErr) {
+      console.warn("Notice: profile update after GitHub sync:", dbErr);
     }
 
     return {

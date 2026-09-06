@@ -4,7 +4,7 @@ import React, { useState, useTransition } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
 
 interface AdminUIProps {
   initialProfiles: Profile[];
@@ -81,6 +81,24 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         setStatusMessage("Score updated successfully.");
       } else {
         alert(res.error || "Failed to update score");
+      }
+    });
+  };
+
+  // Handle Set/Update GitHub
+  const handleSetGithub = (userId: string, currentHandle?: string | null) => {
+    const handle = prompt("Enter GitHub username for this user:", currentHandle || "");
+    if (!handle || !handle.trim()) return;
+    const clean = handle.replace(/^@/, "").trim();
+    startTransition(async () => {
+      const res = await updateUserGithub(userId, clean);
+      if (res.success) {
+        setProfiles((prev) =>
+          prev.map((p) => (p.id === userId ? { ...p, github: clean } : p))
+        );
+        setStatusMessage(`GitHub handle @${clean} linked successfully.`);
+      } else {
+        alert(res.error || "Failed to update GitHub handle");
       }
     });
   };
@@ -223,23 +241,23 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "32px" }}>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#9ca3af", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>TOTAL USERS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalUsers}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalUsers ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "var(--orange)", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>CONTRIBUTORS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--orange)" }}>{metrics.contributors}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--orange)" }}>{metrics.contributors ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#38bdf8", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>MERGED PRS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalPRs}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalPRs ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#f59e0b", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>TOTAL POINTS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalScore}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalScore ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#ef4444", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>ADMINS & PROJECT ADMINS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.admins + metrics.projectAdmins}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{(metrics.admins ?? 0) + (metrics.projectAdmins ?? 0)}</div>
           </div>
         </div>
 
