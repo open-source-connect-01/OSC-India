@@ -12,12 +12,22 @@ export default async function AdminPage() {
     return <AdminLoginView />;
   }
 
+  let adminData = null;
   try {
-    const { profiles, metrics } = await getAdminData();
-    return <AdminUI initialProfiles={profiles} initialMetrics={metrics} />;
+    adminData = await getAdminData();
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to load admin data";
     console.error("Admin portal data loading error:", msg);
+  }
+
+  if (!adminData) {
     return <AdminLoginView />;
   }
+
+  return (
+    <AdminUI
+      initialProfiles={adminData.profiles}
+      initialMetrics={adminData.metrics}
+    />
+  );
 }

@@ -42,7 +42,10 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
   });
 
   // Handle Role Change
-  const handleRoleChange = (userId: string, newRole: any) => {
+  const handleRoleChange = (
+    userId: string,
+    newRole: "contributor" | "mentor" | "project-admin" | "admin"
+  ) => {
     startTransition(async () => {
       const res = await updateUserRole(userId, newRole);
       if (res.success) {
@@ -330,7 +333,12 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                     <td style={{ padding: "16px 20px" }}>
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        onChange={(e) =>
+                          handleRoleChange(
+                            user.id,
+                            e.target.value as "contributor" | "mentor" | "project-admin" | "admin"
+                          )
+                        }
                         style={{ background: "#161618", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "6px 10px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", outline: "none" }}
                       >
                         <option value="contributor">Contributor</option>
