@@ -331,7 +331,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                         </div>
                         <div>
                           <div style={{ fontWeight: 600, color: "white" }}>{user.full_name || "Anonymous"}</div>
-                          <div style={{ fontSize: "11px", color: "#6b7280" }}>{user.email}</div>
+                          <div style={{ fontSize: "11px", color: "#6b7280" }}>{user.email || "No email"}</div>
                         </div>
                       </div>
                     </td>
@@ -339,18 +339,34 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                     {/* GitHub */}
                     <td style={{ padding: "16px 20px" }}>
                       {user.github ? (
-                        <a href={`https://github.com/${user.github}`} target="_blank" rel="noreferrer" style={{ color: "var(--orange)", textDecoration: "none", fontWeight: 500 }} className="hover:underline">
-                          @{user.github}
-                        </a>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <a href={`https://github.com/${user.github}`} target="_blank" rel="noreferrer" style={{ color: "var(--orange)", textDecoration: "none", fontWeight: 500 }} className="hover:underline">
+                            @{user.github}
+                          </a>
+                          <button
+                            onClick={() => handleSetGithub(user.id, user.github)}
+                            title="Change GitHub username"
+                            style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: "12px", padding: "0 2px" }}
+                            className="hover:text-white"
+                          >
+                            ✎
+                          </button>
+                        </div>
                       ) : (
-                        <span style={{ color: "#6b7280" }}>Not linked</span>
+                        <button
+                          onClick={() => handleSetGithub(user.id)}
+                          style={{ background: "rgba(255,117,24,0.1)", border: "1px solid rgba(255,117,24,0.3)", color: "var(--orange)", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+                          className="hover:bg-[rgba(255,117,24,0.2)] transition-colors"
+                        >
+                          + Link GitHub
+                        </button>
                       )}
                     </td>
 
                     {/* Role */}
                     <td style={{ padding: "16px 20px" }}>
                       <select
-                        value={user.role}
+                        value={user.role || "contributor"}
                         onChange={(e) =>
                           handleRoleChange(
                             user.id,
@@ -369,10 +385,10 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                     {/* Score */}
                     <td style={{ padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontWeight: 700, fontSize: "15px", color: user.role === "contributor" ? "white" : "#6b7280" }}>
-                          {user.score}
+                        <span style={{ fontWeight: 700, fontSize: "15px", color: (user.role || "contributor") === "contributor" ? "white" : "#6b7280" }}>
+                          {user.score ?? 0}
                         </span>
-                        {user.role === "contributor" && (
+                        {(user.role || "contributor") === "contributor" && (
                           <div style={{ display: "flex", gap: "4px" }}>
                             <button
                               title="+10 Points"
@@ -409,13 +425,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
 
                     {/* PRs / Projects */}
                     <td style={{ padding: "16px 20px", color: "#d1d5db" }}>
-                      {user.merged_prs} PRs • {user.projects_count} Repos
+                      {(user.merged_prs ?? 0)} PRs • {(user.projects_count ?? 0)} Repos
                     </td>
 
                     {/* Badges Created */}
                     <td style={{ padding: "16px 20px" }}>
-                      <span style={{ color: user.badges_created >= 3 ? "#ef4444" : "#9ca3af", fontWeight: 600 }}>
-                        {user.badges_created}/3
+                      <span style={{ color: (user.badges_created ?? 0) >= 3 ? "#ef4444" : "#9ca3af", fontWeight: 600 }}>
+                        {(user.badges_created ?? 0)}/3
                       </span>
                     </td>
 
@@ -431,7 +447,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                           {syncingId === user.id ? "Syncing..." : "🔄 Sync PRs"}
                         </button>
                       ) : (
-                        <span style={{ fontSize: "11px", color: "#6b7280" }}>No GitHub</span>
+                        <button
+                          onClick={() => handleSetGithub(user.id)}
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer" }}
+                          className="hover:text-white hover:border-white transition-colors"
+                        >
+                          + Set GitHub
+                        </button>
                       )}
                     </td>
                   </tr>

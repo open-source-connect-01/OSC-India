@@ -149,8 +149,18 @@ export async function getAdminData() {
 
   // Merge in any database profile records
   for (const p of rawProfiles) {
-    // Try matching by id or user_id
-    const existing = userMap.get(p.id) || (p.user_id ? userMap.get(p.user_id) : undefined);
+    const rawP = p as any;
+    // Try matching by id, user_id, email, or full_name/avatar
+    let existing = userMap.get(p.id) || (rawP.user_id ? userMap.get(rawP.user_id) : undefined);
+    if (!existing) {
+      existing = Array.from(userMap.values()).find(
+        (u) =>
+          (p.email && u.email && u.email.toLowerCase() === p.email.toLowerCase()) ||
+          (p.full_name && u.full_name === p.full_name) ||
+          (p.avatar_url && u.avatar_url === p.avatar_url)
+      );
+    }
+
     if (existing) {
       if (p.full_name) existing.full_name = p.full_name;
       if (p.avatar_url) existing.avatar_url = p.avatar_url;
@@ -162,7 +172,7 @@ export async function getAdminData() {
       if (p.merged_prs !== undefined && p.merged_prs !== null) existing.merged_prs = Number(p.merged_prs);
       if (p.projects_count !== undefined && p.projects_count !== null) existing.projects_count = Number(p.projects_count);
       if (p.badges_created !== undefined && p.badges_created !== null) existing.badges_created = Number(p.badges_created);
-      if (p.tech_stack) existing.tech_stack = p.tech_stack;
+      if (p.tech_stack && p.tech_stack.length > 0) existing.tech_stack = p.tech_stack;
     } else {
       // Standalone profile row without auth.user
       userMap.set(p.id, {
@@ -213,7 +223,10 @@ export async function getAdminData() {
  * Updates a user's role.
  * Rule: If promoted to admin or project-admin, stats are reset to 0.
  */
-export async function updateUserRole(targetUserId: string, newRole: "contributor" | "mentor" | "project-admin" | "admin") {
+export async function updateUserRole(
+  targetUserId: string,
+  newRole: "contributor" | "mentor" | "project-admin" | "admin"
+): Promise<{ success: boolean; error?: string }> {
   await requireSuperAdmin();
   const admin = createAdminClient();
 
@@ -344,7 +357,10 @@ export async function updateUserScore(targetUserId: string, pointDelta: number, 
 /**
  * Updates a user's GitHub username directly from the Admin Portal.
  */
-export async function updateUserGithub(targetUserId: string, newGithub: string) {
+export async function updateUserGithub(
+  targetUserId: string,
+  newGithub: string
+): Promise<{ success: boolean; github?: string; error?: string }> {
   await requireAdminOrProjectAdmin();
   const admin = createAdminClient();
   const cleanGithub = newGithub.replace(/^@/, "").trim();
