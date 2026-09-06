@@ -93,14 +93,21 @@ export async function getAdminData() {
 
   const { data, error } = await admin
     .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*");
 
   if (error) {
     throw new Error(`Failed to fetch admin data: ${error.message}`);
   }
 
   const profiles = (data as Profile[]) || [];
+
+  // Sort safely in-memory (resilient against missing created_at/updated_at columns)
+  profiles.sort((a, b) => {
+    const timeA = a.created_at || a.updated_at ? new Date(a.created_at || a.updated_at || "").getTime() : 0;
+    const timeB = b.created_at || b.updated_at ? new Date(b.created_at || b.updated_at || "").getTime() : 0;
+    if (timeA && timeB) return timeB - timeA;
+    return (b.score || 0) - (a.score || 0);
+  });
 
   const metrics = {
     totalUsers: profiles.length,
