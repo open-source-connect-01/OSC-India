@@ -50,10 +50,14 @@ export default function HeroSection() {
       <div
         className="hero-content"
         style={{
+          /* Restored base desktop padding. Mobile padding is overridden in globals.css */
+          paddingTop: "110px",
+          paddingBottom: "80px",
+          paddingLeft: "clamp(32px, 8vw, 120px)",
+          paddingRight: "clamp(32px, 8vw, 120px)",
           position: "relative",
           zIndex: 2,
           width: "100%",
-          padding: "110px clamp(32px, 8vw, 120px) 80px",
         }}
       >
         <div style={{ maxWidth: "720px" }}>
@@ -65,7 +69,7 @@ export default function HeroSection() {
               fontWeight: 800,
               lineHeight: 1.12,
               letterSpacing: "-1.5px",
-              marginBottom: "22px",
+              marginBottom: "48px",
             }}
           >
             <div className="hero-title-line-1">
@@ -83,7 +87,8 @@ export default function HeroSection() {
           <p
             className="hero-subtitle"
             style={{
-              fontSize: "15.5px",
+              /* Increased font size to reduce the gap visually and trigger Fast Refresh */
+              fontSize: "18px",
               color: "#9ca3af",
               lineHeight: 1.65,
               marginBottom: "32px",
