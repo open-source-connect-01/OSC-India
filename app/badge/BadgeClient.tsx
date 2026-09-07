@@ -460,19 +460,10 @@ function BadgeContent({
 
           {/* RIGHT: Form */}
           <div className="w-full flex flex-col flex-1 max-w-[480px] box-border" style={{ minWidth: 0 }}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">Create Your <span className="text-[var(--orange)] italic">Badge</span></h2>
-            <p className="text-[var(--text-secondary)] text-[14px] mb-8" style={{ lineHeight: '1.6' }}>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight" style={{ marginBottom: '12px' }}>Create Your <span className="text-[var(--orange)] italic">Badge</span></h2>
+            <p className="text-[var(--text-secondary)] text-[14px]" style={{ lineHeight: '1.6', marginBottom: '32px', color: '#9ca3af' }}>
               Personalize your badge with your name and photo. Download and share your achievement.
             </p>
-
-            {/* Privacy Notice */}
-            <div style={{ background: 'rgba(255, 96, 0, 0.05)', border: '1px solid rgba(255, 96, 0, 0.2)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '16px', marginBottom: '32px' }}>
-              <ShieldIcon className="text-[var(--orange)]" style={{ width: '24px', height: '24px', flexShrink: 0 }} />
-              <div>
-                <h4 style={{ color: 'white', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>Privacy First</h4>
-                <p style={{ color: 'gray', fontSize: '12px' }}>We don't store your image. Your privacy is our priority.</p>
-              </div>
-            </div>
 
             {/* Form using flex styling to avoid Tailwind gap issues */}
             <form style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px' }}>
