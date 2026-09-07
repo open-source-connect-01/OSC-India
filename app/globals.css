@@ -146,7 +146,7 @@ img { display: block; max-width: 100%; }
     min-height: auto !important;
   }
   .hero-content {
-    padding-top: 280px !important;
+    padding-top: 200px !important;
     padding-bottom: 36px !important;
   }
   .hero-title {
@@ -262,7 +262,7 @@ img { display: block; max-width: 100%; }
     opacity: 0.82 !important;
   }
   .hero-content {
-    padding-top: 300px !important;
+    padding-top: 180px !important;
     padding-bottom: 28px !important;
   }
   .hero-title {
