@@ -41,6 +41,11 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
   }, [initialProfile]);
 
   useEffect(() => {
+    setDropdownOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -161,14 +166,14 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                     <div style={{ fontSize: "11px", color: "var(--orange)", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>{profile.role}</div>
                   </div>
                   
-                  <Link href="/dashboard" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
+                  <Link href="/dashboard" style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
                     Dashboard
                   </Link>
-                  <Link href="/leaderboard" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
+                  <Link href="/leaderboard" style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
                     Leaderboard
                   </Link>
                   {profile.isAdmin && (
-                    <Link href="/admin" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#ef4444", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(239,68,68,0.1)] transition-colors">
+                    <Link href="/admin" style={{ padding: "10px 12px", color: "#ef4444", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(239,68,68,0.1)] transition-colors">
                       🛡️ Admin Console
                     </Link>
                   )}
@@ -255,14 +260,14 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
             {profile ? (
               <>
-                <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                <Link href="/dashboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                   <img src={profile.avatar} alt="Avatar" style={{ width: "24px", height: "24px", borderRadius: "50%" }} /> Dashboard
                 </Link>
-                <Link href="/leaderboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                <Link href="/leaderboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                   <span style={{ fontSize: "18px" }}>🏆</span> Leaderboard
                 </Link>
                 {profile.isAdmin && (
-                  <Link href="/admin" onClick={() => setMobileOpen(false)} style={{ color: "#ef4444", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Link href="/admin" style={{ color: "#ef4444", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                     🛡️ Admin Console
                   </Link>
                 )}

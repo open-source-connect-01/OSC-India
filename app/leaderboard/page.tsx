@@ -225,8 +225,6 @@ export default async function LeaderboardPage(props: {
   };
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-white font-sans">Loading Leaderboard...</div>}>
-      <LeaderboardUI initialUsers={topUsers} initialProfile={profilePayload} />
-    </Suspense>
+    <LeaderboardUI initialUsers={topUsers} initialProfile={profilePayload} initialSearch={q} />
   );
 }

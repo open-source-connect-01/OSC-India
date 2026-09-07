@@ -19,10 +19,18 @@ interface LeaderboardUser {
   isFirst: boolean;
 }
 
-export default function LeaderboardUI({ initialUsers, initialProfile }: { initialUsers: LeaderboardUser[]; initialProfile?: any }) {
+export default function LeaderboardUI({
+  initialUsers,
+  initialProfile,
+  initialSearch = "",
+}: {
+  initialUsers: LeaderboardUser[];
+  initialProfile?: any;
+  initialSearch?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || searchParams?.get("q") || "");
   const [users, setUsers] = useState<LeaderboardUser[]>(initialUsers);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
@@ -33,11 +41,11 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
 
   // Debounced search
   useEffect(() => {
-    const currentQ = searchParams.get("q") || "";
+    const currentQ = searchParams?.get("q") || "";
     if (searchQuery === currentQ) return;
 
     const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
       if (searchQuery) {
         params.set("q", searchQuery);
       } else {
