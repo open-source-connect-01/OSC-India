@@ -63,13 +63,13 @@ export default function HeroSection() {
         <div style={{ maxWidth: "720px" }}>
           {/* Main Headline */}
           <h1
-            className="hero-title mb-[20px] md:mb-[22px]"
+            className="hero-title"
             style={{
-              /* Removed inline marginBottom to allow Tailwind classes to work */
               fontSize: "clamp(28px, 5.2vw, 64px)",
               fontWeight: 800,
               lineHeight: 1.12,
               letterSpacing: "-1.5px",
+              marginBottom: "26px",
             }}
           >
             <div className="hero-title-line-1">
