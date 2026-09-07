@@ -14,7 +14,7 @@ interface TimelineEvent {
   duration: string;
   description: string;
   location: string;
-  highlights: string[];
+  highlights?: string[];
   ctaText?: string;
   ctaHref?: string;
   secondaryCtaText?: string;
@@ -379,29 +379,6 @@ export default function TimelinePage() {
                     <p style={{ color: "#9ca3af", fontSize: "14px", lineHeight: "1.65", marginBottom: "24px" }}>
                       {event.description}
                     </p>
-
-                    {/* Highlights Tags Grid */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "24px" }}>
-                      {event.highlights.map((tag, tIdx) => (
-                        <div 
-                          key={tIdx}
-                          style={{
-                            background: "rgba(255, 255, 255, 0.03)",
-                            border: "1px solid rgba(255, 255, 255, 0.07)",
-                            padding: "5px 12px",
-                            borderRadius: "8px",
-                            fontSize: "12px",
-                            color: "#d1d5db",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px"
-                          }}
-                        >
-                          <span style={{ color: isActive ? "var(--orange)" : "#22C55E", fontSize: "10px" }}>✦</span>
-                          {tag}
-                        </div>
-                      ))}
-                    </div>
 
                     {/* Footer Row: Location / Mode & Interactive CTAs */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", paddingTop: "18px", borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}>
