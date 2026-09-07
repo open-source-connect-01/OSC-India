@@ -591,5 +591,43 @@ img { display: block; max-width: 100%; }
   }
 }
 
+/* ===========================
+   TIMELINE ROADMAP STYLES
+   =========================== */
+.timeline-spine {
+  position: absolute;
+  top: 24px;
+  bottom: 24px;
+  left: 21px;
+  width: 2px;
+  background: linear-gradient(180deg, #22C55E 0%, #22C55E 30%, #FF7518 55%, rgba(255,255,255,0.1) 85%);
+  z-index: 1;
+}
 
+.timeline-marker {
+  width: 44px;
+  height: 44px;
+}
 
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(255, 117, 24, 0.25), 0 0 20px rgba(255, 117, 24, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(255, 117, 24, 0.12), 0 0 28px rgba(255, 117, 24, 0.65);
+  }
+}
+
+.timeline-marker-active {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+@media (max-width: 640px) {
+  .timeline-spine {
+    left: 17px;
+  }
+  .timeline-marker {
+    width: 36px;
+    height: 36px;
+  }
+}
