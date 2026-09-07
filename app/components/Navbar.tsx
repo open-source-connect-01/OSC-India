@@ -93,7 +93,7 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
         className="navbar-inner"
         style={{
           width: "100%",
-          padding: "0 40px",
+          padding: "0 clamp(32px, 8vw, 120px)",
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
