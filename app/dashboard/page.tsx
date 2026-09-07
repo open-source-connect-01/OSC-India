@@ -119,17 +119,9 @@ export default async function DashboardPage() {
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--orange)" }} />
               Command Center Active
             </div>
-            <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", fontWeight: 800, marginBottom: "8px", letterSpacing: "-0.02em" }}>Developer Dashboard</h1>
+            <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", fontWeight: 800, marginBottom: "8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
             <p style={{ color: "#9ca3af", fontSize: "15px" }}>Your open source journey, verified scores, and active badges.</p>
           </div>
-
-          {isSuperAdmin && (
-            <Link href="/admin" style={{ textDecoration: "none" }}>
-              <button style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "10px 20px", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                🛡️ Access Admin Portal
-              </button>
-            </Link>
-          )}
         </div>
 
         {/* GitHub Link Banner (shown when GitHub not connected) */}
