@@ -116,8 +116,8 @@ export default async function DashboardPage() {
         <div style={{ width: "100%", marginBottom: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,96,0,0.1)", color: "var(--orange)", padding: "4px 12px", borderRadius: "16px", fontSize: "12px", fontWeight: 600, marginBottom: "20px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--orange)" }} />
-              Command Center Active
+              
+              
             </div>
             <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", fontWeight: 800, marginBottom: "8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
             <p style={{ color: "#9ca3af", fontSize: "15px" }}>Your open source journey, verified scores, and active badges.</p>
