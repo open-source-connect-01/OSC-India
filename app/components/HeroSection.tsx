@@ -48,24 +48,24 @@ export default function HeroSection() {
     >
       {/* Hero Content Area */}
       <div
-        className="hero-content"
+        className="hero-content pt-[280px] md:pt-[110px] pb-[36px] md:pb-[80px] px-[20px] md:px-[clamp(32px,8vw,120px)]"
         style={{
+          /* Removed inline padding to allow Tailwind responsive classes to work */
           position: "relative",
           zIndex: 2,
           width: "100%",
-          padding: "110px clamp(32px, 8vw, 120px) 80px",
         }}
       >
         <div style={{ maxWidth: "720px" }}>
           {/* Main Headline */}
           <h1
-            className="hero-title"
+            className="hero-title mb-[20px] md:mb-[22px]"
             style={{
+              /* Removed inline marginBottom to allow Tailwind classes to work */
               fontSize: "clamp(28px, 5.2vw, 64px)",
               fontWeight: 800,
               lineHeight: 1.12,
               letterSpacing: "-1.5px",
-              marginBottom: "22px",
             }}
           >
             <div className="hero-title-line-1">
@@ -83,7 +83,8 @@ export default function HeroSection() {
           <p
             className="hero-subtitle"
             style={{
-              fontSize: "15.5px",
+              /* Increased font size to reduce the gap visually and trigger Fast Refresh */
+              fontSize: "18px",
               color: "#9ca3af",
               lineHeight: 1.65,
               marginBottom: "32px",

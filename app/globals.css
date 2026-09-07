@@ -145,19 +145,15 @@ img { display: block; max-width: 100%; }
   .hero-container {
     min-height: auto !important;
   }
-  .hero-content {
-    padding: 92px 20px 36px !important;
-  }
   .hero-title {
     font-size: clamp(30px, 8.5vw, 44px) !important;
     line-height: 1.12 !important;
-    margin-bottom: 72px !important;
   }
   .hero-subtitle {
-    font-size: 14.5px !important;
-    line-height: 1.6 !important;
+    font-size: 18px !important;
+    line-height: 1.7 !important;
     color: #d1d5db !important;
-    max-width: 360px !important;
+    max-width: 420px !important;
     margin-bottom: 24px !important;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;
   }
@@ -261,17 +257,13 @@ img { display: block; max-width: 100%; }
     height: 400px !important;
     opacity: 0.82 !important;
   }
-  .hero-content {
-    padding: 82px 16px 28px !important;
-  }
   .hero-title {
     font-size: clamp(26px, 8vw, 34px) !important;
-    margin-bottom: 210px !important;
   }
   .hero-subtitle {
-    font-size: 13.5px !important;
-    line-height: 1.55 !important;
-    max-width: 310px !important;
+    font-size: 17px !important;
+    line-height: 1.65 !important;
+    max-width: 360px !important;
     margin-bottom: 20px !important;
   }
   .hero-register-btn {
