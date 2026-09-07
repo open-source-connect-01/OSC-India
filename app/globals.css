@@ -128,12 +128,12 @@ img { display: block; max-width: 100%; }
   /* --- Hero Background & Visual Visibility --- */
   .hero-bg-container {
     height: 720px !important;
+    top: 60px !important;
   }
   .hero-bg-inner {
     width: 100% !important;
     max-width: 100% !important;
     height: 480px !important;
-    top: 60px !important;
     right: 0 !important;
     opacity: 0.88 !important;
   }
@@ -147,7 +147,7 @@ img { display: block; max-width: 100%; }
     align-items: flex-start !important;
   }
   .hero-content {
-    padding-top: 260px !important;
+    padding-top: 240px !important;
     padding-bottom: 36px !important;
   }
   .hero-title {
@@ -260,11 +260,10 @@ img { display: block; max-width: 100%; }
   /* --- Hero fine-tuning for small screens --- */
   .hero-bg-inner {
     height: 400px !important;
-    top: 60px !important;
     opacity: 0.82 !important;
   }
   .hero-content {
-    padding-top: 240px !important;
+    padding-top: 220px !important;
     padding-bottom: 28px !important;
   }
   .hero-title {
