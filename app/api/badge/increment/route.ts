@@ -17,18 +17,23 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    // 1. Fetch current count
-    const { data: profile, error: fetchErr } = await admin
-      .from("profiles")
-      .select("badges_created")
-      .eq("id", user.id)
-      .single();
+    // 1. Fetch current count from user_metadata or profiles table
+    let currentCount = Number(user.user_metadata?.badges_created ?? 0);
 
-    if (fetchErr || !profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    try {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("badges_created")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile && profile.badges_created !== undefined && profile.badges_created !== null) {
+        currentCount = Number(profile.badges_created);
+      }
+    } catch {
+      // fallback to user_metadata
     }
 
-    const currentCount = profile.badges_created || 0;
     if (currentCount >= 3) {
       return NextResponse.json(
         {
@@ -41,18 +46,32 @@ export async function POST(request: Request) {
 
     // 2. Increment count
     const newCount = currentCount + 1;
-    const { error: updateErr } = await admin
-      .from("profiles")
-      .update({ badges_created: newCount, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
 
-    if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    // 3. Save to auth.users user_metadata (unconditional resilience)
+    try {
+      await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          badges_created: newCount,
+        },
+      });
+    } catch (authErr) {
+      console.warn("Notice: saving badges_created to auth metadata:", authErr);
+    }
+
+    // 4. Also try updating profiles table
+    try {
+      await admin
+        .from("profiles")
+        .update({ badges_created: newCount, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+    } catch (dbErr) {
+      console.warn("Notice: saving badges_created to profiles table:", dbErr);
     }
 
     return NextResponse.json({ success: true, count: newCount });
   } catch (err: any) {
-    console.error("Badge increment API error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.warn("Badge increment API error:", err);
+    return NextResponse.json({ error: err.message || "Failed to increment badge count" }, { status: 500 });
   }
 }

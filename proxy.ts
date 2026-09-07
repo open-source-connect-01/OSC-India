@@ -40,13 +40,12 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname.startsWith("/admin");
   const isProtectedUserRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/badge") ||
     pathname.startsWith("/leaderboard");
 
-  if (isAdminRoute || isProtectedUserRoute) {
+  if (isProtectedUserRoute) {
     // 1. Not authenticated -> Redirect to /sign-in
     if (!user) {
       const redirectUrl = new URL("/sign-in", request.url);
@@ -56,24 +55,6 @@ export async function proxy(request: NextRequest) {
         redirectResponse.cookies.set(cookie);
       });
       return redirectResponse;
-    }
-
-    // 2. Admin Route Protection -> Verify is_admin or admin role
-    if (isAdminRoute) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin, role")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile || (!profile.is_admin && profile.role !== "admin")) {
-        // Non-admin user attempting to access /admin -> Bounce to home
-        const homeResponse = NextResponse.redirect(new URL("/", request.url));
-        response.cookies.getAll().forEach((cookie) => {
-          homeResponse.cookies.set(cookie);
-        });
-        return homeResponse;
-      }
     }
   }
 

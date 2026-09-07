@@ -66,10 +66,12 @@ export async function GET(request: Request) {
             });
           } else {
             const updates: Record<string, any> = {};
-            if (!existingProfile.github && github) updates.github = github;
+            // Always sync github handle from identity metadata (supports linkIdentity flow)
+            if (github && existingProfile.github !== github) updates.github = github;
             if (!existingProfile.avatar_url && avatarUrl) updates.avatar_url = avatarUrl;
             if (!existingProfile.full_name && fullName) updates.full_name = fullName;
             if (Object.keys(updates).length > 0) {
+              updates.updated_at = new Date().toISOString();
               await admin.from("profiles").update(updates).eq("id", user.id);
             }
           }

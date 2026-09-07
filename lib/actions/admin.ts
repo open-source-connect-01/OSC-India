@@ -6,15 +6,31 @@ import { syncGitHubContribution } from "./github";
 import { Profile } from "@/lib/supabase/database";
 import { revalidatePath } from "next/cache";
 
+import {
+  verifyAdminSession,
+  validateAdminCredentials,
+  setAdminSessionCookie,
+  clearAdminSessionCookie,
+} from "@/lib/auth/admin-auth";
+
 /**
  * Validates that the current user has super admin privileges.
+ * Supports dedicated admin email/password session or Supabase admin user.
  */
 async function requireSuperAdmin() {
+  const isAdminSession = await verifyAdminSession();
+  if (isAdminSession) {
+    return {
+      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      profile: { id: "admin-session", role: "admin", is_admin: true },
+    };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
   if (authErr || !user) {
-    throw new Error("Unauthorized. You must be signed in.");
+    throw new Error("Unauthorized. Admin authentication required.");
   }
 
   const admin = createAdminClient();
@@ -35,11 +51,19 @@ async function requireSuperAdmin() {
  * Validates that the current user has either Admin or Project Admin privileges.
  */
 async function requireAdminOrProjectAdmin() {
+  const isAdminSession = await verifyAdminSession();
+  if (isAdminSession) {
+    return {
+      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      profile: { id: "admin-session", role: "admin", is_admin: true },
+    };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
   if (authErr || !user) {
-    throw new Error("Unauthorized. You must be signed in.");
+    throw new Error("Unauthorized. Elevated privileges required.");
   }
 
   const admin = createAdminClient();
@@ -61,22 +85,126 @@ async function requireAdminOrProjectAdmin() {
 }
 
 /**
- * Fetches all user profiles and aggregates for the Super Admin Dashboard
+ * Fetches all user profiles and aggregates for the Super Admin Dashboard.
+ * Merges public.profiles table with auth.users to ensure email, github,
+ * scores, and roles are never missing even if DB schema migration is pending.
  */
 export async function getAdminData() {
   await requireSuperAdmin();
   const admin = createAdminClient();
 
-  const { data, error } = await admin
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Failed to fetch admin data: ${error.message}`);
+  // 1. Fetch from profiles table (resilient)
+  let rawProfiles: Profile[] = [];
+  try {
+    const { data, error } = await admin.from("profiles").select("*");
+    if (!error && data) {
+      rawProfiles = data as Profile[];
+    }
+  } catch (err) {
+    console.warn("Notice: reading profiles table in admin portal:", err);
   }
 
-  const profiles = (data as Profile[]) || [];
+  // 2. Fetch from auth.users
+  let authUsers: any[] = [];
+  try {
+    const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (!error && data?.users) {
+      authUsers = data.users;
+    }
+  } catch (err) {
+    console.warn("Notice: reading auth.users in admin portal:", err);
+  }
+
+  // 3. Build unified profiles map keyed by user id
+  const userMap = new Map<string, Profile>();
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
+
+  for (const u of authUsers) {
+    const meta = u.user_metadata || {};
+    const email = u.email || meta.email || "";
+    const fullName = meta.full_name || meta.name || email.split("@")[0] || "Contributor";
+    const avatar = meta.avatar_url || meta.picture || null;
+    const github = meta.github || meta.user_name || meta.preferred_username || null;
+    const isOwner = email.toLowerCase() === adminEmail;
+    const role = meta.role || (isOwner ? "admin" : "contributor");
+    const isAdmin = Boolean(meta.is_admin || isOwner || role === "admin");
+
+    userMap.set(u.id, {
+      id: u.id,
+      email: email,
+      full_name: fullName,
+      avatar_url: avatar,
+      github: github,
+      role: role,
+      is_admin: isAdmin,
+      score: Number(meta.score ?? 0),
+      merged_prs: Number(meta.merged_prs ?? 0),
+      projects_count: Number(meta.projects_count ?? 0),
+      badges_created: Number(meta.badges_created ?? 0),
+      tech_stack: meta.tech_stack || [],
+      created_at: u.created_at || new Date().toISOString(),
+      updated_at: u.updated_at || new Date().toISOString(),
+    } as Profile);
+  }
+
+  // Merge in any database profile records
+  for (const p of rawProfiles) {
+    const rawP = p as any;
+    // Try matching by id, user_id, email, or full_name/avatar
+    let existing = userMap.get(p.id) || (rawP.user_id ? userMap.get(rawP.user_id) : undefined);
+    if (!existing) {
+      existing = Array.from(userMap.values()).find(
+        (u) =>
+          (p.email && u.email && u.email.toLowerCase() === p.email.toLowerCase()) ||
+          (p.full_name && u.full_name === p.full_name) ||
+          (p.avatar_url && u.avatar_url === p.avatar_url)
+      );
+    }
+
+    if (existing) {
+      if (p.full_name) existing.full_name = p.full_name;
+      if (p.avatar_url) existing.avatar_url = p.avatar_url;
+      if (p.email) existing.email = p.email;
+      if (p.github) existing.github = p.github;
+      if (p.role) existing.role = p.role;
+      if (p.is_admin !== undefined && p.is_admin !== null) existing.is_admin = Boolean(p.is_admin);
+      if (p.score !== undefined && p.score !== null) existing.score = Number(p.score);
+      if (p.merged_prs !== undefined && p.merged_prs !== null) existing.merged_prs = Number(p.merged_prs);
+      if (p.projects_count !== undefined && p.projects_count !== null) existing.projects_count = Number(p.projects_count);
+      if (p.badges_created !== undefined && p.badges_created !== null) existing.badges_created = Number(p.badges_created);
+      if (p.tech_stack && p.tech_stack.length > 0) existing.tech_stack = p.tech_stack;
+    } else {
+      // Standalone profile row without auth.user
+      userMap.set(p.id, {
+        id: p.id,
+        email: p.email || "",
+        full_name: p.full_name || "Contributor",
+        avatar_url: p.avatar_url || null,
+        github: p.github || null,
+        role: p.role || "contributor",
+        is_admin: Boolean(p.is_admin),
+        score: Number(p.score ?? 0),
+        merged_prs: Number(p.merged_prs ?? 0),
+        projects_count: Number(p.projects_count ?? 0),
+        badges_created: Number(p.badges_created ?? 0),
+        tech_stack: p.tech_stack || [],
+        created_at: p.created_at || new Date().toISOString(),
+        updated_at: p.updated_at || new Date().toISOString(),
+      } as Profile);
+    }
+  }
+
+  const profiles = Array.from(userMap.values());
+
+  // Sort by score desc, then by date
+  profiles.sort((a, b) => {
+    if ((b.score || 0) !== (a.score || 0)) {
+      return (b.score || 0) - (a.score || 0);
+    }
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
 
   const metrics = {
     totalUsers: profiles.length,
@@ -95,7 +223,10 @@ export async function getAdminData() {
  * Updates a user's role.
  * Rule: If promoted to admin or project-admin, stats are reset to 0.
  */
-export async function updateUserRole(targetUserId: string, newRole: "contributor" | "mentor" | "project-admin" | "admin") {
+export async function updateUserRole(
+  targetUserId: string,
+  newRole: "contributor" | "mentor" | "project-admin" | "admin"
+): Promise<{ success: boolean; error?: string }> {
   await requireSuperAdmin();
   const admin = createAdminClient();
 
@@ -113,13 +244,28 @@ export async function updateUserRole(targetUserId: string, newRole: "contributor
     updates.projects_count = 0;
   }
 
-  const { error } = await admin
-    .from("profiles")
-    .update(updates)
-    .eq("id", targetUserId);
+  // 1. Update auth.users metadata (works unconditionally)
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
+    if (userData?.user) {
+      await admin.auth.admin.updateUserById(targetUserId, {
+        user_metadata: {
+          ...userData.user.user_metadata,
+          role: newRole,
+          is_admin: newRole === "admin",
+          ...(isElevated || newRole === "mentor" ? { score: 0, merged_prs: 0, projects_count: 0 } : {}),
+        },
+      });
+    }
+  } catch (authErr) {
+    console.warn("Notice: auth metadata role update:", authErr);
+  }
 
-  if (error) {
-    return { success: false, error: error.message };
+  // 2. Also try updating profiles table
+  try {
+    await admin.from("profiles").update(updates).eq("id", targetUserId);
+  } catch (dbErr) {
+    console.warn("Notice: profiles table role update:", dbErr);
   }
 
   revalidatePath("/admin");
@@ -138,44 +284,119 @@ export async function updateUserScore(targetUserId: string, pointDelta: number, 
   const admin = createAdminClient();
 
   // Rule 1: Anti-Tampering / No Self-Scoring
-  if (requester.id === targetUserId) {
+  if (requester.id === targetUserId && requester.id !== "admin-session") {
     return { success: false, error: "Self-scoring is strictly prohibited." };
   }
 
-  // Fetch target profile
-  const { data: target, error: fetchErr } = await admin
+  let currentScore = 0;
+  let currentRole = "contributor";
+
+  // Fetch current user from auth.users or profiles
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
+    if (userData?.user?.user_metadata) {
+      currentScore = Number(userData.user.user_metadata.score ?? 0);
+      currentRole = userData.user.user_metadata.role || "contributor";
+    }
+  } catch {
+    // fallback
+  }
+
+  const { data: target } = await admin
     .from("profiles")
     .select("id, role, score")
     .eq("id", targetUserId)
-    .single();
+    .maybeSingle();
 
-  if (fetchErr || !target) {
-    return { success: false, error: "Target user not found." };
+  if (target) {
+    if (target.score !== undefined && target.score !== null) currentScore = Number(target.score);
+    if (target.role) currentRole = target.role;
   }
 
   // Rule 2: Only contributors can have scores
-  if (target.role !== "contributor") {
+  if (currentRole !== "contributor") {
     return { success: false, error: "Only contributors can be awarded merit points." };
   }
 
-  const newScore = mode === "set" ? Math.max(0, pointDelta) : Math.max(0, (target.score || 0) + pointDelta);
+  const newScore = mode === "set" ? Math.max(0, pointDelta) : Math.max(0, currentScore + pointDelta);
 
-  const { error: updateErr } = await admin
-    .from("profiles")
-    .update({
-      score: newScore,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", targetUserId);
+  // 1. Update in auth user_metadata
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
+    if (userData?.user) {
+      await admin.auth.admin.updateUserById(targetUserId, {
+        user_metadata: {
+          ...userData.user.user_metadata,
+          score: newScore,
+        },
+      });
+    }
+  } catch (authErr) {
+    console.warn("Notice: auth metadata score update:", authErr);
+  }
 
-  if (updateErr) {
-    return { success: false, error: updateErr.message };
+  // 2. Also try updating profiles table
+  try {
+    await admin
+      .from("profiles")
+      .update({
+        score: newScore,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", targetUserId);
+  } catch (dbErr) {
+    console.warn("Notice: profiles table score update:", dbErr);
   }
 
   revalidatePath("/admin");
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
   return { success: true, score: newScore };
+}
+
+/**
+ * Updates a user's GitHub username directly from the Admin Portal.
+ */
+export async function updateUserGithub(
+  targetUserId: string,
+  newGithub: string
+): Promise<{ success: boolean; github?: string; error?: string }> {
+  await requireAdminOrProjectAdmin();
+  const admin = createAdminClient();
+  const cleanGithub = newGithub.replace(/^@/, "").trim();
+
+  // 1. Update in auth user_metadata
+  try {
+    const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
+    if (userData?.user) {
+      await admin.auth.admin.updateUserById(targetUserId, {
+        user_metadata: {
+          ...userData.user.user_metadata,
+          github: cleanGithub,
+        },
+      });
+    }
+  } catch (authErr) {
+    console.warn("Notice: auth metadata github update:", authErr);
+  }
+
+  // 2. Also try updating profiles table
+  try {
+    await admin
+      .from("profiles")
+      .update({
+        github: cleanGithub,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", targetUserId);
+  } catch (dbErr) {
+    console.warn("Notice: profiles table github update:", dbErr);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
+  return { success: true, github: cleanGithub };
 }
 
 /**
@@ -237,3 +458,43 @@ export async function syncAllUsers() {
     failed: failedCount,
   };
 }
+
+/**
+ * Authenticates the admin using email and password.
+ * Issues an HMAC-signed HTTP-only session cookie.
+ */
+export async function adminLoginAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password) {
+      return { success: false, error: "Please provide both admin email and password." };
+    }
+
+    const isValid = validateAdminCredentials(email, password);
+    if (!isValid) {
+      return { success: false, error: "Invalid admin email or password." };
+    }
+
+    await setAdminSessionCookie();
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to verify admin credentials.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Destroys the admin session cookie and locks the admin portal.
+ */
+export async function adminLogoutAction(): Promise<{ success: boolean }> {
+  await clearAdminSessionCookie();
+  revalidatePath("/admin");
+  return { success: true };
+}
+

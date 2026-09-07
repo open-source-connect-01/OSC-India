@@ -4,7 +4,7 @@ import React, { useState, useTransition } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, syncSingleUser, syncAllUsers } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
 
 interface AdminUIProps {
   initialProfiles: Profile[];
@@ -42,7 +42,10 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
   });
 
   // Handle Role Change
-  const handleRoleChange = (userId: string, newRole: any) => {
+  const handleRoleChange = (
+    userId: string,
+    newRole: "contributor" | "mentor" | "project-admin" | "admin"
+  ) => {
     startTransition(async () => {
       const res = await updateUserRole(userId, newRole);
       if (res.success) {
@@ -78,6 +81,24 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         setStatusMessage("Score updated successfully.");
       } else {
         alert(res.error || "Failed to update score");
+      }
+    });
+  };
+
+  // Handle Set/Update GitHub
+  const handleSetGithub = (userId: string, currentHandle?: string | null) => {
+    const handle = prompt("Enter GitHub username for this user:", currentHandle || "");
+    if (!handle || !handle.trim()) return;
+    const clean = handle.replace(/^@/, "").trim();
+    startTransition(async () => {
+      const res = await updateUserGithub(userId, clean);
+      if (res.success) {
+        setProfiles((prev) =>
+          prev.map((p) => (p.id === userId ? { ...p, github: clean } : p))
+        );
+        setStatusMessage(`GitHub handle @${clean} linked successfully.`);
+      } else {
+        alert(res.error || "Failed to update GitHub handle");
       }
     });
   };
@@ -158,6 +179,12 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
     document.body.removeChild(link);
   };
 
+  // Admin Logout / Lock
+  const handleAdminLogout = async () => {
+    await adminLogoutAction();
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
       <Navbar />
@@ -175,7 +202,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
             <p style={{ color: "#9ca3af", fontSize: "15px" }}>Manage contributors, verify roles, trigger syncs, and adjust scoring.</p>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <button
               onClick={handleExportCSV}
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "10px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
@@ -190,6 +217,14 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
               className="hover:bg-[var(--orange-dark)] transition-colors shadow-lg shadow-[rgba(255,117,24,0.2)]"
             >
               {bulkSyncing ? "Syncing All Users..." : "⚡ Sync All Users"}
+            </button>
+            <button
+              onClick={handleAdminLogout}
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "10px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              className="hover:bg-[rgba(239,68,68,0.2)] transition-colors"
+              title="Lock Admin Portal & sign out"
+            >
+              🔒 Lock Portal
             </button>
           </div>
         </div>
@@ -206,23 +241,23 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "32px" }}>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#9ca3af", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>TOTAL USERS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalUsers}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalUsers ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "var(--orange)", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>CONTRIBUTORS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--orange)" }}>{metrics.contributors}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--orange)" }}>{metrics.contributors ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#38bdf8", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>MERGED PRS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalPRs}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalPRs ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#f59e0b", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>TOTAL POINTS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalScore}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.totalScore ?? 0}</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
             <div style={{ color: "#ef4444", fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>ADMINS & PROJECT ADMINS</div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{metrics.admins + metrics.projectAdmins}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800 }}>{(metrics.admins ?? 0) + (metrics.projectAdmins ?? 0)}</div>
           </div>
         </div>
 
@@ -296,7 +331,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                         </div>
                         <div>
                           <div style={{ fontWeight: 600, color: "white" }}>{user.full_name || "Anonymous"}</div>
-                          <div style={{ fontSize: "11px", color: "#6b7280" }}>{user.email}</div>
+                          <div style={{ fontSize: "11px", color: "#6b7280" }}>{user.email || "No email"}</div>
                         </div>
                       </div>
                     </td>
@@ -304,19 +339,40 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                     {/* GitHub */}
                     <td style={{ padding: "16px 20px" }}>
                       {user.github ? (
-                        <a href={`https://github.com/${user.github}`} target="_blank" rel="noreferrer" style={{ color: "var(--orange)", textDecoration: "none", fontWeight: 500 }} className="hover:underline">
-                          @{user.github}
-                        </a>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <a href={`https://github.com/${user.github}`} target="_blank" rel="noreferrer" style={{ color: "var(--orange)", textDecoration: "none", fontWeight: 500 }} className="hover:underline">
+                            @{user.github}
+                          </a>
+                          <button
+                            onClick={() => handleSetGithub(user.id, user.github)}
+                            title="Change GitHub username"
+                            style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: "12px", padding: "0 2px" }}
+                            className="hover:text-white"
+                          >
+                            ✎
+                          </button>
+                        </div>
                       ) : (
-                        <span style={{ color: "#6b7280" }}>Not linked</span>
+                        <button
+                          onClick={() => handleSetGithub(user.id)}
+                          style={{ background: "rgba(255,117,24,0.1)", border: "1px solid rgba(255,117,24,0.3)", color: "var(--orange)", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+                          className="hover:bg-[rgba(255,117,24,0.2)] transition-colors"
+                        >
+                          + Link GitHub
+                        </button>
                       )}
                     </td>
 
                     {/* Role */}
                     <td style={{ padding: "16px 20px" }}>
                       <select
-                        value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        value={user.role || "contributor"}
+                        onChange={(e) =>
+                          handleRoleChange(
+                            user.id,
+                            e.target.value as "contributor" | "mentor" | "project-admin" | "admin"
+                          )
+                        }
                         style={{ background: "#161618", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "6px 10px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", outline: "none" }}
                       >
                         <option value="contributor">Contributor</option>
@@ -329,10 +385,10 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                     {/* Score */}
                     <td style={{ padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontWeight: 700, fontSize: "15px", color: user.role === "contributor" ? "white" : "#6b7280" }}>
-                          {user.score}
+                        <span style={{ fontWeight: 700, fontSize: "15px", color: (user.role || "contributor") === "contributor" ? "white" : "#6b7280" }}>
+                          {user.score ?? 0}
                         </span>
-                        {user.role === "contributor" && (
+                        {(user.role || "contributor") === "contributor" && (
                           <div style={{ display: "flex", gap: "4px" }}>
                             <button
                               title="+10 Points"
@@ -369,13 +425,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
 
                     {/* PRs / Projects */}
                     <td style={{ padding: "16px 20px", color: "#d1d5db" }}>
-                      {user.merged_prs} PRs • {user.projects_count} Repos
+                      {(user.merged_prs ?? 0)} PRs • {(user.projects_count ?? 0)} Repos
                     </td>
 
                     {/* Badges Created */}
                     <td style={{ padding: "16px 20px" }}>
-                      <span style={{ color: user.badges_created >= 3 ? "#ef4444" : "#9ca3af", fontWeight: 600 }}>
-                        {user.badges_created}/3
+                      <span style={{ color: (user.badges_created ?? 0) >= 3 ? "#ef4444" : "#9ca3af", fontWeight: 600 }}>
+                        {(user.badges_created ?? 0)}/3
                       </span>
                     </td>
 
@@ -391,7 +447,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
                           {syncingId === user.id ? "Syncing..." : "🔄 Sync PRs"}
                         </button>
                       ) : (
-                        <span style={{ fontSize: "11px", color: "#6b7280" }}>No GitHub</span>
+                        <button
+                          onClick={() => handleSetGithub(user.id)}
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer" }}
+                          className="hover:text-white hover:border-white transition-colors"
+                        >
+                          + Set GitHub
+                        </button>
                       )}
                     </td>
                   </tr>

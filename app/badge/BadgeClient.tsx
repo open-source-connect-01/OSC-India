@@ -142,6 +142,33 @@ function BadgeContent({
           backgroundColor: null,
           scale: 2, 
           useCORS: true,
+          onclone: (clonedDoc) => {
+            const el = clonedDoc.querySelector(".badge-tricolor-text") as HTMLElement | null;
+            if (el) {
+              const svg = clonedDoc.createElementNS("http://www.w3.org/2000/svg", "svg");
+              svg.setAttribute("viewBox", "0 0 260 56");
+              svg.setAttribute("width", "100%");
+              svg.setAttribute("height", "56");
+              svg.style.display = "block";
+              svg.style.overflow = "visible";
+              svg.innerHTML = `
+                <defs>
+                  <linearGradient id="badgeTricolorDownload" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#FF6000" />
+                    <stop offset="22%" stop-color="#FF771F" />
+                    <stop offset="38%" stop-color="#FFA86B" />
+                    <stop offset="48%" stop-color="#FFFFFF" />
+                    <stop offset="52%" stop-color="#FFFFFF" />
+                    <stop offset="66%" stop-color="#6BDE82" />
+                    <stop offset="100%" stop-color="#04C456" />
+                  </linearGradient>
+                </defs>
+                <text x="130" y="22" text-anchor="middle" fill="url(#badgeTricolorDownload)" font-size="21" font-weight="800" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" letter-spacing="-0.3px">Open Source</text>
+                <text x="130" y="48" text-anchor="middle" fill="url(#badgeTricolorDownload)" font-size="21" font-weight="800" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" letter-spacing="-0.3px">Connect India</text>
+              `;
+              el.parentNode?.replaceChild(svg, el);
+            }
+          }
         });
         const url = canvas.toDataURL("image/png");
         const link = document.createElement("a");
@@ -268,11 +295,39 @@ function BadgeContent({
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: `radial-gradient(ellipse at top, ${roleBg.replace('0.1', '0.3')} 0%, transparent 70%)` }}></div>
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: `radial-gradient(ellipse at bottom, rgba(255,96,0,0.15) 0%, transparent 70%)` }}></div>
 
-                {/* Badge Header */}
-                <div style={{ textAlign: 'center', zIndex: 2, marginBottom: '8%', width: '100%' }}>
-                  <h3 style={{ color: 'white', fontWeight: 800, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>Open Source</h3>
-                  <h3 style={{ color: 'white', fontWeight: 800, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>Connect <span style={{ color: roleColor }}>India</span></h3>
-                  <h3 style={{ color: roleColor, fontWeight: 900, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>2026</h3>
+                {/* Badge Header with Indian Tri-colour Gradient */}
+                <div style={{ textAlign: 'center', zIndex: 2, marginBottom: '6%', width: '100%' }}>
+                  <div 
+                    className="badge-tricolor-text"
+                    style={{
+                      display: 'inline-block',
+                      textAlign: 'center',
+                      fontWeight: 800,
+                      fontSize: 'clamp(19px, 6.2cqw, 23px)',
+                      lineHeight: '1.2',
+                      letterSpacing: '-0.3px',
+                      background: 'linear-gradient(90deg, #FF6000 0%, #FF771F 22%, #FFA86B 38%, #FFFFFF 48%, #FFFFFF 52%, #6BDE82 66%, #04C456 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      color: 'transparent',
+                    }}
+                  >
+                    <div>Open Source</div>
+                    <div>Connect India</div>
+                  </div>
+                  <div 
+                    style={{
+                      color: '#FF7518',
+                      fontWeight: 900,
+                      fontSize: 'clamp(18px, 6cqw, 22px)',
+                      lineHeight: '1.2',
+                      letterSpacing: '0.02em',
+                      marginTop: '2px',
+                    }}
+                  >
+                    2026
+                  </div>
                 </div>
 
                 {/* Avatar Container */}
@@ -325,34 +380,44 @@ function BadgeContent({
                     )}
                   </div>
                   
-                  {/* The Star/Shield Badge (for Mentor/Admin) */}
-                  {(person === 'mentor' || person === 'project-admin') && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '2%',
-                      right: '2%',
-                      width: 'clamp(20px, 6cqw, 28px)',
-                      height: 'clamp(20px, 6cqw, 28px)',
-                      background: person === 'mentor' ? 'linear-gradient(135deg, #f59e0b, #ea580c)' : 'linear-gradient(135deg, #ef4444, #b91c1c)',
-                      border: '2px solid #121214',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: person === 'mentor' ? '0 4px 10px rgba(245,158,11,0.5)' : '0 4px 10px rgba(239,68,68,0.5)',
-                      zIndex: 3
-                    }}>
-                      {person === 'mentor' ? (
-                        <svg width="60%" height="60%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      ) : (
-                        <svg width="55%" height="55%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                        </svg>
-                      )}
-                    </div>
-                  )}
+                  {/* The Star/Shield/Verified Badge */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '3%',
+                    right: '3%',
+                    width: 'clamp(22px, 6.5cqw, 28px)',
+                    height: 'clamp(22px, 6.5cqw, 28px)',
+                    background: person === 'mentor' 
+                      ? 'linear-gradient(135deg, #f59e0b, #ea580c)' 
+                      : person === 'project-admin' 
+                        ? 'linear-gradient(135deg, #ef4444, #b91c1c)' 
+                        : 'linear-gradient(135deg, #FF7518, #EA580C)',
+                    border: '2.5px solid #121214',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: person === 'mentor' 
+                      ? '0 4px 10px rgba(245,158,11,0.5)' 
+                      : person === 'project-admin' 
+                        ? '0 4px 10px rgba(239,68,68,0.5)' 
+                        : '0 4px 10px rgba(255,117,24,0.5)',
+                    zIndex: 3
+                  }}>
+                    {person === 'mentor' ? (
+                      <svg width="60%" height="60%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    ) : person === 'project-admin' ? (
+                      <svg width="55%" height="55%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                      </svg>
+                    ) : (
+                      <svg width="55%" height="55%" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
 
                 {/* Name */}
@@ -405,19 +470,10 @@ function BadgeContent({
 
           {/* RIGHT: Form */}
           <div className="w-full flex flex-col flex-1 max-w-[480px] box-border" style={{ minWidth: 0 }}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">Create Your <span className="text-[var(--orange)] italic">Badge</span></h2>
-            <p className="text-[var(--text-secondary)] text-[14px] mb-8" style={{ lineHeight: '1.6' }}>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight" style={{ marginBottom: '12px' }}>Create Your <span className="text-[var(--orange)] italic">Badge</span></h2>
+            <p className="text-[var(--text-secondary)] text-[14px]" style={{ lineHeight: '1.6', marginBottom: '32px', color: '#9ca3af' }}>
               Personalize your badge with your name and photo. Download and share your achievement.
             </p>
-
-            {/* Privacy Notice */}
-            <div style={{ background: 'rgba(255, 96, 0, 0.05)', border: '1px solid rgba(255, 96, 0, 0.2)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '16px', marginBottom: '32px' }}>
-              <ShieldIcon className="text-[var(--orange)]" style={{ width: '24px', height: '24px', flexShrink: 0 }} />
-              <div>
-                <h4 style={{ color: 'white', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>Privacy First</h4>
-                <p style={{ color: 'gray', fontSize: '12px' }}>We don't store your image. Your privacy is our priority.</p>
-              </div>
-            </div>
 
             {/* Form using flex styling to avoid Tailwind gap issues */}
             <form style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px' }}>

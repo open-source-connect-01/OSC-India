@@ -41,6 +41,11 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
   }, [initialProfile]);
 
   useEffect(() => {
+    setDropdownOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -137,43 +142,197 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
             <>
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                style={{ background: "transparent", border: "2px solid var(--orange)", borderRadius: "50%", padding: "2px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                aria-expanded={dropdownOpen}
+                aria-label="User profile menu"
+                style={{
+                  background: "transparent",
+                  border: dropdownOpen ? "1.5px solid var(--orange)" : "1.5px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: "50%",
+                  padding: "2px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "border-color 0.15s ease",
+                }}
+                className="hover:border-white/40 focus:outline-none"
               >
-                <div style={{ width: "36px", height: "36px", borderRadius: "50%", overflow: "hidden", background: "#1c1c1f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "50%", overflow: "hidden", background: "#1c1c1f", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {profile.avatar ? (
-                    <img src={profile.avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={profile.avatar} alt={profile.name || "Avatar"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ fontSize: "16px", color: "white" }}>{profile.name?.[0] || "U"}</span>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: "white" }}>{profile.name?.[0] || "U"}</span>
                   )}
                 </div>
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Minimal Dropdown Menu */}
               {dropdownOpen && (
                 <div style={{
-                  position: "absolute", top: "56px", right: 0, width: "220px", background: "rgba(15, 15, 15, 0.95)",
-                  backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px",
-                  padding: "8px", display: "flex", flexDirection: "column", gap: "4px", boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-                  animation: "fadeIn 0.2s ease"
+                  position: "absolute",
+                  top: "50px",
+                  right: 0,
+                  width: "235px",
+                  background: "#111113",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "10px",
+                  padding: "5px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04)",
+                  zIndex: 1000,
                 }}>
-                  <div style={{ padding: "12px 12px 8px 12px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: "4px" }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "white", marginBottom: "2px" }}>{profile.name}</div>
-                    <div style={{ fontSize: "11px", color: "var(--orange)", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>{profile.role}</div>
+                  {/* User Profile Header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px 10px 10px" }}>
+                    <div style={{ width: "34px", height: "34px", borderRadius: "50%", overflow: "hidden", background: "#1c1c1f", flexShrink: 0, border: "1px solid rgba(255, 255, 255, 0.12)" }}>
+                      {profile.avatar ? (
+                        <img src={profile.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: "14px", fontWeight: 600, color: "white", display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                          {profile.name?.[0] || "U"}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: "13.5px", fontWeight: 600, color: "#ffffff", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {profile.name}
+                      </div>
+                      {profile.github ? (
+                        <a
+                          href={`https://github.com/${profile.github}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: "12px",
+                            color: "#9ca3af",
+                            marginTop: "2px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            textDecoration: "none",
+                            transition: "color 0.15s ease",
+                            maxWidth: "100%",
+                          }}
+                          className="hover:text-white"
+                          title={`View @${profile.github} on GitHub`}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.8, flexShrink: 0 }}>
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                          </svg>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>@{profile.github}</span>
+                        </a>
+                      ) : (
+                        <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {profile.email}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.08)", margin: "2px 0 4px 0" }} />
                   
-                  <Link href="/dashboard" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
-                    Dashboard
+                  {/* Menu Items */}
+                  <Link
+                    href="/dashboard"
+                    style={{
+                      padding: "7px 10px",
+                      color: "#d4d4d8",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textDecoration: "none",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "9px",
+                      transition: "background-color 0.12s ease, color 0.12s ease",
+                    }}
+                    className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                      <rect width="7" height="9" x="3" y="3" rx="1" />
+                      <rect width="7" height="5" x="14" y="3" rx="1" />
+                      <rect width="7" height="9" x="14" y="12" rx="1" />
+                      <rect width="7" height="5" x="3" y="16" rx="1" />
+                    </svg>
+                    <span>Dashboard</span>
                   </Link>
-                  <Link href="/leaderboard" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#d1d5db", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(255,255,255,0.05)] hover:text-white transition-colors">
-                    Leaderboard
+
+                  <Link
+                    href="/leaderboard"
+                    style={{
+                      padding: "7px 10px",
+                      color: "#d4d4d8",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textDecoration: "none",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "9px",
+                      transition: "background-color 0.12s ease, color 0.12s ease",
+                    }}
+                    className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                      <path d="M4 22h16" />
+                      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
+                    <span>Leaderboard</span>
                   </Link>
+
+                  <Link
+                    href="/badge"
+                    style={{
+                      padding: "7px 10px",
+                      color: "#d4d4d8",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textDecoration: "none",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "9px",
+                      transition: "background-color 0.12s ease, color 0.12s ease",
+                    }}
+                    className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                      <circle cx="12" cy="8" r="6" />
+                      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                    </svg>
+                    <span>Badge Studio</span>
+                  </Link>
+
                   {profile.isAdmin && (
-                    <Link href="/admin" onClick={() => setDropdownOpen(false)} style={{ padding: "10px 12px", color: "#ef4444", fontSize: "13px", textDecoration: "none", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }} className="hover:bg-[rgba(239,68,68,0.1)] transition-colors">
-                      🛡️ Admin Console
+                    <Link
+                      href="/admin"
+                      style={{
+                        padding: "7px 10px",
+                        color: "#d4d4d8",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        borderRadius: "6px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "9px",
+                        transition: "background-color 0.12s ease, color 0.12s ease",
+                      }}
+                      className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                      </svg>
+                      <span>Admin Portal</span>
                     </Link>
                   )}
                   
-                  <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", margin: "4px 0" }} />
+                  <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.08)", margin: "4px 0" }} />
                   
                   <button
                     type="button"
@@ -185,19 +344,26 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                       width: "100%",
                       background: "none",
                       border: "none",
-                      padding: "10px 12px",
-                      color: "#ef4444",
+                      padding: "7px 10px",
+                      color: "#d4d4d8",
                       fontSize: "13px",
+                      fontWeight: 500,
                       borderRadius: "6px",
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
+                      gap: "9px",
                       cursor: "pointer",
                       textAlign: "left",
+                      transition: "background-color 0.12s ease, color 0.12s ease",
                     }}
-                    className="hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+                    className="hover:bg-[rgba(239,68,68,0.12)] hover:text-[#f87171]"
                   >
-                    Sign Out
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" x2="9" y1="12" y2="12" />
+                    </svg>
+                    <span>Sign Out</span>
                   </button>
                 </div>
               )}
@@ -255,15 +421,39 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
             {profile ? (
               <>
-                <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <img src={profile.avatar} alt="Avatar" style={{ width: "24px", height: "24px", borderRadius: "50%" }} /> Dashboard
+                <Link href="/dashboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                    <rect width="7" height="9" x="3" y="3" rx="1" />
+                    <rect width="7" height="5" x="14" y="3" rx="1" />
+                    <rect width="7" height="9" x="14" y="12" rx="1" />
+                    <rect width="7" height="5" x="3" y="16" rx="1" />
+                  </svg>
+                  <span>Dashboard</span>
                 </Link>
-                <Link href="/leaderboard" onClick={() => setMobileOpen(false)} style={{ color: "#ffffff", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "18px" }}>🏆</span> Leaderboard
+                <Link href="/leaderboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                  </svg>
+                  <span>Leaderboard</span>
+                </Link>
+                <Link href="/badge" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                    <circle cx="12" cy="8" r="6" />
+                    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                  </svg>
+                  <span>Badge Studio</span>
                 </Link>
                 {profile.isAdmin && (
-                  <Link href="/admin" onClick={() => setMobileOpen(false)} style={{ color: "#ef4444", textDecoration: "none", fontSize: "16.5px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                    🛡️ Admin Console
+                  <Link href="/admin" style={{ color: "#f87171", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                    </svg>
+                    <span>Admin Portal</span>
                   </Link>
                 )}
                 <button
@@ -275,16 +465,25 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#ef4444",
-                    fontSize: "16.5px",
+                    color: "#a1a1aa",
+                    fontSize: "15px",
                     fontWeight: 500,
                     padding: "12px 8px",
                     cursor: "pointer",
                     textAlign: "left",
                     width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
                   }}
+                  className="hover:text-[#f87171]"
                 >
-                  Sign Out
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" x2="9" y1="12" y2="12" />
+                  </svg>
+                  <span>Sign Out</span>
                 </button>
               </>
             ) : (

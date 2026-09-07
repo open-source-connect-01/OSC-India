@@ -16,6 +16,7 @@ export async function GET(request: Request) {
       headers: {
         "User-Agent": "OSC-India-Dashboard",
       },
+      next: { revalidate: 3600 }, // Cache for 1 hour on server
     });
 
     if (!res.ok) {
@@ -26,6 +27,10 @@ export async function GET(request: Request) {
     }
 
     const html = await res.text();
+
+    // Parse contribution data from the HTML
+    // GitHub's contribution calendar uses <td> with data-date and data-level,
+    // and <tool-tip> elements with the contribution count text.
     const countMap = new Map<string, number>();
     const regex = /data-date="([^"]+)"[^>]*id="([^"]+)"[\s\S]*?<tool-tip[^>]*for="\2"[^>]*>([^<]*)<\/tool-tip>/g;
 
@@ -42,9 +47,9 @@ export async function GET(request: Request) {
         }
       }
 
-      if (count > 0) {
-        countMap.set(date, count);
-      }
+      // Include zero-count days so the frontend can distinguish
+      // "no contributions" from "no data"
+      countMap.set(date, count);
     }
 
     const contributions = Array.from(countMap.entries()).map(([date, count]) => ({
@@ -52,9 +57,13 @@ export async function GET(request: Request) {
       count,
     }));
 
-    return NextResponse.json({ success: true, contributions });
+    return NextResponse.json({
+      success: true,
+      contributions,
+      fetchedAt: new Date().toISOString(),
+    });
   } catch (err: any) {
-    console.error("GitHub activity API error:", err);
+    console.warn("GitHub activity API error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to fetch contribution graph" },
       { status: 500 }

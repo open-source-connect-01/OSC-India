@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAllowedRepoSlugs } from "@/data/projects";
+import { getAllowedRepoSlugs, isAllowedRepoSlug } from "@/data/projects";
 import {
   normalizeGitHubHandle,
   detectDifficulty,
@@ -34,36 +34,29 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
     return { success: false, error: "Invalid GitHub username provided." };
   }
 
-  // 2. Check Role: If role !== 'contributor', reset score to 0 and return early
-  const { data: userProfile, error: profileErr } = await admin
+  // 2. Check Role & Admin status safely
+  let userRole = "contributor";
+  let isAdmin = false;
+
+  const { data: userProfile } = await admin
     .from("profiles")
     .select("role, is_admin, github")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  if (profileErr || !userProfile) {
-    return { success: false, error: "User profile not found in database." };
-  }
-
-  if (userProfile.role !== "contributor" || userProfile.is_admin) {
-    await admin
-      .from("profiles")
-      .update({
-        score: 0,
-        merged_prs: 0,
-        projects_count: 0,
-        github: handle,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
-
-    return {
-      success: true,
-      message: `User role is '${userProfile.role}'. Contribution scoring is strictly for contributors. Stats reset to 0.`,
-      score: 0,
-      merged_prs: 0,
-      projects_count: 0,
-    };
+  if (userProfile) {
+    userRole = userProfile.role || "contributor";
+    isAdmin = Boolean(userProfile.is_admin || userProfile.role === "admin");
+  } else {
+    try {
+      const { data: authUser } = await admin.auth.admin.getUserById(userId);
+      if (authUser?.user?.user_metadata) {
+        userRole = authUser.user.user_metadata.role || "contributor";
+        isAdmin = Boolean(authUser.user.user_metadata.is_admin || userRole === "admin");
+      }
+    } catch {
+      // fallback
+    }
   }
 
   // 3. Extract Allowed Repositories
@@ -130,7 +123,7 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
       const repoSlug = pr.repository_url.replace("https://api.github.com/repos/", "").toLowerCase();
 
       // Skip if repository is not registered in competition
-      if (!allowedSlugs.has(repoSlug)) {
+      if (!isAllowedRepoSlug(repoSlug)) {
         continue;
       }
 
@@ -160,28 +153,52 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
 
     // 7. Compute Score: (easy * 10) + (med * 20) + (hard * 30) + (exp * 50)
     let totalScore = 0;
-    for (const pr of validPRs) {
-      totalScore += pr.points;
+    const isContributor = userRole === "contributor" && !isAdmin;
+    if (isContributor) {
+      for (const pr of validPRs) {
+        totalScore += pr.points;
+      }
     }
 
     const mergedPrsCount = validPRs.length;
     const projectsCount = contributedRepos.size;
 
-    // 8. Update Supabase profiles table
-    const { error: updateErr } = await admin
-      .from("profiles")
-      .update({
-        github: handle,
-        score: totalScore,
-        merged_prs: mergedPrsCount,
-        projects_count: projectsCount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
+    // 8. Update Supabase Auth user_metadata (unconditional resilience)
+    try {
+      const { data: userData } = await admin.auth.admin.getUserById(userId);
+      if (userData?.user) {
+        await admin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...userData.user.user_metadata,
+            github: handle,
+            score: totalScore,
+            merged_prs: mergedPrsCount,
+            projects_count: projectsCount,
+          },
+        });
+      }
+    } catch (authErr) {
+      console.warn("Notice: saving synced metrics to auth metadata:", authErr);
+    }
 
-    if (updateErr) {
-      console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
-      return { success: false, error: updateErr.message };
+    // 9. Update Supabase profiles table
+    try {
+      const { error: updateErr } = await admin
+        .from("profiles")
+        .update({
+          github: handle,
+          score: totalScore,
+          merged_prs: mergedPrsCount,
+          projects_count: projectsCount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (updateErr) {
+        console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
+      }
+    } catch (dbErr) {
+      console.warn("Notice: profile update after GitHub sync:", dbErr);
     }
 
     return {

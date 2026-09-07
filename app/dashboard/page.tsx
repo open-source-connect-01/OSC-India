@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import ActivityMatrix from "../components/ActivityMatrix";
 import TechStack from "../components/TechStack";
-import { syncGitHubContribution } from "@/lib/actions/github";
+import GitHubLinkCard from "../components/GitHubLinkCard";
 
 export const dynamic = "force-dynamic";
 
@@ -83,30 +83,24 @@ export default async function DashboardPage() {
     }
   }
 
-  const roleName = profile?.role
-    ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1)
-    : "Contributor";
+  const userMeta = user.user_metadata || {};
+  const isOwner = (user.email || "").toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
+  const rawRole = profile?.role || userMeta.role || (isOwner ? "admin" : "contributor");
+  const roleName = rawRole.charAt(0).toUpperCase() + rawRole.slice(1);
   const username = githubUsername || user.email?.split("@")[0] || "user";
-  const totalPoints = profile?.score || 0;
-  const mergedPRs = profile?.merged_prs || 0;
-  const projectsCount = profile?.projects_count || 0;
-  const badgesCreated = profile?.badges_created || 0;
-  const isProjectAdmin = profile?.role === "project-admin";
-  const isSuperAdmin = profile?.is_admin || profile?.role === "admin";
-
-  // Lazy Background GitHub Sync (Workflow 2 from plan.md)
-  if (githubUsername && (profile?.role === "contributor" || !profile?.role)) {
-    syncGitHubContribution(user.id, githubUsername).catch((err) => {
-      console.warn("Lazy background sync notice:", err);
-    });
-  }
+  const totalPoints = profile?.score ?? userMeta.score ?? 0;
+  const mergedPRs = profile?.merged_prs ?? userMeta.merged_prs ?? 0;
+  const projectsCount = profile?.projects_count ?? userMeta.projects_count ?? 0;
+  const badgesCreated = profile?.badges_created ?? userMeta.badges_created ?? 0;
+  const isProjectAdmin = rawRole === "project-admin";
+  const isSuperAdmin = Boolean(profile?.is_admin || userMeta.is_admin || isOwner || rawRole === "admin");
 
   const profilePayload = {
     id: user.id,
     name: fullName,
     email: user.email,
     avatar: avatar,
-    role: profile?.role || "contributor",
+    role: rawRole,
     isAdmin: isSuperAdmin,
     github: githubUsername,
   };
@@ -122,21 +116,20 @@ export default async function DashboardPage() {
         <div style={{ width: "100%", marginBottom: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,96,0,0.1)", color: "var(--orange)", padding: "4px 12px", borderRadius: "16px", fontSize: "12px", fontWeight: 600, marginBottom: "20px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--orange)" }} />
-              Command Center Active
+              
+              
             </div>
-            <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", fontWeight: 800, marginBottom: "8px", letterSpacing: "-0.02em" }}>Developer Dashboard</h1>
+            <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", fontWeight: 800, marginBottom: "8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
             <p style={{ color: "#9ca3af", fontSize: "15px" }}>Your open source journey, verified scores, and active badges.</p>
           </div>
-
-          {isSuperAdmin && (
-            <Link href="/admin" style={{ textDecoration: "none" }}>
-              <button style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "10px 20px", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                🛡️ Access Admin Portal
-              </button>
-            </Link>
-          )}
         </div>
+
+        {/* GitHub Link Banner (shown when GitHub not connected) */}
+        {!githubUsername && (
+          <div style={{ width: "100%", marginBottom: "24px" }}>
+            <GitHubLinkCard />
+          </div>
+        )}
 
         {/* Top Grid Area (Profile + Stats) */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full mb-12">
@@ -146,16 +139,54 @@ export default async function DashboardPage() {
             
             {/* Main Profile Card */}
             <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "clamp(24px, 4vw, 40px) 24px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "120px", height: "120px", borderRadius: "50%", border: "2px solid var(--orange)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", fontWeight: 800, color: "white", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
-                {avatar ? (
-                  <img src={avatar} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <span>{fullName[0] || "U"}</span>
-                )}
-                <div style={{ position: "absolute", bottom: "0", right: "0", background: "var(--bg)", borderRadius: "50%", padding: "4px" }}>
-                  <div style={{ width: "24px", height: "24px", background: "var(--orange)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  </div>
+              {/* Avatar Wrapper (relative container without overflow:hidden so badge is never clipped) */}
+              <div style={{ position: "relative", width: "120px", height: "120px", marginBottom: "20px" }}>
+                <div 
+                  style={{ 
+                    width: "100%", 
+                    height: "100%", 
+                    borderRadius: "50%", 
+                    border: "2px solid var(--orange)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    fontSize: "48px", 
+                    fontWeight: 800, 
+                    color: "white", 
+                    overflow: "hidden",
+                    background: "#161618",
+                    boxShadow: "0 0 20px rgba(255, 96, 0, 0.2)"
+                  }}
+                >
+                  {avatar ? (
+                    <img src={avatar} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span>{fullName[0] || "U"}</span>
+                  )}
+                </div>
+
+                {/* Verified Badge anchored cleanly on the bottom-right perimeter */}
+                <div 
+                  title="Verified Contributor"
+                  style={{ 
+                    position: "absolute", 
+                    bottom: "2px", 
+                    right: "2px", 
+                    width: "30px", 
+                    height: "30px", 
+                    background: "linear-gradient(135deg, #FF7518 0%, #EA580C 100%)", 
+                    border: "3px solid #0c0c0e", 
+                    borderRadius: "50%", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.6), 0 0 10px rgba(255,96,0,0.4)",
+                    zIndex: 10
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
               </div>
 
