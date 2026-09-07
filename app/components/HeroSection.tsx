@@ -56,61 +56,24 @@ export default function HeroSection() {
           padding: "110px clamp(32px, 8vw, 120px) 80px",
         }}
       >
-        <div style={{ maxWidth: "560px" }}>
+        <div style={{ maxWidth: "720px" }}>
           {/* Main Headline */}
           <h1
             className="hero-title"
             style={{
-              fontSize: "clamp(32px, 8vw, 68px)",
+              fontSize: "clamp(28px, 5.2vw, 64px)",
               fontWeight: 800,
-              lineHeight: 1.1,
+              lineHeight: 1.12,
               letterSpacing: "-1.5px",
               marginBottom: "22px",
-              color: "#ffffff",
             }}
           >
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline" }}>
-              <span
-                style={{
-                  color: "#ffffff",
-                  marginRight: "12px",
-                }}
-              >
-                Open
-              </span>
-              <span
-                style={{
-                  color: "#ffffff",
-                  display: "inline-block",
-                }}
-              >
-                Source
-              </span>
+            <div className="hero-title-line-1">
+              <span className="tricolor-gradient">Open Source</span>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", marginTop: "4px" }}>
-              <span
-                style={{
-                  color: "#ffffff",
-                  marginRight: "12px",
-                }}
-              >
-                Connect
-              </span>
-              <span
-                style={{
-                  color: "#ffffff",
-                  marginRight: "12px",
-                  display: "inline-block",
-                }}
-              >
-                India
-              </span>
-              <span
-                style={{
-                  color: "#ffffff",
-                  display: "inline-block",
-                }}
-              >
+            <div className="hero-title-line-2">
+              <span className="tricolor-gradient">Connect India</span>
+              <span className="hero-year-tag" style={{ color: "#FF8822" }}>
                 2026
               </span>
             </div>
@@ -124,11 +87,11 @@ export default function HeroSection() {
               color: "#9ca3af",
               lineHeight: 1.65,
               marginBottom: "32px",
-              maxWidth: "440px",
+              maxWidth: "480px",
               fontWeight: 400,
             }}
           >
-            Join us this September to connect, collaborate, and contribute to open source projects that are shaping the future of technology.
+            Join India’s open source movement this September to learn, connect, and contribute alongside developers, maintainers, founders, and technology communities.
           </p>
 
           {/* CTA Buttons */}
@@ -144,7 +107,9 @@ export default function HeroSection() {
           >
             {/* Register Now Button */}
             <Link
-              href="#register"
+              href="https://luma.com/3u22sml7"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hero-register-btn"
               style={{
                 background: "#FF7518",
