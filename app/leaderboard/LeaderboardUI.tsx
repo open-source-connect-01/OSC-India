@@ -228,13 +228,17 @@ export default function LeaderboardUI({ initialUsers, initialProfile }: { initia
         {/* List Section (Ranks 4 to 50 or Search Results) */}
         <div style={{ width: "100%", maxWidth: "860px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px 8px 12px", color: "#9ca3af", fontSize: "12px", fontWeight: 600 }}>
-            <span>{isSearching ? `SEARCH RESULTS (${users.length})` : "TOP CONTRIBUTORS (RANKS 4 - 50)"}</span>
+            <span>{isSearching ? `SEARCH RESULTS (${users.length})` : users.length > 3 ? "TOP CONTRIBUTORS (RANKS 4 - 50)" : "COMMUNITY CONTRIBUTORS"}</span>
             <span>SCORE & PRs</span>
           </div>
 
           {(isSearching ? users : others).length === 0 ? (
-            <div style={{ padding: "48px 20px", textAlign: "center", color: "#9ca3af", background: "rgba(255,255,255,0.02)", borderRadius: "16px" }}>
-              No contributors found matching query.
+            <div style={{ padding: "48px 20px", textAlign: "center", color: "#9ca3af", background: "rgba(255,255,255,0.02)", borderRadius: "16px", fontSize: "14px" }}>
+              {isSearching
+                ? `No contributors found matching "${searchQuery}".`
+                : users.length === 0
+                ? "No registered contributors have earned merit points yet. Contribute to registered repositories to join the leaderboard!"
+                : "More contributors will appear here as community pull requests are merged."}
             </div>
           ) : (
             (isSearching ? users : others).map((user) => (
