@@ -315,7 +315,18 @@ function BadgeContent({
                   >
                     <div>Open Source</div>
                     <div>Connect India</div>
-                    <div>2026</div>
+                  </div>
+                  <div 
+                    style={{
+                      color: '#FF7518',
+                      fontWeight: 900,
+                      fontSize: 'clamp(18px, 6cqw, 22px)',
+                      lineHeight: '1.2',
+                      letterSpacing: '0.02em',
+                      marginTop: '2px',
+                    }}
+                  >
+                    2026
                   </div>
                 </div>
 
