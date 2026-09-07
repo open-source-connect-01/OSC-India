@@ -69,7 +69,7 @@ export default function HeroSection() {
               fontWeight: 800,
               lineHeight: 1.12,
               letterSpacing: "-1.5px",
-              marginBottom: "26px",
+              marginBottom: "48px",
             }}
           >
             <div className="hero-title-line-1">
