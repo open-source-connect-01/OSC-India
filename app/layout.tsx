@@ -59,6 +59,35 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
 
+  // Favicons and App Icons for all browsers (Chrome, Brave, Safari, Firefox, Edge, Android, iOS)
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { url: "/favicon-48x48.png", type: "image/png", sizes: "48x48" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "192x192",
+        url: "/android-chrome-192x192.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "512x512",
+        url: "/android-chrome-512x512.png",
+      },
+    ],
+  },
+  manifest: "/site.webmanifest",
+
   // Additional social hints
   other: {
     "theme-color": "#FF7518",
