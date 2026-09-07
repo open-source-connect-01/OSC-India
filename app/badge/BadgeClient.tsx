@@ -380,34 +380,44 @@ function BadgeContent({
                     )}
                   </div>
                   
-                  {/* The Star/Shield Badge (for Mentor/Admin) */}
-                  {(person === 'mentor' || person === 'project-admin') && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '2%',
-                      right: '2%',
-                      width: 'clamp(20px, 6cqw, 28px)',
-                      height: 'clamp(20px, 6cqw, 28px)',
-                      background: person === 'mentor' ? 'linear-gradient(135deg, #f59e0b, #ea580c)' : 'linear-gradient(135deg, #ef4444, #b91c1c)',
-                      border: '2px solid #121214',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: person === 'mentor' ? '0 4px 10px rgba(245,158,11,0.5)' : '0 4px 10px rgba(239,68,68,0.5)',
-                      zIndex: 3
-                    }}>
-                      {person === 'mentor' ? (
-                        <svg width="60%" height="60%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      ) : (
-                        <svg width="55%" height="55%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                        </svg>
-                      )}
-                    </div>
-                  )}
+                  {/* The Star/Shield/Verified Badge */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '3%',
+                    right: '3%',
+                    width: 'clamp(22px, 6.5cqw, 28px)',
+                    height: 'clamp(22px, 6.5cqw, 28px)',
+                    background: person === 'mentor' 
+                      ? 'linear-gradient(135deg, #f59e0b, #ea580c)' 
+                      : person === 'project-admin' 
+                        ? 'linear-gradient(135deg, #ef4444, #b91c1c)' 
+                        : 'linear-gradient(135deg, #FF7518, #EA580C)',
+                    border: '2.5px solid #121214',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: person === 'mentor' 
+                      ? '0 4px 10px rgba(245,158,11,0.5)' 
+                      : person === 'project-admin' 
+                        ? '0 4px 10px rgba(239,68,68,0.5)' 
+                        : '0 4px 10px rgba(255,117,24,0.5)',
+                    zIndex: 3
+                  }}>
+                    {person === 'mentor' ? (
+                      <svg width="60%" height="60%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    ) : person === 'project-admin' ? (
+                      <svg width="55%" height="55%" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                      </svg>
+                    ) : (
+                      <svg width="55%" height="55%" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
 
                 {/* Name */}

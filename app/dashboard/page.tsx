@@ -139,16 +139,54 @@ export default async function DashboardPage() {
             
             {/* Main Profile Card */}
             <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "clamp(24px, 4vw, 40px) 24px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "120px", height: "120px", borderRadius: "50%", border: "2px solid var(--orange)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", fontWeight: 800, color: "white", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
-                {avatar ? (
-                  <img src={avatar} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <span>{fullName[0] || "U"}</span>
-                )}
-                <div style={{ position: "absolute", bottom: "0", right: "0", background: "var(--bg)", borderRadius: "50%", padding: "4px" }}>
-                  <div style={{ width: "24px", height: "24px", background: "var(--orange)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  </div>
+              {/* Avatar Wrapper (relative container without overflow:hidden so badge is never clipped) */}
+              <div style={{ position: "relative", width: "120px", height: "120px", marginBottom: "20px" }}>
+                <div 
+                  style={{ 
+                    width: "100%", 
+                    height: "100%", 
+                    borderRadius: "50%", 
+                    border: "2px solid var(--orange)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    fontSize: "48px", 
+                    fontWeight: 800, 
+                    color: "white", 
+                    overflow: "hidden",
+                    background: "#161618",
+                    boxShadow: "0 0 20px rgba(255, 96, 0, 0.2)"
+                  }}
+                >
+                  {avatar ? (
+                    <img src={avatar} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span>{fullName[0] || "U"}</span>
+                  )}
+                </div>
+
+                {/* Verified Badge anchored cleanly on the bottom-right perimeter */}
+                <div 
+                  title="Verified Contributor"
+                  style={{ 
+                    position: "absolute", 
+                    bottom: "2px", 
+                    right: "2px", 
+                    width: "30px", 
+                    height: "30px", 
+                    background: "linear-gradient(135deg, #FF7518 0%, #EA580C 100%)", 
+                    border: "3px solid #0c0c0e", 
+                    borderRadius: "50%", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.6), 0 0 10px rgba(255,96,0,0.4)",
+                    zIndex: 10
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
               </div>
 
