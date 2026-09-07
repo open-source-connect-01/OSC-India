@@ -143,7 +143,8 @@ img { display: block; max-width: 100%; }
 
   /* --- Hero Content & Text Contrast --- */
   .hero-container {
-    min-height: auto !important;
+    min-height: 100svh !important;
+    align-items: flex-start !important;
   }
   .hero-content {
     padding-top: 200px !important;
