@@ -142,6 +142,33 @@ function BadgeContent({
           backgroundColor: null,
           scale: 2, 
           useCORS: true,
+          onclone: (clonedDoc) => {
+            const el = clonedDoc.querySelector(".badge-tricolor-text") as HTMLElement | null;
+            if (el) {
+              const svg = clonedDoc.createElementNS("http://www.w3.org/2000/svg", "svg");
+              svg.setAttribute("viewBox", "0 0 260 56");
+              svg.setAttribute("width", "100%");
+              svg.setAttribute("height", "56");
+              svg.style.display = "block";
+              svg.style.overflow = "visible";
+              svg.innerHTML = `
+                <defs>
+                  <linearGradient id="badgeTricolorDownload" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#FF6000" />
+                    <stop offset="22%" stop-color="#FF771F" />
+                    <stop offset="38%" stop-color="#FFA86B" />
+                    <stop offset="48%" stop-color="#FFFFFF" />
+                    <stop offset="52%" stop-color="#FFFFFF" />
+                    <stop offset="66%" stop-color="#6BDE82" />
+                    <stop offset="100%" stop-color="#04C456" />
+                  </linearGradient>
+                </defs>
+                <text x="130" y="22" text-anchor="middle" fill="url(#badgeTricolorDownload)" font-size="21" font-weight="800" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" letter-spacing="-0.3px">Open Source</text>
+                <text x="130" y="48" text-anchor="middle" fill="url(#badgeTricolorDownload)" font-size="21" font-weight="800" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" letter-spacing="-0.3px">Connect India</text>
+              `;
+              el.parentNode?.replaceChild(svg, el);
+            }
+          }
         });
         const url = canvas.toDataURL("image/png");
         const link = document.createElement("a");
@@ -268,11 +295,28 @@ function BadgeContent({
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: `radial-gradient(ellipse at top, ${roleBg.replace('0.1', '0.3')} 0%, transparent 70%)` }}></div>
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: `radial-gradient(ellipse at bottom, rgba(255,96,0,0.15) 0%, transparent 70%)` }}></div>
 
-                {/* Badge Header */}
-                <div style={{ textAlign: 'center', zIndex: 2, marginBottom: '8%', width: '100%' }}>
-                  <h3 style={{ color: 'white', fontWeight: 800, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>Open Source</h3>
-                  <h3 style={{ color: 'white', fontWeight: 800, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>Connect <span style={{ color: roleColor }}>India</span></h3>
-                  <h3 style={{ color: roleColor, fontWeight: 900, fontSize: 'clamp(18px, 6cqw, 22px)', lineHeight: '1.2' }}>2026</h3>
+                {/* Badge Header with Indian Tri-colour Gradient */}
+                <div style={{ textAlign: 'center', zIndex: 2, marginBottom: '6%', width: '100%' }}>
+                  <div 
+                    className="badge-tricolor-text"
+                    style={{
+                      display: 'inline-block',
+                      textAlign: 'center',
+                      fontWeight: 800,
+                      fontSize: 'clamp(19px, 6.2cqw, 23px)',
+                      lineHeight: '1.2',
+                      letterSpacing: '-0.3px',
+                      background: 'linear-gradient(90deg, #FF6000 0%, #FF771F 22%, #FFA86B 38%, #FFFFFF 48%, #FFFFFF 52%, #6BDE82 66%, #04C456 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      color: 'transparent',
+                    }}
+                  >
+                    <div>Open Source</div>
+                    <div>Connect India</div>
+                    <div>2026</div>
+                  </div>
                 </div>
 
                 {/* Avatar Container */}
