@@ -73,17 +73,20 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
 
   return (
     <nav
+      className={`navbar-root ${scrolled ? "scrolled" : ""}`}
       style={{
         position: "fixed",
         top: 0,
         left: 0,
         right: 0,
         zIndex: 1000,
+        paddingTop: scrolled ? "10px" : "18px",
+        paddingBottom: scrolled ? "10px" : "14px",
         background: scrolled ? "rgba(6, 6, 6, 0.85)" : "transparent",
         backdropFilter: scrolled ? "blur(12px)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
-        borderBottom: "none",
-        transition: "background 0.3s ease, backdrop-filter 0.3s ease",
+        borderBottom: scrolled ? "1px solid rgba(255, 255, 255, 0.07)" : "1px solid transparent",
+        transition: "background 0.3s ease, backdrop-filter 0.3s ease, padding 0.3s ease, border-color 0.3s ease",
       }}
     >
       <div
@@ -94,7 +97,7 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          height: "72px",
+          height: "64px",
         }}
       >
         {/* Logo */}

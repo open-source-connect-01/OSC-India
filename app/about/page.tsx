@@ -9,7 +9,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans">
       <Navbar />
       {/* Spacer to clear the fixed Navbar */}
-      <div style={{ height: "72px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
       
       <main className="about-page-wrapper">
         

@@ -7,7 +7,8 @@ export default function ProjectsLoading() {
     <main className="min-h-screen bg-[var(--bg)] flex flex-col">
       <Navbar />
 
-      <div style={{ height: "72px", flexShrink: 0 }} aria-hidden="true" />
+      {/* Spacer for fixed navbar */}
+      <div style={{ height: "96px", flexShrink: 0 }} aria-hidden="true" />
 
       <div className="projects-page-wrapper">
         <div style={{ textAlign: "center", marginBottom: "48px" }} className="animate-pulse">

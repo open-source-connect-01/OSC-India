@@ -151,7 +151,7 @@ export default function TimelinePage() {
       <Navbar />
       
       {/* Spacer to clear the fixed Navbar */}
-      <div style={{ height: "80px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
       
       <main className="flex-grow flex flex-col items-center px-4 sm:px-6" style={{ margin: "0 auto", maxWidth: "1080px", width: "100%", paddingBottom: "110px", paddingTop: "40px" }}>
         
