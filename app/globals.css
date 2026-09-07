@@ -145,6 +145,10 @@ img { display: block; max-width: 100%; }
   .hero-container {
     min-height: auto !important;
   }
+  .hero-content {
+    padding-top: 280px !important;
+    padding-bottom: 36px !important;
+  }
   .hero-title {
     font-size: clamp(30px, 8.5vw, 44px) !important;
     line-height: 1.12 !important;
@@ -256,6 +260,10 @@ img { display: block; max-width: 100%; }
   .hero-bg-inner {
     height: 400px !important;
     opacity: 0.82 !important;
+  }
+  .hero-content {
+    padding-top: 300px !important;
+    padding-bottom: 28px !important;
   }
   .hero-title {
     font-size: clamp(26px, 8vw, 34px) !important;

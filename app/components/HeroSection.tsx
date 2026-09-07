@@ -48,9 +48,11 @@ export default function HeroSection() {
     >
       {/* Hero Content Area */}
       <div
-        className="hero-content pt-[280px] md:pt-[110px] pb-[36px] md:pb-[80px]"
+        className="hero-content"
         style={{
-          /* Restored horizontal padding to inline styles to ensure it aligns perfectly with other sections */
+          /* Restored base desktop padding. Mobile padding is overridden in globals.css */
+          paddingTop: "110px",
+          paddingBottom: "80px",
           paddingLeft: "clamp(32px, 8vw, 120px)",
           paddingRight: "clamp(32px, 8vw, 120px)",
           position: "relative",
