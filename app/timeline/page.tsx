@@ -158,24 +158,6 @@ export default function TimelinePage() {
         {/* Header Section */}
         <div style={{ textAlign: "center", marginBottom: "40px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
-          {/* Top Pill */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(255, 117, 24, 0.08)",
-            border: "1px solid rgba(255, 117, 24, 0.25)",
-            padding: "6px 16px",
-            borderRadius: "9999px",
-            fontSize: "12px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            color: "var(--orange)",
-            marginBottom: "20px"
-          }}>
-            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 10px #22C55E" }} />
-            OSCI 2026 OFFICIAL ROADMAP
-          </div>
 
           <h1 style={{ color: "white", fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 800, marginBottom: "16px", letterSpacing: "-0.025em", lineHeight: 1.15 }}>
             Program <span style={{ color: "var(--orange)" }}>Timeline</span>
