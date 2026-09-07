@@ -48,9 +48,11 @@ export default function HeroSection() {
     >
       {/* Hero Content Area */}
       <div
-        className="hero-content pt-[280px] md:pt-[110px] pb-[36px] md:pb-[80px] px-[20px] md:px-[clamp(32px,8vw,120px)]"
+        className="hero-content pt-[280px] md:pt-[110px] pb-[36px] md:pb-[80px]"
         style={{
-          /* Removed inline padding to allow Tailwind responsive classes to work */
+          /* Restored horizontal padding to inline styles to ensure it aligns perfectly with other sections */
+          paddingLeft: "clamp(32px, 8vw, 120px)",
+          paddingRight: "clamp(32px, 8vw, 120px)",
           position: "relative",
           zIndex: 2,
           width: "100%",
