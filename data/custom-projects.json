@@ -1,0 +1,72 @@
+[
+  {
+    "id": "e044b674-4ac1-4365-9527-50be652bf339",
+    "title": "OSC India Platform",
+    "description": "Official web platform and dashboard for Open Source Connect India community.",
+    "githubUrl": "https://github.com/OSC-India/platform",
+    "language": "TypeScript",
+    "accentColor": "#FF7518",
+    "stars": "1.2k",
+    "forks": "340"
+  },
+  {
+    "id": "99eeadd8-9698-47df-a2f0-b825c31df39c",
+    "title": "CloudNative Orchestrator",
+    "description": "A modern container orchestration platform built for scalability and performance",
+    "githubUrl": "https://github.com/OSC-India/cloudnative-orchestrator",
+    "language": "Go",
+    "accentColor": "#22d3ee",
+    "stars": "12.5k",
+    "forks": "2.3k"
+  },
+  {
+    "id": "b3a35526-0504-449e-b0da-715a6cf6b38f",
+    "title": "DataFlow Pipeline",
+    "description": "Real-time data processing framework with distributed architecture",
+    "githubUrl": "https://github.com/OSC-India/dataflow-pipeline",
+    "language": "Python",
+    "accentColor": "#34d399",
+    "stars": "8.9k",
+    "forks": "1.5k"
+  },
+  {
+    "id": "a6c12470-d17d-442a-967b-1c6791834072",
+    "title": "ReactUI Components",
+    "description": "Comprehensive component library with accessibility-first design",
+    "githubUrl": "https://github.com/OSC-India/reactui-components",
+    "language": "TypeScript",
+    "accentColor": "#f472b6",
+    "stars": "15.2k",
+    "forks": "3.1k"
+  },
+  {
+    "id": "5cde7b46-15e7-4acb-b9ad-7b8731dcbd1d",
+    "title": "ML Vision Toolkit",
+    "description": "Computer vision library powered by cutting-edge machine learning models",
+    "githubUrl": "https://github.com/OSC-India/ml-vision-toolkit",
+    "language": "Python",
+    "accentColor": "#ef4444",
+    "stars": "9.8k",
+    "forks": "1.9k"
+  },
+  {
+    "id": "2c9e1f84-f90d-4ed0-bd3d-5247bd94302f",
+    "title": "SecureAuth Framework",
+    "description": "Enterprise-grade authentication and authorization solution",
+    "githubUrl": "https://github.com/OSC-India/secureauth-framework",
+    "language": "Rust",
+    "accentColor": "#3b82f6",
+    "stars": "6.7k",
+    "forks": "987"
+  },
+  {
+    "id": "848c8073-bdb2-4a38-b232-64e7aef1faf5",
+    "title": "DevOps Automation",
+    "description": "Complete CI/CD automation suite for modern development workflows",
+    "githubUrl": "https://github.com/OSC-India/devops-automation",
+    "language": "JavaScript",
+    "accentColor": "#f97316",
+    "stars": "11.3k",
+    "forks": "2.4k"
+  }
+]

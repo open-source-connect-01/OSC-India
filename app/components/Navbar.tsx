@@ -63,13 +63,20 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
 
   const isAuthed = initialProfile !== undefined ? Boolean(profile) : (mounted && Boolean(profile));
 
-  const navLinks = [
-    { label: "About us", href: "/about" },
-    { label: "Projects", href: "/projects" },
-    ...(isAuthed ? [{ label: "Leaderboard", href: "/leaderboard" }] : []),
-    { label: "Team", href: "/team" },
-    { label: "Timeline", href: "/timeline" },
-  ];
+  const navLinks = isAuthed
+    ? [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Leaderboard", href: "/leaderboard" },
+        { label: "Projects", href: "/projects" },
+        { label: "Team", href: "/team" },
+        { label: "Timeline", href: "/timeline" },
+      ]
+    : [
+        { label: "About us", href: "/about" },
+        { label: "Projects", href: "/projects" },
+        { label: "Team", href: "/team" },
+        { label: "Timeline", href: "/timeline" },
+      ];
 
   return (
     <nav
@@ -424,26 +431,6 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
             {profile ? (
               <>
-                <Link href="/dashboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                    <rect width="7" height="9" x="3" y="3" rx="1" />
-                    <rect width="7" height="5" x="14" y="3" rx="1" />
-                    <rect width="7" height="9" x="14" y="12" rx="1" />
-                    <rect width="7" height="5" x="3" y="16" rx="1" />
-                  </svg>
-                  <span>Dashboard</span>
-                </Link>
-                <Link href="/leaderboard" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                    <path d="M4 22h16" />
-                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-                  </svg>
-                  <span>Leaderboard</span>
-                </Link>
                 <Link href="/badge" style={{ color: "#ffffff", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
                     <circle cx="12" cy="8" r="6" />

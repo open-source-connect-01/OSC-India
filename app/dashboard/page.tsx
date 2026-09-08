@@ -231,7 +231,7 @@ export default async function DashboardPage() {
                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
                  <div>
                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#9ca3af", fontSize: "12px", fontWeight: 600, marginBottom: "8px", letterSpacing: "0.05em" }}>
-                     <span style={{ color: "var(--orange)" }}>🏆</span> TOTAL MERIT SCORE
+                     <span style={{ color: "var(--orange)" }}></span> TOTAL MERIT SCORE
                    </div>
                    <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
                      <div style={{ fontSize: "48px", fontWeight: 800, color: "var(--orange)" }}>{totalPoints}</div>

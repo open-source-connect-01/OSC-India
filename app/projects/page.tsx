@@ -1,65 +1,13 @@
-import ProjectCard, { ProjectCardProps } from "../components/ProjectCard";
+import ProjectCard from "../components/ProjectCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { getProjects } from "@/lib/actions/projects";
 
-const mockProjects: ProjectCardProps[] = [
-  {
-    title: "CloudNative Orchestrator",
-    description: "A modern container orchestration platform built for scalability and performance",
-    language: "Go",
-    stars: "12.5k",
-    forks: "2.3k",
-    githubUrl: "#",
-    accentColor: "#22d3ee",
-  },
-  {
-    title: "DataFlow Pipeline",
-    description: "Real-time data processing framework with distributed architecture",
-    language: "Python",
-    stars: "8.9k",
-    forks: "1.5k",
-    githubUrl: "#",
-    accentColor: "#34d399",
-  },
-  {
-    title: "ReactUI Components",
-    description: "Comprehensive component library with accessibility-first design",
-    language: "TypeScript",
-    stars: "15.2k",
-    forks: "3.1k",
-    githubUrl: "#",
-    accentColor: "#f472b6",
-  },
-  {
-    title: "ML Vision Toolkit",
-    description: "Computer vision library powered by cutting-edge machine learning models",
-    language: "Python",
-    stars: "9.8k",
-    forks: "1.9k",
-    githubUrl: "#",
-    accentColor: "#ef4444",
-  },
-  {
-    title: "SecureAuth Framework",
-    description: "Enterprise-grade authentication and authorization solution",
-    language: "Rust",
-    stars: "6.7k",
-    forks: "987",
-    githubUrl: "#",
-    accentColor: "#3b82f6",
-  },
-  {
-    title: "DevOps Automation",
-    description: "Complete CI/CD automation suite for modern development workflows",
-    language: "JavaScript",
-    stars: "11.3k",
-    forks: "2.4k",
-    githubUrl: "#",
-    accentColor: "#f97316",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  const projects = await getProjects();
+
   return (
     <main className="min-h-screen bg-[var(--bg)] flex flex-col">
       <Navbar />
@@ -98,16 +46,31 @@ export default function ProjectsPage() {
 
         {/* Cards grid — responsive via CSS class */}
         <div className="projects-grid" style={{ marginBottom: "40px" }}>
-          {mockProjects.map((project, index) => (
-            <ProjectCard key={index} {...project} />
+          {projects.map((project) => (
+            <ProjectCard 
+              key={project.id || project.githubUrl} 
+              title={project.title}
+              description={project.description}
+              language={project.language}
+              stars={project.stars || "0"}
+              forks={project.forks || "0"}
+              githubUrl={project.githubUrl}
+              accentColor={project.accentColor || "#FF7518"}
+            />
           ))}
         </div>
 
         {/* CTA */}
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <button className="projects-cta-btn">
-            Explore All Projects
-          </button>
+          <a 
+            href="https://github.com/open-source-connect-01" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="projects-cta-btn"
+            style={{ textDecoration: "none" }}
+          >
+            Explore All Repositories
+          </a>
         </div>
       </div>
 

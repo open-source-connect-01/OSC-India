@@ -12,6 +12,7 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "@/lib/auth/admin-auth";
+import { getProjects, ProjectItem } from "./projects";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -216,7 +217,9 @@ export async function getAdminData() {
     totalScore: profiles.reduce((acc, p) => acc + (p.score || 0), 0),
   };
 
-  return { profiles, metrics };
+  const projects = await getProjects();
+
+  return { profiles, metrics, projects };
 }
 
 /**

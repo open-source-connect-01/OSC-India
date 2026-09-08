@@ -89,18 +89,36 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
     <div style={{ flex: 1, minWidth: '200px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
-          <span style={{ color: 'var(--orange)' }}>⚡</span> Tech Stack
+          <span style={{ color: 'var(--orange)' }}></span> Tech Stack
         </div>
         <button 
           onClick={handleSync}
           disabled={isSyncing}
-          style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '12px', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: isSyncing ? 0.5 : 1 }}
+          style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '12px', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '5px', opacity: isSyncing ? 0.6 : 1 }}
           className="hover:text-white transition-colors"
+          title="Sync Tech Stack"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }}>
-            <path d="M21.5 2v6h-6M2.13 15.57a10 10 0 1 0 1.49-10.3L2.5 6"></path><path d="M2.5 2v6h6M21.87 8.43a10 10 0 1 0-1.49 10.3L21.5 18"></path>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              animation: isSyncing ? 'spin 1s linear infinite' : 'none',
+              transformOrigin: 'center',
+              display: 'block',
+            }}
+          >
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
           </svg>
-          {isSyncing ? 'Syncing...' : 'Sync'}
+          <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
         </button>
       </div>
 
