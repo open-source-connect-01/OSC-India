@@ -154,73 +154,80 @@ async function checkAdminAuth(): Promise<boolean> {
 }
 
 /**
- * Fetches all active community projects.
- * Combines database entries, local custom additions, and default projects.
+ * Parses a database row from public.projects into a clean ProjectItem.
+ * Extracts title from `name`, repo from `github_repo_url`, and extra metadata from embedded comment or columns.
+ */
+function parseProjectFromDb(row: any): ProjectItem {
+  let cleanDesc = row.description || "";
+  let language = "TypeScript";
+  let accentColor = "#FF7518";
+  let stars = "0";
+  let forks = "0";
+
+  if (row.language) language = row.language;
+  if (row.accent_color || row.accentColor) accentColor = row.accent_color || row.accentColor;
+  if (row.stars) stars = row.stars;
+  if (row.forks) forks = row.forks;
+
+  const metaMatch = cleanDesc.match(/<!--meta:(.*?)-->/);
+  if (metaMatch) {
+    try {
+      const parsed = JSON.parse(metaMatch[1]);
+      if (parsed.language) language = parsed.language;
+      if (parsed.accentColor) accentColor = parsed.accentColor;
+      if (parsed.stars) stars = parsed.stars;
+      if (parsed.forks) forks = parsed.forks;
+      cleanDesc = cleanDesc.replace(/<!--meta:(.*?)-->/, "").trim();
+    } catch {
+      // ignore parse error
+    }
+  }
+
+  return {
+    id: String(row.id),
+    title: row.name || row.title || "Project",
+    description: cleanDesc,
+    githubUrl: row.github_repo_url || row.github_url || row.githubUrl || "#",
+    language,
+    accentColor,
+    stars,
+    forks,
+    created_at: row.created_at,
+  };
+}
+
+/**
+ * Fetches all active projects directly from the Supabase database.
+ * When DB is reachable, it is the single source of truth.
  */
 export async function getProjects(): Promise<ProjectItem[]> {
-  const localCustom = readLocalCustomProjects();
-  let dbProjects: ProjectItem[] = [];
-
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*");
 
     if (!error && data && data.length > 0) {
-      dbProjects = data.map((d: any) => ({
-        id: String(d.id),
-        title: d.title,
-        description: d.description || "",
-        githubUrl: d.github_url || d.githubUrl || "#",
-        language: d.language || "TypeScript",
-        accentColor: d.accent_color || d.accentColor || "#FF7518",
-        stars: d.stars || "0",
-        forks: d.forks || "0",
-        created_at: d.created_at,
-      }));
+      const projects = data.map(parseProjectFromDb);
+      // Sync local backup store
+      writeLocalCustomProjects(projects);
+      return projects;
     }
   } catch (err) {
-    // Supabase query fallback (e.g. table not yet migrated or offline)
+    console.warn("Notice: reading projects table from Supabase:", err);
   }
 
-  // Combine projects, prioritizing DB & local custom projects over defaults
-  const seenUrls = new Set<string>();
-  const combined: ProjectItem[] = [];
-
-  // 1. First include database projects
-  for (const p of dbProjects) {
-    const key = (p.githubUrl || p.title).toLowerCase();
-    if (!seenUrls.has(key)) {
-      seenUrls.add(key);
-      combined.push(p);
-    }
+  // Fallback to local store only if database query failed (e.g. offline sandbox)
+  const localProjects = readLocalCustomProjects();
+  if (localProjects.length > 0) {
+    return localProjects;
   }
 
-  // 2. Next include local custom projects
-  for (const p of localCustom) {
-    const key = (p.githubUrl || p.title).toLowerCase();
-    if (!seenUrls.has(key)) {
-      seenUrls.add(key);
-      combined.push(p);
-    }
-  }
-
-  // 3. Finally fill with default platform projects
-  for (const p of DEFAULT_PROJECTS) {
-    const key = (p.githubUrl || p.title).toLowerCase();
-    if (!seenUrls.has(key)) {
-      seenUrls.add(key);
-      combined.push(p);
-    }
-  }
-
-  return combined;
+  return [];
 }
 
 /**
- * Creates and registers a new project.
+ * Creates and registers a new project directly in the Supabase database.
  * Only accessible by authenticated administrators.
  */
 export async function createProjectAction(
@@ -240,48 +247,53 @@ export async function createProjectAction(
     cleanGithub = `https://github.com/${cleanGithub.replace(/^@/, "")}`;
   }
 
-  const newProject: ProjectItem = {
-    id: `proj_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    title: input.title.trim(),
-    description: (input.description || "").trim() || "Community open source project participating in OSC India.",
-    githubUrl: cleanGithub || "https://github.com/open-source-connect-01",
+  const metaPayload = {
     language: (input.language || "TypeScript").trim(),
     accentColor: (input.accentColor || "#FF7518").trim(),
     stars: input.stars?.trim() || "0",
     forks: input.forks?.trim() || "0",
-    created_at: new Date().toISOString(),
   };
 
-  // 1. Persist to local store
-  const localCustom = readLocalCustomProjects();
-  const updatedLocal = [newProject, ...localCustom.filter((p) => p.githubUrl !== newProject.githubUrl)];
-  writeLocalCustomProjects(updatedLocal);
+  const userDesc = (input.description || "").trim() || "Community open source project participating in OSC India.";
+  const dbDescription = `${userDesc}\n<!--meta:${JSON.stringify(metaPayload)}-->`;
 
-  // 2. Try persisting to Supabase projects table
+  let createdProject: ProjectItem;
+
   try {
     const admin = createAdminClient();
-    await admin.from("projects").insert({
-      title: newProject.title,
-      description: newProject.description,
-      github_url: newProject.githubUrl,
-      language: newProject.language,
-      accent_color: newProject.accentColor,
-      stars: newProject.stars,
-      forks: newProject.forks,
-    });
-  } catch (err) {
-    // Graceful fallback to local persistence if table not yet migrated
-    console.warn("Could not insert into Supabase projects table, relying on local store:", err);
+    const { data, error } = await admin
+      .from("projects")
+      .insert({
+        name: input.title.trim(),
+        github_repo_url: cleanGithub || "https://github.com/open-source-connect-01",
+        description: dbDescription,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to insert project into Supabase DB:", error);
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+
+    createdProject = parseProjectFromDb(data);
+  } catch (err: any) {
+    console.error("Database project creation exception:", err);
+    return { success: false, error: err?.message || "Failed to save project to database." };
   }
+
+  // Also sync to local backup
+  const currentLocal = readLocalCustomProjects();
+  writeLocalCustomProjects([createdProject, ...currentLocal.filter((p) => p.id !== createdProject.id)]);
 
   revalidatePath("/projects");
   revalidatePath("/admin");
 
-  return { success: true, project: newProject };
+  return { success: true, project: createdProject };
 }
 
 /**
- * Deletes a project from active tracking and display.
+ * Deletes a project directly from the Supabase database.
  */
 export async function deleteProjectAction(
   projectId: string
@@ -291,18 +303,26 @@ export async function deleteProjectAction(
     return { success: false, error: "Unauthorized. Admin credentials required to delete projects." };
   }
 
-  // 1. Remove from local store
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("projects")
+      .delete()
+      .eq("id", projectId);
+
+    if (error) {
+      console.error("Failed to delete project from Supabase DB:", error);
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+  } catch (err: any) {
+    console.error("Database project deletion exception:", err);
+    return { success: false, error: err?.message || "Failed to delete project from database." };
+  }
+
+  // Also sync local backup
   const localCustom = readLocalCustomProjects();
   const filtered = localCustom.filter((p) => p.id !== projectId);
   writeLocalCustomProjects(filtered);
-
-  // 2. Remove from Supabase
-  try {
-    const admin = createAdminClient();
-    await admin.from("projects").delete().eq("id", projectId);
-  } catch (err) {
-    console.warn("Could not delete from Supabase projects table:", err);
-  }
 
   revalidatePath("/projects");
   revalidatePath("/admin");
