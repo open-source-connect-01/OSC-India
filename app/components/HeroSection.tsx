@@ -155,6 +155,7 @@ export default function HeroSection() {
               }}
             >
               <span
+                suppressHydrationWarning
                 style={{
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                   fontSize: "18px",

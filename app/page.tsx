@@ -29,7 +29,8 @@ export default function Home() {
             top: 0,
             left: 0,
             right: 0,
-            height: "1400px", // Fixed height so the image doesn't scale infinitely
+            height: "100%",
+            minHeight: "600px",
             zIndex: 0,
             pointerEvents: "none",
             overflow: "hidden",
@@ -43,8 +44,8 @@ export default function Home() {
               top: 0,
               right: 0,
               width: "100%",
-              maxWidth: "1356px", // Matches Figma asset width
-              height: "1282px", // Matches Figma asset height
+              maxWidth: "1356px",
+              height: "1282px",
             }}
           >
             <Image

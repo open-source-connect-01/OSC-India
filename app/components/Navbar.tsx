@@ -22,22 +22,30 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
 
   useEffect(() => {
     setMounted(true);
-    if (!initialProfile) {
-      getClientProfile().then((res) => setProfile(res || null));
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return;
     }
 
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        getClientProfile().then((res) => setProfile(res || null));
-      } else if (event === "SIGNED_OUT") {
-        setProfile(null);
-      }
-    });
+    if (!initialProfile) {
+      getClientProfile().then((res) => setProfile(res || null)).catch(() => {});
+    }
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    try {
+      const supabase = createClient();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+          getClientProfile().then((res) => setProfile(res || null)).catch(() => {});
+        } else if (event === "SIGNED_OUT") {
+          setProfile(null);
+        }
+      });
+
+      return () => {
+        subscription?.unsubscribe();
+      };
+    } catch {
+      // Graceful fallback when auth service is unreachable
+    }
   }, [initialProfile]);
 
   useEffect(() => {
