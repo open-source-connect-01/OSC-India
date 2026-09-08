@@ -203,6 +203,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const [newProject, setNewProject] = useState<NewProjectInput>({
     title: "",
@@ -237,13 +238,17 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
   // Modal ESC key listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showAddProjectModal) {
-        setShowAddProjectModal(false);
+      if (e.key === "Escape") {
+        if (projectToDelete && !deletingProjectId) {
+          setProjectToDelete(null);
+        } else if (showAddProjectModal && !isSubmittingProject) {
+          setShowAddProjectModal(false);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddProjectModal]);
+  }, [showAddProjectModal, projectToDelete, deletingProjectId, isSubmittingProject]);
 
   // Filter projects
   const filteredProjects = projects.filter((p) => {
@@ -298,11 +303,15 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     }
   };
 
-  // Handle Delete Project
-  const handleDeleteProject = async (projectId: string, projectTitle: string) => {
-    if (!confirm(`Are you sure you want to remove "${projectTitle}" from active projects?`)) {
-      return;
-    }
+  // Prompt Delete Project Confirmation Modal
+  const handlePromptDeleteProject = (projectId: string, projectTitle: string) => {
+    setProjectToDelete({ id: projectId, title: projectTitle });
+  };
+
+  // Confirm Delete Project
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+    const { id: projectId, title: projectTitle } = projectToDelete;
 
     setDeletingProjectId(projectId);
     try {
@@ -310,6 +319,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       if (res.success) {
         setProjects((prev) => prev.filter((p) => p.id !== projectId));
         showToast(`Project "${projectTitle}" removed successfully.`, "success");
+        setProjectToDelete(null);
       } else {
         showToast(res.error || "Failed to delete project.", "error");
       }
@@ -1435,7 +1445,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                           </a>
 
                           <button
-                            onClick={() => handleDeleteProject(project.id, project.title)}
+                            onClick={() => handlePromptDeleteProject(project.id, project.title)}
                             disabled={deletingProjectId === project.id}
                             title="Remove project from directory"
                             style={{
@@ -1817,6 +1827,179 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Project Confirmation Modal */}
+    {projectToDelete && (
+      <div 
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-desc"
+        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        style={{ 
+          background: "rgba(0, 0, 0, 0.8)", 
+          backdropFilter: "blur(14px)", 
+          WebkitBackdropFilter: "blur(14px)" 
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !deletingProjectId) {
+            setProjectToDelete(null);
+          }
+        }}
+      >
+        <div 
+          style={{ 
+            width: "100%", 
+            maxWidth: "460px", 
+            background: "linear-gradient(180deg, #17171d 0%, #0d0d11 100%)", 
+            border: "1px solid rgba(239, 68, 68, 0.3)", 
+            borderRadius: "20px", 
+            boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.12)",
+            overflow: "hidden",
+            animation: "toastSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+          }}
+        >
+          {/* Crimson accent line */}
+          <div style={{ height: "3px", width: "100%", background: "linear-gradient(90deg, #ef4444 0%, #f97316 100%)" }} />
+
+          <div style={{ padding: "28px 26px 24px" }}>
+            {/* Top row: Alert Icon and Close Button */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+              <div 
+                style={{ 
+                  width: "48px", 
+                  height: "48px", 
+                  borderRadius: "14px", 
+                  background: "rgba(239, 68, 68, 0.12)", 
+                  border: "1px solid rgba(239, 68, 68, 0.25)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  color: "#f87171",
+                  boxShadow: "0 0 20px rgba(239, 68, 68, 0.15)"
+                }}
+              >
+                <Trash2Icon className="w-5 h-5" />
+              </div>
+
+              <button 
+                onClick={() => !deletingProjectId && setProjectToDelete(null)}
+                disabled={Boolean(deletingProjectId)}
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.04)", 
+                  border: "1px solid rgba(255, 255, 255, 0.08)", 
+                  color: "#9ca3af", 
+                  width: "32px", 
+                  height: "32px", 
+                  borderRadius: "10px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: deletingProjectId ? "not-allowed" : "pointer" 
+                }}
+                className="hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+                title="Cancel"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Title & Description */}
+            <h3 
+              id="delete-dialog-title"
+              style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 10px", letterSpacing: "-0.02em" }}
+            >
+              Remove Project?
+            </h3>
+
+            <p id="delete-dialog-desc" style={{ fontSize: "14px", color: "#9ca3af", lineHeight: "1.55", margin: "0 0 18px" }}>
+              Are you sure you want to remove{" "}
+              <span style={{ color: "#ffffff", fontWeight: 700 }}>
+                &ldquo;{projectToDelete.title}&rdquo;
+              </span>{" "}
+              from active projects?
+            </p>
+
+            {/* Warning callout banner */}
+            <div 
+              style={{ 
+                display: "flex", 
+                alignItems: "flex-start", 
+                gap: "10px", 
+                padding: "12px 14px", 
+                borderRadius: "12px", 
+                background: "rgba(239, 68, 68, 0.06)", 
+                border: "1px solid rgba(239, 68, 68, 0.18)", 
+                marginBottom: "24px" 
+              }}
+            >
+              <AlertCircleIcon className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <span style={{ fontSize: "12px", color: "#d1d5db", lineHeight: "1.45" }}>
+                This repository will be removed from the public showcase in the <strong style={{ color: "#ffffff" }}>/projects</strong> directory.
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setProjectToDelete(null)}
+                disabled={Boolean(deletingProjectId)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  color: "white",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: deletingProjectId ? "not-allowed" : "pointer",
+                  transition: "all 0.15s"
+                }}
+                className="hover:bg-[rgba(255,255,255,0.08)] active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProject}
+                disabled={Boolean(deletingProjectId)}
+                style={{
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  border: "none",
+                  color: "white",
+                  padding: "10px 22px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: deletingProjectId ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 16px rgba(239, 68, 68, 0.35)",
+                  transition: "all 0.15s",
+                  opacity: deletingProjectId ? 0.8 : 1
+                }}
+                className="hover:shadow-[0_6px_22px_rgba(239,68,68,0.5)] active:scale-[0.98]"
+              >
+                {deletingProjectId ? (
+                  <>
+                    <RefreshCwIcon className="w-3.5 h-3.5 animate-spin" />
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2Icon className="w-3.5 h-3.5" />
+                    <span>Yes, Remove</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     )}
