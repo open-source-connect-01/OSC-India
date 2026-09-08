@@ -372,15 +372,21 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ animation: isSyncing ? "spin 1s linear infinite" : "none" }}
+              style={{
+                animation: isSyncing ? "spin 1s linear infinite" : "none",
+                transformOrigin: "center",
+                display: "block",
+              }}
             >
-              <path d="M21.5 2v6h-6M2.13 15.57a10 10 0 1 0 1.49-10.3L2.5 6"></path>
-              <path d="M2.5 2v6h6M21.87 8.43a10 10 0 1 0-1.49 10.3L21.5 18"></path>
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
             </svg>
-            {isSyncing ? "Syncing Activity..." : "Sync Activity"}
+            <span>{isSyncing ? "Syncing Activity..." : "Sync Activity"}</span>
           </button>
         </div>
       </div>
