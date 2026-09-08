@@ -136,19 +136,21 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toastPaused, setToastPaused] = useState(false);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     setToast({ message, type });
+    setToastPaused(false);
   };
 
-  // Auto-dismiss side toast after 4.5 seconds
+  // Auto-dismiss side toast after 4 seconds (pauses on hover)
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || toastPaused) return;
     const timer = setTimeout(() => {
       setToast(null);
-    }, 4500);
+    }, 4000);
     return () => clearTimeout(timer);
-  }, [toast]);
+  }, [toast, toastPaused]);
 
   // Filter profiles
   const filteredProfiles = profiles.filter((p) => {
@@ -860,110 +862,100 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         <div 
           role="status"
           aria-live="polite"
+          onMouseEnter={() => setToastPaused(true)}
+          onMouseLeave={() => setToastPaused(false)}
           className="fixed bottom-6 right-6 z-[9999] flex flex-col overflow-hidden"
           style={{ 
             maxWidth: "calc(100vw - 32px)", 
-            width: "390px",
-            background: "linear-gradient(145deg, rgba(18, 18, 24, 0.96) 0%, rgba(10, 10, 14, 0.96) 100%)",
+            width: "360px",
+            background: "linear-gradient(180deg, #16161b 0%, #0d0d11 100%)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid rgba(255, 117, 24, 0.35)",
-            borderRadius: "16px",
+            border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "14px",
             boxShadow: toast.type === "error" 
-              ? "0 24px 50px -8px rgba(0, 0, 0, 0.85), 0 0 30px rgba(239, 68, 68, 0.15)"
-              : "0 24px 50px -8px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 117, 24, 0.15)",
-            animation: "toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+              ? "0 20px 45px -10px rgba(0, 0, 0, 0.85), 0 0 24px rgba(239, 68, 68, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12)"
+              : "0 20px 45px -10px rgba(0, 0, 0, 0.85), 0 0 24px rgba(255, 117, 24, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+            animation: "toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
         >
-          <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: "12px" }}>
-            {/* Icon badge */}
+          <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: "11px" }}>
+            {/* Minimalist circular status icon */}
             <div 
               style={{ 
-                width: "34px", 
-                height: "34px", 
-                borderRadius: "10px", 
-                background: toast.type === "error" ? "rgba(239, 68, 68, 0.12)" : "rgba(255, 117, 24, 0.12)", 
-                border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(255, 117, 24, 0.3)",
-                color: toast.type === "error" ? "#f87171" : "#FF8822",
+                width: "24px", 
+                height: "24px", 
+                borderRadius: "50%", 
+                background: toast.type === "error" ? "rgba(239, 68, 68, 0.15)" : "rgba(255, 117, 24, 0.15)", 
+                color: toast.type === "error" ? "#f87171" : "#FF7518",
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center",
                 flexShrink: 0,
-                marginTop: "1px"
               }}
             >
               {toast.type === "error" ? (
-                <AlertCircleIcon className="w-4 h-4" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
               ) : toast.type === "info" ? (
-                <ZapIcon className="w-4 h-4" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
               ) : (
-                <CheckCircleIcon className="w-4 h-4" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               )}
             </div>
 
-            {/* Text Content */}
+            {/* Message text */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
-                <span 
-                  style={{ 
-                    width: "6px", 
-                    height: "6px", 
-                    borderRadius: "50%", 
-                    background: toast.type === "error" ? "#ef4444" : "#FF7518", 
-                    boxShadow: toast.type === "error" ? "0 0 6px #ef4444" : "0 0 6px #FF7518" 
-                  }} 
-                />
-                <span 
-                  style={{ 
-                    fontSize: "10.5px", 
-                    fontWeight: 700, 
-                    letterSpacing: "0.08em", 
-                    color: toast.type === "error" ? "#f87171" : "#FF8822", 
-                    textTransform: "uppercase" 
-                  }}
-                >
-                  {toast.type === "error" ? "System Alert" : "Admin Console"}
-                </span>
-              </div>
-              <p style={{ fontSize: "13px", color: "white", fontWeight: 500, margin: 0, lineHeight: "1.4", wordBreak: "break-word" }}>
+              <p style={{ fontSize: "13px", color: "#f3f4f6", fontWeight: 500, margin: 0, lineHeight: "1.45", wordBreak: "break-word" }}>
                 {toast.message}
               </p>
             </div>
 
-            {/* Close button */}
+            {/* Subtle close button */}
             <button 
               onClick={() => setToast(null)} 
               style={{ 
-                background: "rgba(255, 255, 255, 0.04)", 
-                border: "1px solid rgba(255, 255, 255, 0.08)", 
-                color: "#9ca3af", 
+                background: "transparent", 
+                border: "none", 
+                color: "#6b7280", 
                 cursor: "pointer", 
-                fontSize: "13px", 
-                width: "24px", 
-                height: "24px", 
-                borderRadius: "8px", 
+                width: "22px", 
+                height: "22px", 
+                borderRadius: "6px", 
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center",
                 flexShrink: 0,
-                transition: "all 0.15s"
+                padding: 0,
+                transition: "color 0.15s, background-color 0.15s"
               }}
-              className="hover:text-white hover:bg-[rgba(255,255,255,0.1)] active:scale-95"
-              title="Dismiss notification"
+              className="hover:text-white hover:bg-[rgba(255,255,255,0.08)] active:scale-95"
+              title="Dismiss"
             >
-              ✕
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
 
-          {/* Progress bar */}
-          <div style={{ width: "100%", height: "2.5px", background: "rgba(255, 255, 255, 0.06)", overflow: "hidden" }}>
+          {/* Ultra-sleek progress line */}
+          <div style={{ width: "100%", height: "1.5px", background: "rgba(255, 255, 255, 0.04)", overflow: "hidden" }}>
             <div 
               style={{ 
                 height: "100%", 
                 background: toast.type === "error" 
                   ? "linear-gradient(90deg, #ef4444, #dc2626)" 
                   : "linear-gradient(90deg, #FF7518, #FF5500)", 
-                animation: "toastProgress 4.5s linear forwards" 
+                animation: "toastProgress 4s linear forwards",
+                animationPlayState: toastPaused ? "paused" : "running"
               }} 
             />
           </div>
@@ -971,13 +963,13 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
       )}
 
       <style>{`
-        @keyframes toastSlideIn {
+        @keyframes toastSlideUp {
           from {
-            transform: translateX(120%) scale(0.96);
+            transform: translateY(16px) scale(0.97);
             opacity: 0;
           }
           to {
-            transform: translateX(0) scale(1);
+            transform: translateY(0) scale(1);
             opacity: 1;
           }
         }
