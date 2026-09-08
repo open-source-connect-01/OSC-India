@@ -5,11 +5,31 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { adminLoginAction } from "@/lib/actions/admin";
 
-function LockIcon({ className }: { className?: string }) {
+function ShieldLockIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <rect x="9" y="10" width="6" height="5" rx="1" />
+      <path d="M10 10V8a2 2 0 1 1 4 0v2" />
+    </svg>
+  );
+}
+
+function MailIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  );
+}
+
+function KeyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+      <path d="m21 2-9.6 9.6" />
+      <circle cx="7.5" cy="16.5" r="5.5" />
     </svg>
   );
 }
@@ -26,7 +46,7 @@ function ShieldAlertIcon({ className }: { className?: string }) {
 
 function EyeIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -35,7 +55,7 @@ function EyeIcon({ className }: { className?: string }) {
 
 function EyeOffIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
       <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
       <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
@@ -65,42 +85,51 @@ export default function AdminLoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
+    <div className="min-h-screen bg-[#050507] flex flex-col font-sans text-white relative selection:bg-[#FF7518]/30">
       <Navbar />
       <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
 
-      <main className="flex-grow flex items-center justify-center px-4 py-12">
+      {/* Ambient Cyber Aura Background */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        style={{
+          background: "radial-gradient(ellipse 70% 45% at 50% 28%, rgba(255, 117, 24, 0.09) 0%, rgba(10, 10, 14, 0) 70%)",
+        }}
+      />
+
+      <main className="flex-grow flex items-center justify-center px-4 py-16 relative z-10">
         <div 
-          className="w-full max-w-[460px] rounded-[24px] border border-[rgba(255,255,255,0.15)] shadow-2xl relative overflow-hidden"
+          className="w-full max-w-[460px] rounded-[24px] relative overflow-hidden"
           style={{ 
-            background: "#121214", 
-            padding: "clamp(32px, 8vw, 48px) clamp(24px, 6vw, 40px)",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(239, 68, 68, 0.08)"
+            background: "linear-gradient(180deg, #131317 0%, #0a0a0d 100%)", 
+            padding: "clamp(32px, 7vw, 44px) clamp(24px, 6vw, 36px)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 28px 65px -12px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 117, 24, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           }}
         >
-          {/* Subtle Top Accent Glow */}
+          {/* Top Brand Ambient Line */}
           <div 
             style={{ 
               position: "absolute", 
               top: 0, 
-              left: "10%", 
-              right: "10%", 
+              left: "15%", 
+              right: "15%", 
               height: "2px", 
-              background: "linear-gradient(90deg, transparent, #ef4444, transparent)" 
+              background: "linear-gradient(90deg, transparent, #FF7518, transparent)" 
             }} 
           />
 
           {/* Security Badge */}
-          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+          <div style={{ textAlign: "center", marginBottom: "26px" }}>
             <div 
               style={{ 
                 display: "inline-flex", 
                 alignItems: "center", 
                 gap: "8px", 
-                background: "rgba(239,68,68,0.12)", 
-                border: "1px solid rgba(239,68,68,0.3)", 
-                color: "#ef4444", 
-                padding: "6px 14px", 
+                background: "rgba(255, 117, 24, 0.08)", 
+                border: "1px solid rgba(255, 117, 24, 0.25)", 
+                color: "#FF8822", 
+                padding: "5px 14px", 
                 borderRadius: "20px", 
                 fontSize: "11px", 
                 fontWeight: 700, 
@@ -108,29 +137,39 @@ export default function AdminLoginView() {
                 marginBottom: "20px" 
               }}
             >
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
-              RESTRICTED • ADMIN PORTAL
+              <span 
+                style={{ 
+                  width: "6px", 
+                  height: "6px", 
+                  borderRadius: "50%", 
+                  background: "#FF7518", 
+                  boxShadow: "0 0 8px #FF7518" 
+                }} 
+              />
+              RESTRICTED • ADMIN COMMAND
             </div>
 
+            {/* Glowing Emblem */}
             <div 
               style={{ 
-                width: "56px", 
-                height: "56px", 
-                borderRadius: "16px", 
-                background: "rgba(255,255,255,0.03)", 
-                border: "1px solid rgba(255,255,255,0.1)", 
+                width: "60px", 
+                height: "60px", 
+                borderRadius: "18px", 
+                background: "linear-gradient(135deg, rgba(255, 117, 24, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)", 
+                border: "1px solid rgba(255, 117, 24, 0.3)", 
+                boxShadow: "0 8px 24px -4px rgba(255, 117, 24, 0.2)",
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center", 
                 margin: "0 auto 16px",
-                color: "#ef4444"
+                color: "#FF8822"
               }}
             >
-              <LockIcon className="w-6 h-6" />
+              <ShieldLockIcon className="w-7 h-7" />
             </div>
 
-            <h1 className="text-[26px] font-bold text-white mb-2 tracking-tight">Admin Authentication</h1>
-            <p className="text-[13.5px] text-gray-400">
+            <h1 className="text-[25px] font-extrabold text-white mb-2 tracking-tight">Admin Authentication</h1>
+            <p className="text-[13.5px] text-gray-400 leading-relaxed max-w-[340px] mx-auto">
               Enter your designated administrative credentials to unlock the Command Center.
             </p>
           </div>
@@ -138,9 +177,9 @@ export default function AdminLoginView() {
           {errorMessage && (
             <div 
               style={{ 
-                background: "rgba(239,68,68,0.1)", 
-                border: "1px solid rgba(239,68,68,0.3)", 
-                color: "#ef4444", 
+                background: "rgba(239, 68, 68, 0.1)", 
+                border: "1px solid rgba(239, 68, 68, 0.25)", 
+                color: "#f87171", 
                 padding: "12px 14px", 
                 borderRadius: "12px", 
                 fontSize: "13px", 
@@ -156,42 +195,76 @@ export default function AdminLoginView() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
             {/* Email Field */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label className="text-[13px] text-gray-300 font-medium ml-1">Admin Email</label>
-              <input 
-                name="email"
-                type="email" 
-                required
-                autoFocus
-                autoComplete="username"
-                placeholder="admin@osc-india.org"
-                className="w-full bg-[#1c1c1f] text-white text-[14px] placeholder-gray-500 rounded-xl border border-[rgba(255,255,255,0.08)] focus:outline-none focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444] transition-all"
-                style={{ padding: "14px 16px" }}
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+              <label className="text-[12.5px] text-gray-300 font-semibold tracking-wide ml-0.5">Admin Email</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 text-gray-500 pointer-events-none flex items-center">
+                  <MailIcon className="w-4 h-4" />
+                </div>
+                <input 
+                  name="email"
+                  type="email" 
+                  required
+                  autoComplete="username"
+                  placeholder="admin@osc-india.org"
+                  className="w-full text-white text-[14px] placeholder-gray-500 rounded-xl transition-all"
+                  style={{ 
+                    padding: "13px 16px 13px 40px",
+                    background: "rgba(255, 255, 255, 0.035)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    outline: "none",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.14)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
             </div>
 
             {/* Password Field */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label className="text-[13px] text-gray-300 font-medium ml-1">Admin Master Password</label>
-              <div className="relative">
+            <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+              <label className="text-[12.5px] text-gray-300 font-semibold tracking-wide ml-0.5">Admin Master Password</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 text-gray-500 pointer-events-none flex items-center">
+                  <KeyIcon className="w-4 h-4" />
+                </div>
                 <input 
                   name="password"
                   type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
                   placeholder="Enter master password"
-                  className="w-full bg-[#1c1c1f] text-white text-[14px] placeholder-gray-500 rounded-xl border border-[rgba(255,255,255,0.08)] focus:outline-none focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444] transition-all"
-                  style={{ padding: "14px 16px", paddingRight: "48px" }}
+                  className="w-full text-white text-[14px] placeholder-gray-500 rounded-xl transition-all"
+                  style={{ 
+                    padding: "13px 44px 13px 40px",
+                    background: "rgba(255, 255, 255, 0.035)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    outline: "none",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.14)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors bg-transparent border-none cursor-pointer"
+                  className="absolute right-3.5 text-gray-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer flex items-center"
                   tabIndex={-1}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOffIcon className="w-[18px] h-[18px]" /> : <EyeIcon className="w-[18px] h-[18px]" />}
+                  {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -200,8 +273,19 @@ export default function AdminLoginView() {
             <button 
               type="submit"
               disabled={isPending}
-              className="w-full bg-[#ef4444] hover:bg-[#dc2626] text-white text-[15px] font-semibold rounded-xl transition-all shadow-lg shadow-red-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border-none"
-              style={{ padding: "16px", marginTop: "8px" }}
+              className="w-full text-white text-[14.5px] font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border-none"
+              style={{ 
+                padding: "14px", 
+                marginTop: "6px",
+                background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                boxShadow: "0 10px 24px -4px rgba(255, 117, 24, 0.35)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isPending) (e.currentTarget as HTMLElement).style.filter = "brightness(1.08)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.filter = "none";
+              }}
             >
               {isPending ? (
                 <>
@@ -209,15 +293,22 @@ export default function AdminLoginView() {
                   <span>Verifying Credentials...</span>
                 </>
               ) : (
-                <span>Unlock Command Center</span>
+                <>
+                  <span>Unlock Command Center</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </>
               )}
             </button>
           </form>
 
           {/* Security Notice */}
-          <div style={{ marginTop: "28px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "20px", textAlign: "center" }}>
-            <p className="text-[12px] text-gray-500 leading-relaxed">
-              🔒 Independent Security Boundary. This area does not accept public OAuth logins.
+          <div style={{ marginTop: "26px", borderTop: "1px solid rgba(255, 255, 255, 0.06)", paddingTop: "18px", textAlign: "center" }}>
+            <p className="text-[12px] text-gray-500 leading-relaxed flex items-center justify-center gap-1.5">
+              <span></span>
+              <span>Independent Security Boundary • Encrypted Access</span>
             </p>
           </div>
         </div>
