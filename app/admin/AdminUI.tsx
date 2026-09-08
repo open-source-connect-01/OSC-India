@@ -1,12 +1,22 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
 import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
 
 // Icons
+function AlertCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
 function DownloadIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -125,7 +135,20 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
   const [isPending, startTransition] = useTransition();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ message, type });
+  };
+
+  // Auto-dismiss side toast after 4.5 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Filter profiles
   const filteredProfiles = profiles.filter((p) => {
@@ -161,9 +184,9 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
               : p
           )
         );
-        setStatusMessage(`Role updated to ${newRole} for user.`);
+        showToast(`Role updated to ${newRole} for user.`, "success");
       } else {
-        alert(res.error || "Failed to update role");
+        showToast(res.error || "Failed to update role", "error");
       }
     });
   };
@@ -176,9 +199,9 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         setProfiles((prev) =>
           prev.map((p) => (p.id === userId ? { ...p, score: res.score || 0 } : p))
         );
-        setStatusMessage("Score updated successfully.");
+        showToast("Score updated successfully.", "success");
       } else {
-        alert(res.error || "Failed to update score");
+        showToast(res.error || "Failed to update score", "error");
       }
     });
   };
@@ -194,9 +217,9 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         setProfiles((prev) =>
           prev.map((p) => (p.id === userId ? { ...p, github: clean } : p))
         );
-        setStatusMessage(`GitHub handle @${clean} linked successfully.`);
+        showToast(`GitHub handle @${clean} linked successfully.`, "success");
       } else {
-        alert(res.error || "Failed to update GitHub handle");
+        showToast(res.error || "Failed to update GitHub handle", "error");
       }
     });
   };
@@ -204,7 +227,7 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
   // Handle Single Sync
   const handleSingleSync = async (user: Profile) => {
     if (!user.github) {
-      alert("This user does not have a linked GitHub username.");
+      showToast("This user does not have a linked GitHub username.", "error");
       return;
     }
     setSyncingId(user.id);
@@ -223,9 +246,9 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
               : p
           )
         );
-        setStatusMessage(`Synced @${user.github}: ${res.score} pts (${res.merged_prs} PRs)`);
+        showToast(`Synced @${user.github}: ${res.score} pts (${res.merged_prs} PRs)`, "success");
       } else {
-        alert(res.error || "Failed to sync GitHub contributions.");
+        showToast(res.error || "Failed to sync GitHub contributions.", "error");
       }
     } finally {
       setSyncingId(null);
@@ -238,14 +261,14 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
       return;
     }
     setBulkSyncing(true);
-    setStatusMessage("Bulk sync started in background...");
+    showToast("Bulk sync started in background...", "info");
     try {
       const res = await syncAllUsers();
       if (res.success) {
-        setStatusMessage(`Bulk sync complete! Synced: ${res.synced}, Failed: ${res.failed}, Total: ${res.total}`);
+        showToast(`Bulk sync complete! Synced: ${res.synced}, Failed: ${res.failed}, Total: ${res.total}`, "success");
         window.location.reload();
       } else {
-        alert(res.error || "Bulk sync failed");
+        showToast(res.error || "Bulk sync failed", "error");
       }
     } finally {
       setBulkSyncing(false);
@@ -416,38 +439,6 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
             </button>
           </div>
         </div>
-
-        {/* Status Notification */}
-        {statusMessage && (
-          <div 
-            style={{ 
-              width: "100%", 
-              background: "rgba(255,117,24,0.08)", 
-              border: "1px solid rgba(255,117,24,0.28)", 
-              color: "#FF8822", 
-              padding: "12px 18px", 
-              borderRadius: "14px", 
-              fontSize: "14px", 
-              marginBottom: "28px", 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.3)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#FF7518" }} />
-              <span>{statusMessage}</span>
-            </div>
-            <button 
-              onClick={() => setStatusMessage(null)} 
-              style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "16px", padding: "2px 6px" }}
-              className="hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-        )}
 
         {/* Metric Cards */}
         <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "36px" }}>
@@ -863,6 +854,142 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
           </div>
         </div>
       </main>
+
+      {/* Side Toast Notification */}
+      {toast && (
+        <div 
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-[9999] flex flex-col overflow-hidden"
+          style={{ 
+            maxWidth: "calc(100vw - 32px)", 
+            width: "390px",
+            background: "linear-gradient(145deg, rgba(18, 18, 24, 0.96) 0%, rgba(10, 10, 14, 0.96) 100%)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid rgba(255, 117, 24, 0.35)",
+            borderRadius: "16px",
+            boxShadow: toast.type === "error" 
+              ? "0 24px 50px -8px rgba(0, 0, 0, 0.85), 0 0 30px rgba(239, 68, 68, 0.15)"
+              : "0 24px 50px -8px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 117, 24, 0.15)",
+            animation: "toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
+        >
+          <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+            {/* Icon badge */}
+            <div 
+              style={{ 
+                width: "34px", 
+                height: "34px", 
+                borderRadius: "10px", 
+                background: toast.type === "error" ? "rgba(239, 68, 68, 0.12)" : "rgba(255, 117, 24, 0.12)", 
+                border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(255, 117, 24, 0.3)",
+                color: toast.type === "error" ? "#f87171" : "#FF8822",
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                flexShrink: 0,
+                marginTop: "1px"
+              }}
+            >
+              {toast.type === "error" ? (
+                <AlertCircleIcon className="w-4 h-4" />
+              ) : toast.type === "info" ? (
+                <ZapIcon className="w-4 h-4" />
+              ) : (
+                <CheckCircleIcon className="w-4 h-4" />
+              )}
+            </div>
+
+            {/* Text Content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
+                <span 
+                  style={{ 
+                    width: "6px", 
+                    height: "6px", 
+                    borderRadius: "50%", 
+                    background: toast.type === "error" ? "#ef4444" : "#FF7518", 
+                    boxShadow: toast.type === "error" ? "0 0 6px #ef4444" : "0 0 6px #FF7518" 
+                  }} 
+                />
+                <span 
+                  style={{ 
+                    fontSize: "10.5px", 
+                    fontWeight: 700, 
+                    letterSpacing: "0.08em", 
+                    color: toast.type === "error" ? "#f87171" : "#FF8822", 
+                    textTransform: "uppercase" 
+                  }}
+                >
+                  {toast.type === "error" ? "System Alert" : "Admin Console"}
+                </span>
+              </div>
+              <p style={{ fontSize: "13px", color: "white", fontWeight: 500, margin: 0, lineHeight: "1.4", wordBreak: "break-word" }}>
+                {toast.message}
+              </p>
+            </div>
+
+            {/* Close button */}
+            <button 
+              onClick={() => setToast(null)} 
+              style={{ 
+                background: "rgba(255, 255, 255, 0.04)", 
+                border: "1px solid rgba(255, 255, 255, 0.08)", 
+                color: "#9ca3af", 
+                cursor: "pointer", 
+                fontSize: "13px", 
+                width: "24px", 
+                height: "24px", 
+                borderRadius: "8px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "all 0.15s"
+              }}
+              className="hover:text-white hover:bg-[rgba(255,255,255,0.1)] active:scale-95"
+              title="Dismiss notification"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ width: "100%", height: "2.5px", background: "rgba(255, 255, 255, 0.06)", overflow: "hidden" }}>
+            <div 
+              style={{ 
+                height: "100%", 
+                background: toast.type === "error" 
+                  ? "linear-gradient(90deg, #ef4444, #dc2626)" 
+                  : "linear-gradient(90deg, #FF7518, #FF5500)", 
+                animation: "toastProgress 4.5s linear forwards" 
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes toastSlideIn {
+          from {
+            transform: translateX(120%) scale(0.96);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes toastProgress {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+      `}</style>
 
       <Footer />
     </div>
