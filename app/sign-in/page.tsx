@@ -130,7 +130,7 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans">
       <Navbar />
-      <div style={{ height: "72px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
 
       <main className="flex-grow flex items-center justify-center px-4 py-12">
         <Suspense fallback={

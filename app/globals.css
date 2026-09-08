@@ -109,12 +109,21 @@ img { display: block; max-width: 100%; }
   .desktop-nav { display: none !important; }
   .desktop-cta { display: none !important; }
   
+  .navbar-root {
+    padding-top: 14px !important;
+    padding-bottom: 10px !important;
+  }
+  .navbar-root.scrolled {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
   .navbar-inner {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     padding: 0 20px !important;
-    height: 64px !important;
+    height: 60px !important;
   }
 
   .mobile-menu-btn {
@@ -251,9 +260,13 @@ img { display: block; max-width: 100%; }
    =========================== */
 @media (max-width: 480px) {
   /* --- Navbar --- */
+  .navbar-root {
+    padding-top: 12px !important;
+    padding-bottom: 8px !important;
+  }
   .navbar-inner {
     padding: 0 16px !important;
-    height: 60px !important;
+    height: 56px !important;
   }
 
   /* --- Hero fine-tuning for small screens --- */

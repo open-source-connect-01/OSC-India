@@ -14,7 +14,7 @@ interface TimelineEvent {
   duration: string;
   description: string;
   location: string;
-  highlights: string[];
+  highlights?: string[];
   ctaText?: string;
   ctaHref?: string;
   secondaryCtaText?: string;
@@ -151,31 +151,13 @@ export default function TimelinePage() {
       <Navbar />
       
       {/* Spacer to clear the fixed Navbar */}
-      <div style={{ height: "80px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
       
       <main className="flex-grow flex flex-col items-center px-4 sm:px-6" style={{ margin: "0 auto", maxWidth: "1080px", width: "100%", paddingBottom: "110px", paddingTop: "40px" }}>
         
         {/* Header Section */}
         <div style={{ textAlign: "center", marginBottom: "40px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
-          {/* Top Pill */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(255, 117, 24, 0.08)",
-            border: "1px solid rgba(255, 117, 24, 0.25)",
-            padding: "6px 16px",
-            borderRadius: "9999px",
-            fontSize: "12px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            color: "var(--orange)",
-            marginBottom: "20px"
-          }}>
-            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 10px #22C55E" }} />
-            OSCI 2026 OFFICIAL ROADMAP
-          </div>
 
           <h1 style={{ color: "white", fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 800, marginBottom: "16px", letterSpacing: "-0.025em", lineHeight: 1.15 }}>
             Program <span style={{ color: "var(--orange)" }}>Timeline</span>
@@ -397,29 +379,6 @@ export default function TimelinePage() {
                     <p style={{ color: "#9ca3af", fontSize: "14px", lineHeight: "1.65", marginBottom: "24px" }}>
                       {event.description}
                     </p>
-
-                    {/* Highlights Tags Grid */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "24px" }}>
-                      {event.highlights.map((tag, tIdx) => (
-                        <div 
-                          key={tIdx}
-                          style={{
-                            background: "rgba(255, 255, 255, 0.03)",
-                            border: "1px solid rgba(255, 255, 255, 0.07)",
-                            padding: "5px 12px",
-                            borderRadius: "8px",
-                            fontSize: "12px",
-                            color: "#d1d5db",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px"
-                          }}
-                        >
-                          <span style={{ color: isActive ? "var(--orange)" : "#22C55E", fontSize: "10px" }}>✦</span>
-                          {tag}
-                        </div>
-                      ))}
-                    </div>
 
                     {/* Footer Row: Location / Mode & Interactive CTAs */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", paddingTop: "18px", borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}>

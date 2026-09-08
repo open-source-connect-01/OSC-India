@@ -65,7 +65,7 @@ export default function ProjectsPage() {
       <Navbar />
 
       {/* Spacer for fixed navbar */}
-      <div style={{ height: "72px", flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: "96px", flexShrink: 0 }} aria-hidden="true" />
 
       {/* Page wrapper with side padding applied via CSS */}
       <div className="projects-page-wrapper">
