@@ -296,7 +296,16 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
         }}
       />
 
-      <main className="flex-grow flex flex-col items-center relative z-10" style={{ margin: "0 auto", maxWidth: "1440px", width: "100%", padding: "24px 32px 96px" }}>
+      <main 
+        className="flex-grow flex flex-col items-center relative z-10" 
+        style={{ 
+          margin: "0 auto", 
+          maxWidth: "1440px", 
+          width: "100%", 
+          minHeight: "calc(100vh - 96px)",
+          padding: "clamp(36px, 6vh, 56px) clamp(20px, 4vw, 36px) clamp(80px, 12vh, 140px)" 
+        }}
+      >
         {/* Header */}
         <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "36px", flexWrap: "wrap", gap: "20px" }}>
           <div>

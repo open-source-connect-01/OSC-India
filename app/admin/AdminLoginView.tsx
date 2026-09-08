@@ -97,12 +97,19 @@ export default function AdminLoginView() {
         }}
       />
 
-      <main className="flex-grow flex items-center justify-center px-4 py-16 relative z-10">
+      <main 
+        className="flex-grow flex items-center justify-center relative z-10"
+        style={{
+          width: "100%",
+          minHeight: "calc(100vh - 96px)",
+          padding: "clamp(56px, 8vh, 96px) 20px clamp(80px, 12vh, 130px)",
+        }}
+      >
         <div 
-          className="w-full max-w-[460px] rounded-[24px] relative overflow-hidden"
+          className="w-full max-w-[450px] rounded-[24px] relative overflow-hidden"
           style={{ 
             background: "linear-gradient(180deg, #131317 0%, #0a0a0d 100%)", 
-            padding: "clamp(32px, 7vw, 44px) clamp(24px, 6vw, 36px)",
+            padding: "clamp(28px, 5vw, 38px) clamp(22px, 5vw, 32px)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             boxShadow: "0 28px 65px -12px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 117, 24, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           }}
@@ -120,7 +127,7 @@ export default function AdminLoginView() {
           />
 
           {/* Security Badge */}
-          <div style={{ textAlign: "center", marginBottom: "26px" }}>
+          <div style={{ textAlign: "center", marginBottom: "22px" }}>
             <div 
               style={{ 
                 display: "inline-flex", 
@@ -134,7 +141,7 @@ export default function AdminLoginView() {
                 fontSize: "11px", 
                 fontWeight: 700, 
                 letterSpacing: "0.08em",
-                marginBottom: "20px" 
+                marginBottom: "16px" 
               }}
             >
               <span 
@@ -152,24 +159,24 @@ export default function AdminLoginView() {
             {/* Glowing Emblem */}
             <div 
               style={{ 
-                width: "60px", 
-                height: "60px", 
-                borderRadius: "18px", 
+                width: "56px", 
+                height: "56px", 
+                borderRadius: "16px", 
                 background: "linear-gradient(135deg, rgba(255, 117, 24, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)", 
                 border: "1px solid rgba(255, 117, 24, 0.3)", 
                 boxShadow: "0 8px 24px -4px rgba(255, 117, 24, 0.2)",
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center", 
-                margin: "0 auto 16px",
+                margin: "0 auto 14px",
                 color: "#FF8822"
               }}
             >
-              <ShieldLockIcon className="w-7 h-7" />
+              <ShieldLockIcon className="w-6 h-6" />
             </div>
 
-            <h1 className="text-[25px] font-extrabold text-white mb-2 tracking-tight">Admin Authentication</h1>
-            <p className="text-[13.5px] text-gray-400 leading-relaxed max-w-[340px] mx-auto">
+            <h1 className="text-[24px] font-extrabold text-white mb-1.5 tracking-tight">Admin Authentication</h1>
+            <p className="text-[13px] text-gray-400 leading-relaxed max-w-[340px] mx-auto">
               Enter your designated administrative credentials to unlock the Command Center.
             </p>
           </div>
@@ -305,9 +312,8 @@ export default function AdminLoginView() {
           </form>
 
           {/* Security Notice */}
-          <div style={{ marginTop: "26px", borderTop: "1px solid rgba(255, 255, 255, 0.06)", paddingTop: "18px", textAlign: "center" }}>
+          <div style={{ marginTop: "20px", borderTop: "1px solid rgba(255, 255, 255, 0.06)", paddingTop: "14px", textAlign: "center" }}>
             <p className="text-[12px] text-gray-500 leading-relaxed flex items-center justify-center gap-1.5">
-              <span></span>
               <span>Independent Security Boundary • Encrypted Access</span>
             </p>
           </div>
