@@ -5,8 +5,71 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
 import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
+import { createProjectAction, deleteProjectAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
 
 // Icons
+function FolderPlusIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 10v6" />
+      <path d="M9 13h6" />
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+    </svg>
+  );
+}
+
+function FolderGitIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+      <circle cx="12" cy="13" r="2" />
+      <path d="M14 13h3" />
+      <path d="M7 13h3" />
+    </svg>
+  );
+}
+
+function Trash2Icon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function GitForkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="18" r="3" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9" />
+      <path d="M12 12v3" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 function AlertCircleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -125,13 +188,32 @@ interface AdminUIProps {
     totalPRs: number;
     totalScore: number;
   };
+  initialProjects?: ProjectItem[];
 }
 
-export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProps) {
+export default function AdminUI({ initialProfiles, initialMetrics, initialProjects }: AdminUIProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
+  const [projects, setProjects] = useState<ProjectItem[]>(initialProjects || []);
+  const [activeTab, setActiveTab] = useState<"contributors" | "projects">("contributors");
   const [metrics, setMetrics] = useState(initialMetrics);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectLangFilter, setProjectLangFilter] = useState("all");
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  const [newProject, setNewProject] = useState<NewProjectInput>({
+    title: "",
+    description: "",
+    githubUrl: "",
+    language: "TypeScript",
+    accentColor: "#FF7518",
+    stars: "0",
+    forks: "0",
+  });
+
   const [isPending, startTransition] = useTransition();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
@@ -151,6 +233,92 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
     }, 4000);
     return () => clearTimeout(timer);
   }, [toast, toastPaused]);
+
+  // Modal ESC key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showAddProjectModal) {
+        setShowAddProjectModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAddProjectModal]);
+
+  // Filter projects
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      (p.title || "").toLowerCase().includes(projectSearch.toLowerCase()) ||
+      (p.description || "").toLowerCase().includes(projectSearch.toLowerCase()) ||
+      (p.githubUrl || "").toLowerCase().includes(projectSearch.toLowerCase()) ||
+      (p.language || "").toLowerCase().includes(projectSearch.toLowerCase());
+
+    const matchesLang =
+      projectLangFilter === "all" ||
+      (p.language || "").toLowerCase() === projectLangFilter.toLowerCase();
+
+    return matchesSearch && matchesLang;
+  });
+
+  // Handle Add Project
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProject.title.trim()) {
+      showToast("Project title is required.", "error");
+      return;
+    }
+    if (!newProject.githubUrl.trim()) {
+      showToast("GitHub repository URL is required.", "error");
+      return;
+    }
+
+    setIsSubmittingProject(true);
+    try {
+      const res = await createProjectAction(newProject);
+      if (res.success && res.project) {
+        setProjects((prev) => [res.project!, ...prev]);
+        showToast(`Project "${res.project.title}" added to directory!`, "success");
+        setShowAddProjectModal(false);
+        setNewProject({
+          title: "",
+          description: "",
+          githubUrl: "",
+          language: "TypeScript",
+          accentColor: "#FF7518",
+          stars: "0",
+          forks: "0",
+        });
+      } else {
+        showToast(res.error || "Failed to add project.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to add project.", "error");
+    } finally {
+      setIsSubmittingProject(false);
+    }
+  };
+
+  // Handle Delete Project
+  const handleDeleteProject = async (projectId: string, projectTitle: string) => {
+    if (!confirm(`Are you sure you want to remove "${projectTitle}" from active projects?`)) {
+      return;
+    }
+
+    setDeletingProjectId(projectId);
+    try {
+      const res = await deleteProjectAction(projectId);
+      if (res.success) {
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        showToast(`Project "${projectTitle}" removed successfully.`, "success");
+      } else {
+        showToast(res.error || "Failed to delete project.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to delete project.", "error");
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
 
   // Filter profiles
   const filteredProfiles = profiles.filter((p) => {
@@ -371,6 +539,29 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
             <button
+              onClick={() => setShowAddProjectModal(true)}
+              style={{ 
+                background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)", 
+                border: "none", 
+                color: "white", 
+                padding: "10px 18px", 
+                borderRadius: "12px", 
+                fontSize: "13px", 
+                fontWeight: 700, 
+                cursor: "pointer", 
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 4px 16px rgba(255, 117, 24, 0.25)",
+                transition: "all 0.2s"
+              }}
+              className="hover:shadow-[0_6px_22px_rgba(255,117,24,0.35)] active:scale-[0.98]"
+            >
+              <FolderPlusIcon className="w-4 h-4" />
+              <span>+ Add Project</span>
+            </button>
+
+            <button
               onClick={handleExportCSV}
               style={{ 
                 background: "rgba(255,255,255,0.03)", 
@@ -548,9 +739,132 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
             </div>
             <div style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.02em" }}>{(metrics.admins ?? 0) + (metrics.projectAdmins ?? 0)}</div>
           </div>
+
+          {/* Active Projects */}
+          <div 
+            style={{ 
+              background: "linear-gradient(180deg, #131317 0%, #0d0d10 100%)", 
+              border: "1px solid rgba(255,255,255,0.07)", 
+              borderRadius: "18px", 
+              padding: "22px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+              transition: "transform 0.2s, border-color 0.2s",
+              cursor: "pointer"
+            }}
+            onClick={() => setActiveTab("projects")}
+            className="hover:border-[rgba(56,189,248,0.35)] group"
+            title="Switch to Projects Directory"
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <span style={{ color: "#38bdf8", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em" }}>PROJECT REPOS</span>
+              <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(56,189,248,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#38bdf8" }}>
+                <FolderGitIcon className="w-4 h-4" />
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+              <div style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.02em", color: "#38bdf8" }}>{projects.length}</div>
+              <span style={{ fontSize: "11px", color: "#9ca3af" }} className="group-hover:text-white transition-colors">Manage →</span>
+            </div>
+          </div>
         </div>
 
-        {/* Filters */}
+        {/* Tab Switcher */}
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "16px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "16px" }}>
+          <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <button
+              onClick={() => setActiveTab("contributors")}
+              style={{
+                background: activeTab === "contributors" ? "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)" : "transparent",
+                color: activeTab === "contributors" ? "white" : "#9ca3af",
+                border: "none",
+                padding: "8px 18px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: activeTab === "contributors" ? 700 : 500,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+                boxShadow: activeTab === "contributors" ? "0 2px 10px rgba(255,117,24,0.3)" : "none"
+              }}
+              className={activeTab !== "contributors" ? "hover:text-white hover:bg-[rgba(255,255,255,0.03)]" : ""}
+            >
+              <UsersIcon className="w-4 h-4" />
+              <span>Contributors & Ranks</span>
+              <span style={{
+                background: activeTab === "contributors" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.08)",
+                padding: "2px 8px",
+                borderRadius: "10px",
+                fontSize: "11px",
+                fontWeight: 700,
+              }}>
+                {profiles.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("projects")}
+              style={{
+                background: activeTab === "projects" ? "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)" : "transparent",
+                color: activeTab === "projects" ? "white" : "#9ca3af",
+                border: "none",
+                padding: "8px 18px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: activeTab === "projects" ? 700 : 500,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+                boxShadow: activeTab === "projects" ? "0 2px 10px rgba(255,117,24,0.3)" : "none"
+              }}
+              className={activeTab !== "projects" ? "hover:text-white hover:bg-[rgba(255,255,255,0.03)]" : ""}
+            >
+              <FolderGitIcon className="w-4 h-4" />
+              <span>Project Directory</span>
+              <span style={{
+                background: activeTab === "projects" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.08)",
+                padding: "2px 8px",
+                borderRadius: "10px",
+                fontSize: "11px",
+                fontWeight: 700,
+              }}>
+                {projects.length}
+              </span>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              onClick={() => setShowAddProjectModal(true)}
+              style={{
+                background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                border: "none",
+                color: "white",
+                padding: "8px 16px",
+                borderRadius: "10px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 10px rgba(255,117,24,0.3)",
+                transition: "all 0.2s"
+              }}
+              className="hover:shadow-[0_4px_16px_rgba(255,117,24,0.4)] active:scale-[0.98]"
+            >
+              <FolderPlusIcon className="w-4 h-4" />
+              <span>+ Add New Project</span>
+            </button>
+          </div>
+        </div>
+
+        {activeTab === "contributors" && (
+          <div style={{ width: "100%" }}>
+            {/* Filters */}
         <div style={{ width: "100%", display: "flex", gap: "16px", marginBottom: "28px", flexWrap: "wrap", alignItems: "center" }}>
           {/* Search Input with Icon */}
           <div style={{ position: "relative", flex: 1, minWidth: "280px" }}>
@@ -855,7 +1169,658 @@ export default function AdminUI({ initialProfiles, initialMetrics }: AdminUIProp
             </table>
           </div>
         </div>
-      </main>
+      </div>
+    )}
+
+    {/* Project Directory Tab */}
+    {activeTab === "projects" && (
+      <div style={{ width: "100%" }}>
+        {/* Project Filters */}
+        <div style={{ width: "100%", display: "flex", gap: "16px", marginBottom: "28px", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Search Input with Icon */}
+          <div style={{ position: "relative", flex: 1, minWidth: "280px" }}>
+            <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#6b7280", pointerEvents: "none" }}>
+              <SearchIcon className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search projects by title, language, description, or repo URL..."
+              value={projectSearch}
+              onChange={(e) => setProjectSearch(e.target.value)}
+              style={{ 
+                width: "100%", 
+                background: "#111115", 
+                border: "1px solid rgba(255,255,255,0.08)", 
+                borderRadius: "12px", 
+                padding: "12px 18px 12px 40px", 
+                color: "white", 
+                fontSize: "14px", 
+                outline: "none",
+                transition: "border-color 0.2s, box-shadow 0.2s"
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#FF7518";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+            {projectSearch && (
+              <button 
+                onClick={() => setProjectSearch("")}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "14px" }}
+                className="hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Language Filter Pills */}
+          <div style={{ display: "flex", gap: "6px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.06)", flexWrap: "wrap" }}>
+            {["all", "TypeScript", "Python", "Go", "Rust", "JavaScript"].map((lang) => {
+              const isActive = projectLangFilter.toLowerCase() === lang.toLowerCase();
+              return (
+                <button
+                  key={lang}
+                  onClick={() => setProjectLangFilter(lang)}
+                  style={{
+                    background: isActive ? "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)" : "transparent",
+                    color: isActive ? "white" : "#9ca3af",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    boxShadow: isActive ? "0 2px 10px rgba(255,117,24,0.3)" : "none"
+                  }}
+                  className={!isActive ? "hover:text-white hover:bg-[rgba(255,255,255,0.03)]" : ""}
+                >
+                  {lang === "all" ? "All Languages" : lang}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <div 
+          style={{ 
+            width: "100%", 
+            background: "linear-gradient(180deg, #121216 0%, #0c0c0f 100%)", 
+            border: "1px solid rgba(255,255,255,0.08)", 
+            borderRadius: "20px", 
+            overflow: "hidden",
+            boxShadow: "0 20px 50px -10px rgba(0,0,0,0.65)" 
+          }}
+        >
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#9ca3af", fontWeight: 700, fontSize: "11px", letterSpacing: "0.06em" }}>
+                  <th style={{ padding: "18px 22px" }}>PROJECT & REPOSITORY</th>
+                  <th style={{ padding: "18px 22px" }}>LANGUAGE</th>
+                  <th style={{ padding: "18px 22px" }}>COLOR</th>
+                  <th style={{ padding: "18px 22px" }}>COMMUNITY STATS</th>
+                  <th style={{ padding: "18px 22px" }}>STATUS</th>
+                  <th style={{ padding: "18px 22px", textAlign: "right" }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProjects.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: "64px 20px", textAlign: "center", color: "#9ca3af" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+                        <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>
+                          <FolderGitIcon className="w-6 h-6" />
+                        </div>
+                        <p style={{ fontSize: "15px", fontWeight: 600, color: "#d1d5db", margin: 0 }}>No projects found</p>
+                        <p style={{ fontSize: "13px", color: "#6b7280", maxWidth: "380px", margin: 0 }}>
+                          No repository records match your criteria. Add a project to showcase it in the public OSC India directory.
+                        </p>
+                        <button
+                          onClick={() => setShowAddProjectModal(true)}
+                          style={{
+                            marginTop: "8px",
+                            background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                            border: "none",
+                            color: "white",
+                            padding: "8px 18px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          + Add New Project
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <tr 
+                      key={project.id} 
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }} 
+                      className="hover:bg-[rgba(255,117,24,0.02)] transition-colors"
+                    >
+                      {/* Project & Repository */}
+                      <td style={{ padding: "18px 22px", maxWidth: "360px" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                          <div 
+                            style={{ 
+                              width: "10px", 
+                              height: "10px", 
+                              borderRadius: "50%", 
+                              background: project.accentColor || "#FF7518",
+                              boxShadow: `0 0 10px ${project.accentColor || "#FF7518"}`,
+                              marginTop: "6px",
+                              flexShrink: 0
+                            }} 
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, color: "white", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                              {project.title}
+                            </div>
+                            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "3px 0 6px", lineHeight: "1.4", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {project.description}
+                            </p>
+                            <a 
+                              href={project.githubUrl} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              style={{ color: "#FF8822", textDecoration: "none", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }} 
+                              className="hover:underline"
+                            >
+                              <span style={{ maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {project.githubUrl.replace("https://github.com/", "")}
+                              </span>
+                              <ExternalLinkIcon className="w-3 h-3 opacity-70" />
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Language */}
+                      <td style={{ padding: "18px 22px" }}>
+                        <span 
+                          style={{ 
+                            display: "inline-block", 
+                            padding: "4px 10px", 
+                            borderRadius: "8px", 
+                            fontSize: "11px", 
+                            fontWeight: 700, 
+                            background: "rgba(255,255,255,0.04)", 
+                            color: "#e5e7eb",
+                            border: "1px solid rgba(255,255,255,0.08)"
+                          }}
+                        >
+                          {project.language || "TypeScript"}
+                        </span>
+                      </td>
+
+                      {/* Accent Color */}
+                      <td style={{ padding: "18px 22px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.03)", padding: "4px 10px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <span 
+                            style={{ 
+                              width: "12px", 
+                              height: "12px", 
+                              borderRadius: "50%", 
+                              background: project.accentColor || "#FF7518" 
+                            }} 
+                          />
+                          <span style={{ fontSize: "11px", fontFamily: "monospace", color: "#9ca3af" }}>
+                            {project.accentColor || "#FF7518"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Stats */}
+                      <td style={{ padding: "18px 22px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#fbbf24", fontWeight: 600 }}>
+                            <StarIcon className="w-3.5 h-3.5" />
+                            {project.stars || "0"}
+                          </span>
+                          <span style={{ opacity: 0.3, color: "#6b7280" }}>•</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#9ca3af", fontWeight: 600 }}>
+                            <GitForkIcon className="w-3.5 h-3.5" />
+                            {project.forks || "0"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: "18px 22px" }}>
+                        {project.id.startsWith("default-") ? (
+                          <span style={{ display: "inline-block", padding: "3px 8px", borderRadius: "6px", fontSize: "10px", fontWeight: 700, background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
+                            SHOWCASE
+                          </span>
+                        ) : (
+                          <span style={{ display: "inline-block", padding: "3px 8px", borderRadius: "6px", fontSize: "10px", fontWeight: 700, background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }}>
+                            CUSTOM
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: "18px 22px", textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          <a
+                            href={project.githubUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                              color: "#9ca3af",
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                            className="hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+                          >
+                            <span>GitHub</span>
+                            <ExternalLinkIcon className="w-3 h-3 opacity-60" />
+                          </a>
+
+                          <button
+                            onClick={() => handleDeleteProject(project.id, project.title)}
+                            disabled={deletingProjectId === project.id}
+                            title="Remove project from directory"
+                            style={{
+                              background: "rgba(239,68,68,0.06)",
+                              border: "1px solid rgba(239,68,68,0.2)",
+                              color: "#f87171",
+                              padding: "6px 10px",
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              cursor: deletingProjectId === project.id ? "not-allowed" : "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              transition: "all 0.2s"
+                            }}
+                            className="hover:bg-[rgba(239,68,68,0.16)] hover:border-[rgba(239,68,68,0.35)] active:scale-[0.96]"
+                          >
+                            <Trash2Icon className="w-3.5 h-3.5" />
+                            <span>{deletingProjectId === project.id ? "..." : "Remove"}</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Project Modal */}
+    {showAddProjectModal && (
+      <div 
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        style={{ background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowAddProjectModal(false);
+        }}
+      >
+        <div 
+          style={{ 
+            width: "100%", 
+            maxWidth: "600px", 
+            background: "linear-gradient(180deg, #15151a 0%, #0d0d11 100%)", 
+            border: "1px solid rgba(255,255,255,0.12)", 
+            borderRadius: "20px", 
+            boxShadow: "0 25px 60px -15px rgba(0,0,0,0.85), 0 0 30px rgba(255,117,24,0.1)",
+            overflow: "hidden"
+          }}
+        >
+          {/* Modal Header */}
+          <div style={{ padding: "22px 26px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#FF8822", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", marginBottom: "4px" }}>
+                <FolderPlusIcon className="w-3.5 h-3.5" />
+                <span>PROJECT REPOSITORY DIRECTORY</span>
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "white", margin: 0 }}>Add New Project</h3>
+              <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "4px", margin: 0 }}>
+                Register a repository to showcase in the OSC India public directory.
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowAddProjectModal(false)}
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#9ca3af", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              className="hover:text-white hover:border-[rgba(255,255,255,0.2)]"
+            >
+              <XIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Modal Form */}
+          <form onSubmit={handleAddProject} style={{ padding: "24px 26px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              {/* Project Title */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  PROJECT TITLE <span style={{ color: "#FF7518" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., OSC-India Platform"
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: "#0c0c10",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    color: "white",
+                    fontSize: "13px",
+                    outline: "none"
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                />
+              </div>
+
+              {/* GitHub URL */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  GITHUB REPOSITORY URL <span style={{ color: "#FF7518" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="https://github.com/open-source-connect-01/OSC-India"
+                  value={newProject.githubUrl}
+                  onChange={(e) => setNewProject({ ...newProject, githubUrl: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: "#0c0c10",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    color: "white",
+                    fontSize: "13px",
+                    outline: "none"
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                />
+              </div>
+
+              {/* Tech / Primary Language */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  PRIMARY LANGUAGE / STACK
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., TypeScript, Go, Python, Rust"
+                  value={newProject.language || ""}
+                  onChange={(e) => setNewProject({ ...newProject, language: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: "#0c0c10",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    color: "white",
+                    fontSize: "13px",
+                    outline: "none",
+                    marginBottom: "8px"
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                />
+                {/* Quick Preset Buttons */}
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {["TypeScript", "Python", "Go", "Rust", "React", "JavaScript", "Java", "C++"].map((l) => (
+                    <button
+                      type="button"
+                      key={l}
+                      onClick={() => setNewProject({ ...newProject, language: l })}
+                      style={{
+                        background: newProject.language === l ? "rgba(255,117,24,0.15)" : "rgba(255,255,255,0.03)",
+                        border: newProject.language === l ? "1px solid #FF7518" : "1px solid rgba(255,255,255,0.08)",
+                        color: newProject.language === l ? "#FF8822" : "#9ca3af",
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accent Color Selection */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  ACCENT THEME COLOR
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  {[
+                    { name: "Orange", hex: "#FF7518" },
+                    { name: "Cyan", hex: "#22d3ee" },
+                    { name: "Emerald", hex: "#34d399" },
+                    { name: "Pink", hex: "#f472b6" },
+                    { name: "Purple", hex: "#a855f7" },
+                    { name: "Red", hex: "#ef4444" },
+                    { name: "Blue", hex: "#3b82f6" },
+                    { name: "Amber", hex: "#f59e0b" },
+                  ].map((col) => (
+                    <button
+                      type="button"
+                      key={col.hex}
+                      onClick={() => setNewProject({ ...newProject, accentColor: col.hex })}
+                      title={col.name}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        background: col.hex,
+                        border: newProject.accentColor === col.hex ? "3px solid white" : "2px solid rgba(0,0,0,0.4)",
+                        boxShadow: newProject.accentColor === col.hex ? `0 0 12px ${col.hex}` : "none",
+                        cursor: "pointer",
+                        transform: newProject.accentColor === col.hex ? "scale(1.15)" : "scale(1)",
+                        transition: "all 0.15s"
+                      }}
+                    />
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "6px" }}>
+                    <input
+                      type="color"
+                      value={newProject.accentColor || "#FF7518"}
+                      onChange={(e) => setNewProject({ ...newProject, accentColor: e.target.value })}
+                      style={{ width: "28px", height: "28px", padding: 0, border: "none", borderRadius: "50%", cursor: "pointer", background: "none" }}
+                    />
+                    <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "monospace" }}>
+                      {newProject.accentColor}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  DESCRIPTION
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Short description of the repository and what contributors will build or improve..."
+                  value={newProject.description || ""}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: "#0c0c10",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    color: "white",
+                    fontSize: "13px",
+                    outline: "none",
+                    resize: "vertical"
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                />
+              </div>
+
+              {/* Initial Stats (Stars & Forks) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                    STARS (DISPLAY)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1.2k or 45"
+                    value={newProject.stars || ""}
+                    onChange={(e) => setNewProject({ ...newProject, stars: e.target.value })}
+                    style={{
+                      width: "100%",
+                      background: "#0c0c10",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "10px",
+                      padding: "10px 14px",
+                      color: "white",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                    FORKS (DISPLAY)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 340 or 12"
+                    value={newProject.forks || ""}
+                    onChange={(e) => setNewProject({ ...newProject, forks: e.target.value })}
+                    style={{
+                      width: "100%",
+                      background: "#0c0c10",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "10px",
+                      padding: "10px 14px",
+                      color: "white",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  />
+                </div>
+              </div>
+
+              {/* Card Live Preview */}
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "12px", padding: "14px" }}>
+                <div style={{ fontSize: "10px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                  PREVIEW CARD (HOW IT WILL APPEAR IN /PROJECTS)
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: newProject.accentColor || "#FF7518", boxShadow: `0 0 8px ${newProject.accentColor || "#FF7518"}`, marginTop: "5px" }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "white" }}>
+                      {newProject.title || "Project Title"}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#9ca3af", margin: "2px 0 4px" }}>
+                      {newProject.description || "Project summary description will appear here..."}
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "10px", color: "#6b7280" }}>
+                      <span style={{ color: "#d1d5db" }}>{newProject.language || "TypeScript"}</span>
+                      <span>•</span>
+                      <span style={{ color: "#fbbf24" }}>★ {newProject.stars || "0"}</span>
+                      <span>•</span>
+                      <span>⑂ {newProject.forks || "0"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Buttons */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px", paddingTop: "18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <button
+                type="button"
+                onClick={() => setShowAddProjectModal(false)}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "white",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+                className="hover:bg-[rgba(255,255,255,0.08)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingProject}
+                style={{
+                  background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                  border: "none",
+                  color: "white",
+                  padding: "10px 22px",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: isSubmittingProject ? "not-allowed" : "pointer",
+                  opacity: isSubmittingProject ? 0.75 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 16px rgba(255, 117, 24, 0.3)"
+                }}
+                className="hover:shadow-[0_6px_22px_rgba(255,117,24,0.45)] active:scale-[0.98]"
+              >
+                {isSubmittingProject ? (
+                  <>
+                    <RefreshCwIcon className="w-4 h-4 animate-spin" />
+                    <span>Adding Project...</span>
+                  </>
+                ) : (
+                  <>
+                    <FolderPlusIcon className="w-4 h-4" />
+                    <span>Add Project</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+  </main>
 
       {/* Side Toast Notification */}
       {toast && (

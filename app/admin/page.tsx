@@ -28,6 +28,7 @@ export default async function AdminPage() {
     <AdminUI
       initialProfiles={adminData.profiles}
       initialMetrics={adminData.metrics}
+      initialProjects={adminData.projects}
     />
   );
 }
