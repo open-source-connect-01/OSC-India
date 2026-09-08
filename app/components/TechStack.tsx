@@ -89,7 +89,7 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
     <div style={{ flex: 1, minWidth: '200px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
-          <span style={{ color: 'var(--orange)' }}>⚡</span> Tech Stack
+          <span style={{ color: 'var(--orange)' }}></span> Tech Stack
         </div>
         <button 
           onClick={handleSync}
