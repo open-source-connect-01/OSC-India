@@ -1927,27 +1927,6 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
         </div>
       )}
 
-      <style>{`
-        @keyframes toastSlideUp {
-          from {
-            transform: translateY(16px) scale(0.97);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-          }
-        }
-        @keyframes toastProgress {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0%;
-          }
-        }
-      `}</style>
-
       <Footer />
     </div>
   );
