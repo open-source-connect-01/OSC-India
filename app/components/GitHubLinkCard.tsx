@@ -14,8 +14,15 @@ export default function GitHubLinkCard() {
     setMode("linking");
     const res = await linkGithubAccount();
     if (res.error) {
-      setError(res.error);
-      setMode("choice");
+      if (res.error.toLowerCase().includes("manual linking is disabled")) {
+        setError(
+          "Supabase has manual OAuth linking disabled in project settings. Please enter your GitHub username directly below."
+        );
+        setMode("manual");
+      } else {
+        setError(res.error);
+        setMode("choice");
+      }
     }
   };
 

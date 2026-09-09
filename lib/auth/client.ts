@@ -134,11 +134,22 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return null;
 
-    const { data: profile } = await supabase
+    const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
+
+    let { data: profile } = await supabase
       .from("profiles")
       .select("id, full_name, email, avatar_url, role, is_admin, github")
       .eq("id", user.id)
       .maybeSingle();
+
+    if (!profile && userEmail) {
+      const { data: byEmail } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url, role, is_admin, github")
+        .ilike("email", userEmail)
+        .maybeSingle();
+      if (byEmail) profile = byEmail;
+    }
 
     const fullName =
       profile?.full_name ||

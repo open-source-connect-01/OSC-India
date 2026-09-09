@@ -9,9 +9,9 @@ interface TimelineEvent {
   phase: string;
   status: "completed" | "active" | "upcoming";
   title: string;
-  subtitle: string;
+  subtitle?: string;
   date: string;
-  duration: string;
+  duration?: string;
   description: string;
   location: string;
   highlights?: string[];
@@ -28,116 +28,64 @@ export default function TimelinePage() {
     {
       phase: "PHASE 01",
       status: "completed",
-      title: "Project Onboarding & Mentor Applications",
-      subtitle: "Curating India's Premier Open Source Repositories",
-      date: "July 15 – August 10, 2026",
-      duration: "4 Weeks",
-      description:
-        "Open-source maintainers and tech organizations across India onboarded their core repositories. Project maintainers organized issue trackers, established contributing guidelines, and tagged beginner-friendly Good First Issues.",
-      location: "Virtual / GitHub",
-      highlights: [
-        "50+ Vetted Repositories",
-        "120+ Maintainers & Mentors",
-        "Architecture Guidelines Published",
-        "Issue Trackers Triaged"
-      ],
-      ctaText: "Explore Projects",
-      ctaHref: "/projects"
+      title: "Registrations Open",
+      subtitle: "Nationwide Contributor Registration",
+      date: "1st July, 2026",
+      description: "Participants from across India can officially register for OSCI’26.",
+      location: "Online / Official Portal",
+      ctaText: "Sign In / Register",
+      ctaHref: "/sign-in",
     },
     {
       phase: "PHASE 02",
       status: "completed",
-      title: "Contributor Registrations & Community Kickoff",
-      subtitle: "Onboarding, Git Bootcamps & Team Formation",
-      date: "August 11 – August 31, 2026",
-      duration: "3 Weeks",
-      description:
-        "Nationwide registrations opened for student developers, professionals, and open-source enthusiasts. Hosted interactive Git & GitHub workshops, architecture deep-dives with maintainers, and mentor-mentee connect AMAs.",
-      location: "Discord & Live Stream",
-      highlights: [
-        "1,500+ Registered Contributors",
-        "Git & Pull Request Bootcamps",
-        "Maintainer AMA Sessions",
-        "Tech Stack Affinity Groups"
-      ],
-      ctaText: "About the Community",
-      ctaHref: "/about"
+      title: "Mentor Registration Opens",
+      subtitle: "Guiding Open-Source Contributors",
+      date: "23rd August, 2026",
+      description: "Experienced open-source contributors, industry professionals, and mentors are invited to register as mentors.",
+      location: "Virtual / Community Call",
+      ctaText: "About the Program",
+      ctaHref: "/about",
     },
     {
       phase: "PHASE 03",
-      status: "active",
-      title: "The Month-Long Contribution Sprint",
-      subtitle: "Active Coding Period, PR Submissions & Live Rankings",
-      date: "September 1 – September 30, 2026",
-      duration: "30 Days (Ongoing)",
-      description:
-        "The official coding marathon is LIVE! Contributors solve open issues, submit pull requests, earn verified merit points on the live Leaderboard, and collaborate with mentors through weekly office hours.",
-      location: "Pan-India / Distributed",
-      highlights: [
-        "Live Real-Time Leaderboard",
-        "Verified PR Merit Scoring",
-        "Weekly Mentor Office Hours",
-        "Custom Contributor Badge Studio"
-      ],
-      ctaText: "View Live Leaderboard",
-      ctaHref: "/leaderboard",
-      secondaryCtaText: "Customize Badge",
-      secondaryCtaHref: "/badge"
+      status: "completed",
+      title: "Project Admin Registration Opens",
+      subtitle: "Open-Source Organization & Repo Onboarding",
+      date: "26th August, 2026",
+      description: "Open-source organizations, startups, and independent maintainers are invited to onboard their projects.",
+      location: "GitHub / Maintainer Portal",
+      ctaText: "Admin Portal",
+      ctaHref: "/admin",
     },
     {
       phase: "PHASE 04",
-      status: "upcoming",
-      title: "Mid-Term Evaluations & Code Reviews",
-      subtitle: "Quality Audits, Mentorship Feedback & Scoring Review",
-      date: "October 1 – October 7, 2026",
-      duration: "1 Week",
+      status: "completed",
+      title: "OSCI'26 Orientation Session",
+      subtitle: "Orientation Session",
+      date: "31st August, 2026",
       description:
-        "Project maintainers conduct thorough code reviews to assess architectural consistency, documentation, unit tests, and overall impact. Mid-sprint merit scores are calculated and quality feedback is provided to contributors.",
-      location: "GitHub & Maintainer Portal",
-      highlights: [
-        "Code Quality & CI/CD Audits",
-        "Test Coverage Assessments",
-        "1-on-1 Mentor Feedback",
-        "Leaderboard Score Validations"
-      ]
+        "This session introduces Open Source Connect India (OSCI'26), providing participants with an overview of open source, the OSCI'26 initiative, and how they can get started with contributing to real-world projects and communities.",
+      location: "Virtual Livestream & Discord",
+      ctaText: "Explore Community",
+      ctaHref: "/about",
     },
     {
       phase: "PHASE 05",
-      status: "upcoming",
-      title: "National Demo Day & Tech Summit",
-      subtitle: "Project Pitches, Live Demos & Industry Keynotes",
-      date: "October 17 – October 18, 2026",
-      duration: "2 Days",
+      status: "active",
+      title: "Project Listings Go Live",
+      subtitle: "Official Repository Directory Launch",
+      date: "10th September, 2026",
       description:
-        "Top contributor teams and standout maintainers present their deployed solutions, system designs, and community impact to leading tech founders, sponsor judges, and open-source pioneers.",
-      location: "Bengaluru, Karnataka & Live Stream",
-      highlights: [
-        "Live Project Pitches",
-        "Industry Keynote Speakers",
-        "Sponsor Networking Booths",
-        "Community Hackathon Tracks"
-      ]
+        "Registered projects are published on the platform with detailed descriptions, tech stacks, contribution guidelines, and difficulty levels.",
+      location: "OSCI Platform / Projects Directory",
+      ctaText: "Explore Projects",
+      ctaHref: "/projects",
     },
-    {
-      phase: "PHASE 06",
-      status: "upcoming",
-      title: "Winners Gala, Badges & Swag Distribution",
-      subtitle: "Season Finale, Cash Grants & Physical Swag Kits",
-      date: "October 28, 2026",
-      duration: "Grand Finale",
-      description:
-        "Celebration of the season's achievements! Announcement of the top ranked contributors, distribution of cash grants, merit certificates, official verified digital badges, and exclusive OSCI 2026 contributor swag boxes.",
-      location: "Virtual Livestream Ceremony",
-      highlights: [
-        "Top 10 Contributor Honors",
-        "Verified Digital Certificates",
-        "Exclusive OSCI Contributor Swag",
-        "Community Fellowship Nominations"
-      ],
-      ctaText: "Generate ID Badge",
-      ctaHref: "/badge"
-    }
   ];
+
+  const activeUpcomingCount = events.filter((ev) => ev.status === "active" || ev.status === "upcoming").length;
+  const completedCount = events.filter((ev) => ev.status === "completed").length;
 
   const filteredEvents = events.filter((ev) => {
     if (filter === "all") return true;
@@ -163,7 +111,7 @@ export default function TimelinePage() {
             Program <span style={{ color: "var(--orange)" }}>Timeline</span>
           </h1>
           <p style={{ color: "#9ca3af", fontSize: "clamp(14px, 2.5vw, 16px)", lineHeight: "1.7", maxWidth: "680px", margin: "0 auto" }}>
-            The structured pathway of Open Source Connect India 2026. From project onboarding and mentor curation to active coding sprints, national evaluations, and recognition.
+            The structured pathway of Open Source Connect India 2026. From participant registration and project onboarding to orientation sessions and project directory launch.
           </p>
         </div>
 
@@ -212,7 +160,7 @@ export default function TimelinePage() {
               transition: "all 0.2s ease"
             }}
           >
-            Active & Upcoming (4)
+            Active & Upcoming ({activeUpcomingCount})
           </button>
           <button
             type="button"
@@ -229,7 +177,7 @@ export default function TimelinePage() {
               transition: "all 0.2s ease"
             }}
           >
-            Completed (2)
+            Completed ({completedCount})
           </button>
         </div>
 
@@ -362,8 +310,12 @@ export default function TimelinePage() {
                           <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
                         <span>{event.date}</span>
-                        <span style={{ color: "#4b5563" }}>•</span>
-                        <span style={{ color: "#6b7280", fontSize: "12px" }}>{event.duration}</span>
+                        {event.duration && (
+                          <>
+                            <span style={{ color: "#4b5563" }}>•</span>
+                            <span style={{ color: "#6b7280", fontSize: "12px" }}>{event.duration}</span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -371,9 +323,11 @@ export default function TimelinePage() {
                     <h2 style={{ color: "white", fontSize: "clamp(20px, 3.5vw, 24px)", fontWeight: 800, marginBottom: "6px", letterSpacing: "-0.015em", lineHeight: 1.25 }}>
                       {event.title}
                     </h2>
-                    <div style={{ color: "var(--orange)", fontSize: "13px", fontWeight: 600, marginBottom: "16px" }}>
-                      {event.subtitle}
-                    </div>
+                    {event.subtitle && (
+                      <div style={{ color: "var(--orange)", fontSize: "13px", fontWeight: 600, marginBottom: "16px" }}>
+                        {event.subtitle}
+                      </div>
+                    )}
 
                     {/* Description */}
                     <p style={{ color: "#9ca3af", fontSize: "14px", lineHeight: "1.65", marginBottom: "24px" }}>

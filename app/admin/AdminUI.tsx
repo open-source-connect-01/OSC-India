@@ -4,7 +4,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction, getAdminData } from "@/lib/actions/admin";
 import { createProjectAction, deleteProjectAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
 
 // Icons
@@ -218,6 +218,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
   const [isPending, startTransition] = useTransition();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toastPaused, setToastPaused] = useState(false);
 
@@ -452,6 +453,25 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       }
     } finally {
       setBulkSyncing(false);
+    }
+  };
+
+  // Handle Reload Users & Metrics
+  const handleReloadUsers = async () => {
+    setIsReloading(true);
+    try {
+      const data = await getAdminData();
+      if (data?.profiles) {
+        setProfiles(data.profiles);
+        if (data.metrics) setMetrics(data.metrics);
+        if (data.projects) setProjects(data.projects);
+        showToast("User data reloaded successfully.", "success");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to reload user data";
+      showToast(msg, "error");
+    } finally {
+      setIsReloading(false);
     }
   };
 
@@ -945,6 +965,32 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
               );
             })}
           </div>
+
+          {/* Reload Users Button */}
+          <button
+            onClick={handleReloadUsers}
+            disabled={isReloading}
+            title="Reload user data"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: isReloading ? "#FF7518" : "#9ca3af",
+              padding: "8px 14px",
+              borderRadius: "12px",
+              cursor: isReloading ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "12px",
+              fontWeight: 600,
+              transition: "all 0.2s",
+              height: "40px",
+            }}
+            className="hover:text-white hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.18)] active:scale-95"
+          >
+            <RefreshCwIcon className={`w-4 h-4 ${isReloading ? "animate-spin text-[#FF7518]" : ""}`} />
+            <span>{isReloading ? "Reloading..." : "Reload"}</span>
+          </button>
         </div>
 
         {/* User Table */}

@@ -40,7 +40,7 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
 
   const { data: userProfile } = await admin
     .from("profiles")
-    .select("role, is_admin, github")
+    .select("role, is_admin, github, email")
     .eq("id", userId)
     .maybeSingle();
 
@@ -181,9 +181,9 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
       console.warn("Notice: saving synced metrics to auth metadata:", authErr);
     }
 
-    // 9. Update Supabase profiles table
+    // 9. Update Supabase profiles table (by userId and by email)
     try {
-      const { error: updateErr } = await admin
+      await admin
         .from("profiles")
         .update({
           github: handle,
@@ -194,8 +194,17 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
         })
         .eq("id", userId);
 
-      if (updateErr) {
-        console.warn("Notice: profile update after GitHub sync (schema migration pending):", updateErr.message);
+      if (userProfile?.email) {
+        await admin
+          .from("profiles")
+          .update({
+            github: handle,
+            score: totalScore,
+            merged_prs: mergedPrsCount,
+            projects_count: projectsCount,
+            updated_at: new Date().toISOString(),
+          })
+          .ilike("email", userProfile.email);
       }
     } catch (dbErr) {
       console.warn("Notice: profile update after GitHub sync:", dbErr);
