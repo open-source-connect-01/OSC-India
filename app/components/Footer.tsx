@@ -74,16 +74,29 @@ export default function Footer() {
     { name: "Community Guidelines", href: "/about" },
     { name: "Code of Conduct", href: "/about" },
     { name: "Swags", href: "#" },
-    { name: "Help Center", href: "#" },
   ];
 
   const applyLinks = [
-    { name: "Speak With Us", href: "https://luma.com/3u22sml7" },
-    { name: "Become a Mentor", href: "#" },
-    { name: "Become Project Admin", href: "#" },
-    { name: "Become Campus Lead", href: "#" },
-    { name: "Become State Lead", href: "#" },
-    { name: "Become Sponsor", href: "/#sponsors" },
+    { 
+      name: "Become a Mentor", 
+      href: "https://docs.google.com/forms/d/e/1FAIpQLScag2hPC2jcy14l8CgSVm6JteRU_mOipKBkjgqSA3h6jvr7xA/viewform?usp=header" 
+    },
+    { 
+      name: "Become Project Admin", 
+      href: "https://docs.google.com/forms/d/e/1FAIpQLSdR-oiwn6zKj-Qe4aBZCRLWK3J-OLSv78k_lq05tgmkGldjog/viewform?usp=header" 
+    },
+    { 
+      name: "Become Campus Lead", 
+      href: "https://luma.com/87bgkoi9" 
+    },
+    { 
+      name: "Become State Lead", 
+      href: "https://luma.com/xvuw75cu" 
+    },
+    { 
+      name: "Become Sponsor", 
+      href: "https://docs.google.com/forms/d/e/1FAIpQLSfqazU3eI5qYHbXJDMbcnnLDwo3oD9m4fuPFke20jWx_ot8vQ/viewform?usp=header" 
+    },
   ];
 
   return (
@@ -164,6 +177,8 @@ export default function Footer() {
                 <li key={item.name} style={{ marginBottom: "14px" }}>
                   <Link
                     href={item.href}
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                    rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                     style={{
                       fontSize: "14px",
                       color: "#9ca3af",
@@ -199,6 +214,8 @@ export default function Footer() {
                 <li key={item.name} style={{ marginBottom: "14px" }}>
                   <Link
                     href={item.href}
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                    rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                     style={{
                       fontSize: "14px",
                       color: "#9ca3af",
@@ -258,6 +275,7 @@ export default function Footer() {
                     border: "1px solid rgba(255, 255, 255, 0.12)",
                     borderRadius: "12px",
                     padding: "4px 4px 4px 14px",
+                    overflow: "hidden",
                   }}
                 >
                   <input
@@ -266,6 +284,8 @@ export default function Footer() {
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
                     required
+                    autoComplete="email"
+                    className="footer-newsletter-input"
                     style={{
                       flex: 1,
                       background: "transparent",
@@ -275,6 +295,7 @@ export default function Footer() {
                       fontSize: "13.5px",
                       padding: "8px 0",
                       minWidth: 0,
+                      colorScheme: "dark",
                     }}
                   />
                   <button

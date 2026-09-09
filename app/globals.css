@@ -80,6 +80,51 @@ img { display: block; max-width: 100%; }
 }
 
 /* ===========================
+   Autofill Styling (Dark Theme Fix)
+   =========================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #161618 inset !important;
+  box-shadow: 0 0 0 1000px #161618 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+  transition: background-color 5000000s ease-in-out 0s;
+}
+
+input:autofill {
+  box-shadow: 0 0 0 1000px #161618 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.footer-newsletter-input {
+  color-scheme: dark;
+}
+
+.footer-newsletter-input:-webkit-autofill,
+.footer-newsletter-input:-webkit-autofill:hover, 
+.footer-newsletter-input:-webkit-autofill:focus, 
+.footer-newsletter-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #161618 inset !important;
+  box-shadow: 0 0 0 1000px #161618 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+  transition: background-color 5000000s ease-in-out 0s;
+  border-radius: 6px !important;
+}
+
+.footer-newsletter-input:autofill {
+  box-shadow: 0 0 0 1000px #161618 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+/* ===========================
    RESPONSIVE: Tablet (≤ 900px)
    =========================== */
 @media (max-width: 900px) {
