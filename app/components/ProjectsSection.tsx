@@ -71,28 +71,6 @@ export default function ProjectsSection() {
       }}
     >
       <div style={{ width: "100%", position: "relative" }}>
-        {/* Tag */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "14px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "13px",
-              color: "#FF6000",
-              fontWeight: 700,
-              letterSpacing: "1.5px",
-              textTransform: "uppercase",
-            }}
-          >
-            &lt; FEATURED WORK &gt;
-          </span>
-        </div>
-
         {/* Heading */}
         <h2
           style={{

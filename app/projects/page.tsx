@@ -45,7 +45,7 @@ export default async function ProjectsPage() {
         </div>
 
         {/* Cards grid — responsive via CSS class */}
-        <div className="projects-grid" style={{ marginBottom: "40px" }}>
+        <div className="projects-grid">
           {projects.map((project) => (
             <ProjectCard 
               key={project.id || project.githubUrl} 
@@ -58,19 +58,6 @@ export default async function ProjectsPage() {
               accentColor={project.accentColor || "#FF7518"}
             />
           ))}
-        </div>
-
-        {/* CTA */}
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <a 
-            href="https://github.com/open-source-connect-01" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="projects-cta-btn"
-            style={{ textDecoration: "none" }}
-          >
-            Explore All Repositories
-          </a>
         </div>
       </div>
 
