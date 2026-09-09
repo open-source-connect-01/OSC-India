@@ -23,13 +23,61 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
-    const { error } = await admin
-      .from("profiles")
-      .update({ github, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
+    const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    // 1. Check for existing profile by user.id or email
+    let { data: existingProfile } = await admin
+      .from("profiles")
+      .select("id, email, github")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!existingProfile && userEmail) {
+      const { data: byEmail } = await admin
+        .from("profiles")
+        .select("id, email, github")
+        .ilike("email", userEmail)
+        .maybeSingle();
+      if (byEmail) existingProfile = byEmail;
+    }
+
+    if (existingProfile) {
+      await admin
+        .from("profiles")
+        .update({ github, updated_at: new Date().toISOString() })
+        .eq("id", existingProfile.id);
+
+      if (userEmail) {
+        await admin
+          .from("profiles")
+          .update({ github, updated_at: new Date().toISOString() })
+          .ilike("email", userEmail);
+      }
+    } else {
+      await admin.from("profiles").insert({
+        id: user.id,
+        email: userEmail || user.email || "",
+        github,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Contributor",
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        role: "contributor",
+        score: 0,
+        merged_prs: 0,
+        projects_count: 0,
+        badges_created: 0,
+      });
+    }
+
+    // 3. Sync auth metadata
+    try {
+      await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          github,
+        },
+      });
+    } catch {
+      // non-blocking
     }
 
     return NextResponse.json({ success: true, github });

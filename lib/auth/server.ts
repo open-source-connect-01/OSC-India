@@ -45,11 +45,22 @@ export async function getAuthenticatedProfile(): Promise<AuthenticatedUserPayloa
   if (!user) return null;
 
   const admin = createAdminClient();
-  const { data: profile } = await admin
+  const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
+
+  let { data: profile } = await admin
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (!profile && userEmail) {
+    const { data: byEmail } = await admin
+      .from("profiles")
+      .select("*")
+      .ilike("email", userEmail)
+      .maybeSingle();
+    if (byEmail) profile = byEmail;
+  }
 
   const fullName =
     profile?.full_name ||

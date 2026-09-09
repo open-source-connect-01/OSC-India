@@ -27,22 +27,68 @@ export default async function DashboardPage() {
 
   const admin = createAdminClient();
 
-  // Fetch unified profile from profiles table
+  const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
+  const metaGithub =
+    user.user_metadata?.user_name ||
+    user.user_metadata?.preferred_username ||
+    null;
+
+  // 1. Fetch profile by user.id
   let { data: profile } = await admin
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
 
+  // 2. If not found by id, search by email!
+  if (!profile && userEmail) {
+    const { data: byEmail } = await admin
+      .from("profiles")
+      .select("*")
+      .ilike("email", userEmail)
+      .maybeSingle();
+    if (byEmail) {
+      profile = byEmail;
+      // Re-bind profile ID to current user.id
+      try {
+        await admin
+          .from("profiles")
+          .update({ id: user.id, updated_at: new Date().toISOString() })
+          .eq("id", byEmail.id);
+      } catch (e) {
+        console.warn("Notice re-binding profile id in dashboard:", e);
+      }
+    }
+  }
+
+  // 3. If still not found, search by GitHub username
+  if (!profile && metaGithub) {
+    const { data: byGithub } = await admin
+      .from("profiles")
+      .select("*")
+      .ilike("github", metaGithub)
+      .maybeSingle();
+    if (byGithub) {
+      profile = byGithub;
+      try {
+        await admin
+          .from("profiles")
+          .update({ id: user.id, email: userEmail || byGithub.email, updated_at: new Date().toISOString() })
+          .eq("id", byGithub.id);
+      } catch (e) {
+        console.warn("Notice re-binding profile id in dashboard:", e);
+      }
+    }
+  }
+
   const fullName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "Contributor";
   const avatar = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
   const githubUsername =
     profile?.github ||
-    user.user_metadata?.user_name ||
-    user.user_metadata?.preferred_username ||
+    metaGithub ||
     null;
 
-  // Auto-provision profile if missing or synchronize github handle
+  // Auto-provision profile only if genuinely missing from database
   if (!profile) {
     try {
       const { data: created, error: upsertErr } = await admin
@@ -50,7 +96,7 @@ export default async function DashboardPage() {
         .upsert({
           id: user.id,
           full_name: fullName,
-          email: user.email,
+          email: userEmail || user.email,
           avatar_url: avatar,
           github: githubUsername,
           role: "contributor",
@@ -72,12 +118,13 @@ export default async function DashboardPage() {
     } catch (err: any) {
       console.warn("Profile auto-provision error:", err.message);
     }
-  } else if (!profile.github && githubUsername) {
+  } else if (!profile.github && metaGithub) {
     try {
       await admin
         .from("profiles")
-        .update({ github: githubUsername, updated_at: new Date().toISOString() })
+        .update({ github: metaGithub, updated_at: new Date().toISOString() })
         .eq("id", user.id);
+      profile.github = metaGithub;
     } catch (err: any) {
       console.warn("Profile github sync warning:", err.message);
     }
