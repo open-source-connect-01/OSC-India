@@ -163,15 +163,22 @@ img { display: block; max-width: 100%; }
     margin-bottom: 16px !important;
   }
   .hero-subtitle {
-    font-size: 14.5px !important;
-    line-height: 1.6 !important;
+    font-size: clamp(14px, 2.2vw, 15.5px) !important;
+    line-height: 1.65 !important;
     color: #d1d5db !important;
-    max-width: 480px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: justify !important;
+    text-justify: inter-word !important;
     margin-bottom: 24px !important;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;
   }
   .hero-cta-group {
-    gap: 12px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 14px !important;
     margin-bottom: 18px !important;
   }
   .hero-register-btn {
@@ -184,6 +191,12 @@ img { display: block; max-width: 100%; }
   .hero-countdown-box span {
     font-size: 15px !important;
     letter-spacing: 2px !important;
+  }
+  .hero-date-box {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
   }
   .hero-date-box span {
     font-size: 14px !important;
@@ -275,7 +288,7 @@ img { display: block; max-width: 100%; }
     opacity: 0.82 !important;
   }
   .hero-content {
-    padding: clamp(230px, 64vw, 290px) 16px 36px !important;
+    padding: clamp(285px, 74vw, 345px) 16px 40px !important;
   }
   .hero-title {
     font-size: clamp(26px, 8vw, 36px) !important;
@@ -283,10 +296,21 @@ img { display: block; max-width: 100%; }
     margin-bottom: 14px !important;
   }
   .hero-subtitle {
-    font-size: 13.5px !important;
-    line-height: 1.55 !important;
+    font-size: clamp(13.5px, 3.8vw, 15px) !important;
+    line-height: 1.6 !important;
+    width: 100% !important;
     max-width: 100% !important;
+    text-align: justify !important;
+    text-justify: inter-word !important;
     margin-bottom: 22px !important;
+  }
+  .hero-cta-group {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
   }
   .hero-register-btn {
     padding: 10px 18px !important;
@@ -298,6 +322,12 @@ img { display: block; max-width: 100%; }
   .hero-countdown-box span {
     font-size: 14px !important;
     letter-spacing: 1.5px !important;
+  }
+  .hero-date-box {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
   }
 
   /* --- Stats: single column grid --- */

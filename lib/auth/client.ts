@@ -49,6 +49,42 @@ export async function signInWithOAuth(
 }
 
 /**
+ * Authenticates user directly using Google Identity Services (GIS) ID Token.
+ * The browser communicates directly with Google's native popup/prompt,
+ * and exchanges the ID token with Supabase in the background.
+ * The Supabase project URL is 100% hidden and never seen by the user.
+ */
+export async function signInWithGoogleIdToken(
+  idToken: string
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: idToken,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Automatically sync and provision profile with deduplication
+    try {
+      await fetch("/api/auth/sync", {
+        method: "POST",
+      });
+    } catch {
+      // Non-blocking
+    }
+
+    return {};
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : undefined;
+    return { error: message || "Failed to sign in with Google ID token" };
+  }
+}
+
+/**
  * Links a GitHub identity to the currently authenticated user via Supabase OAuth.
  * After linking, the auth callback will sync the github handle to profiles.
  */
