@@ -102,37 +102,6 @@ export default function WhatsNewSection() {
       }}
     >
       <div style={{ width: "100%" }}>
-        {/* Section Tag */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "14px",
-          }}
-        >
-          <div
-            style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              background: "#FF7518",
-              boxShadow: "0 0 8px #FF7518",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "12.5px",
-              color: "#FF7518",
-              fontWeight: 700,
-              letterSpacing: "1.5px",
-              textTransform: "uppercase",
-            }}
-          >
-            WHAT&apos;S CHANGING
-          </span>
-        </div>
-
         {/* Section Header */}
         <h2
           style={{

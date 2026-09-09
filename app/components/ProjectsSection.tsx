@@ -71,28 +71,6 @@ export default function ProjectsSection() {
       }}
     >
       <div style={{ width: "100%", position: "relative" }}>
-        {/* Tag */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "14px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "13px",
-              color: "#FF6000",
-              fontWeight: 700,
-              letterSpacing: "1.5px",
-              textTransform: "uppercase",
-            }}
-          >
-            &lt; FEATURED WORK &gt;
-          </span>
-        </div>
-
         {/* Heading */}
         <h2
           style={{
@@ -103,10 +81,8 @@ export default function ProjectsSection() {
             marginBottom: "16px",
           }}
         >
-          <span style={{ color: "#ffffff" }}>Innovative projects built by </span>
-          <span style={{ color: "#ffffff" }}>our</span>
-          <br />
-          <span style={{ color: "#ffffff" }}>community.</span>
+          <span style={{ color: "#ffffff" }}>Featured Projects .</span>
+          
         </h2>
 
         <p
@@ -118,7 +94,7 @@ export default function ProjectsSection() {
             maxWidth: "520px",
           }}
         >
-          Explore projects built by developers across India solving real-world problems through open source collaboration.
+          Discover innovative open source projects that are shaping the future of technology.
         </p>
 
         {/* Projects Container with Horizontal Alignment on Mobile */}
