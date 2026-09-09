@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const rawNext = searchParams.get("next") ?? "/dashboard";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const errorParam = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
@@ -37,6 +38,9 @@ export async function GET(request: Request) {
           const fullName =
             user.user_metadata?.full_name ||
             user.user_metadata?.name ||
+            (user.user_metadata?.given_name
+              ? `${user.user_metadata.given_name} ${user.user_metadata?.family_name || ""}`.trim()
+              : null) ||
             user.email?.split("@")[0] ||
             "Contributor";
           const avatarUrl =
@@ -82,12 +86,13 @@ export async function GET(request: Request) {
       }
 
       const forwardedHost = request.headers.get("x-forwarded-host");
+      const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
       const isLocalEnv = process.env.NODE_ENV === "development";
 
       if (isLocalEnv) {
         return NextResponse.redirect(`${origin}${next}`);
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+        return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${next}`);
       } else {
         return NextResponse.redirect(`${origin}${next}`);
       }

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Profile } from "@/lib/supabase/database";
 
 export interface AuthenticatedUserPayload {
@@ -95,3 +96,40 @@ export async function signOutServer() {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+/**
+ * Server-side action to initiate OAuth sign-in (e.g. Google or GitHub).
+ */
+export async function signInWithOAuthServerAction(
+  provider: "google" | "github",
+  nextUrl = "/dashboard"
+) {
+  const supabase = await createClient();
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const proto = headersList.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = headersList.get("origin") || `${proto}://${host}`;
+
+  const safeNext = nextUrl.startsWith("/") && !nextUrl.startsWith("//") ? nextUrl : "/dashboard";
+  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error) {
+    redirect(`/sign-in?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data?.url) {
+    redirect(data.url);
+  }
+}
+
