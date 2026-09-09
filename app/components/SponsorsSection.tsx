@@ -27,30 +27,6 @@ export default function SponsorsSection() {
       }}
     >
       <div style={{ width: "100%", textAlign: "center" }}>
-        {/* Section Tag */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "14px",
-          }}
-        >
-          <div style={{ width: "6px", height: "6px", backgroundColor: "#FF7518", borderRadius: "50%", boxShadow: "0 0 8px #FF7518" }} />
-          <span
-            style={{
-              fontSize: "12px",
-              color: "#FF7518",
-              fontWeight: 700,
-              letterSpacing: "1.5px",
-              textTransform: "uppercase",
-            }}
-          >
-            OUR SPONSORS
-          </span>
-        </div>
-
         {/* Heading */}
         <h2
           style={{

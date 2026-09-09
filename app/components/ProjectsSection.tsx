@@ -94,7 +94,7 @@ export default function ProjectsSection() {
             maxWidth: "520px",
           }}
         >
-          Explore projects built by developers across India solving real-world problems through open source collaboration.
+          Discover innovative open source projects that are shaping the future of technology.
         </p>
 
         {/* Projects Container with Horizontal Alignment on Mobile */}
