@@ -37,11 +37,8 @@ export default function SponsorsSection() {
             marginBottom: "16px",
           }}
         >
-          <span style={{ color: "#ffffff" }}>Building the </span>
-          <span style={{ color: "#22C55E" }}>Future</span>
-          <br />
-          <span style={{ color: "#ffffff" }}>with Amazing </span>
-          <span style={{ color: "#FF7518" }}>Sponsors</span>
+          <span style={{ color: "#ffffff" }}>Our Sponsors . </span>
+          
         </h2>
 
         <p
