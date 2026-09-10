@@ -387,20 +387,52 @@ input:autofill {
 
   /* --- Footer --- */
   .footer-section {
-    padding: 40px 20px 24px !important;
+    padding: 48px 20px 32px !important;
   }
   .footer-main-grid {
+    display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 40px 24px !important;
+    gap: 36px 20px !important;
   }
-  .footer-col-item h4 {
-    font-size: 12px !important;
+  .footer-brand-col {
+    grid-column: 1 / -1 !important;
   }
-  .footer-col-item a {
-    font-size: 11px !important;
+  .footer-brand-desc {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 20px !important;
   }
-  .footer-copyright {
-    margin-top: 40px !important;
+  .footer-social-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+  }
+  .footer-links-col {
+    grid-column: span 1 !important;
+  }
+  .footer-col-title {
+    font-size: 11.5px !important;
+    letter-spacing: 1.5px !important;
+    margin-bottom: 14px !important;
+  }
+  .footer-nav-link {
+    font-size: 13px !important;
+    display: inline-block !important;
+  }
+  .footer-newsletter-col {
+    grid-column: 1 / -1 !important;
+  }
+  .footer-newsletter-card {
+    max-width: 100% !important;
+    padding: 22px 18px !important;
+    border-radius: 16px !important;
+  }
+  .footer-bottom-bar {
+    margin-top: 36px !important;
+    padding-top: 20px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
   }
 }
 
@@ -544,13 +576,23 @@ input:autofill {
     min-width: 240px !important;
   }
 
-  /* --- Footer --- */
+  /* --- Footer Small Phone Layout --- */
   .footer-section {
-    padding: 36px 16px 24px !important;
+    padding: 40px 16px 28px !important;
   }
   .footer-main-grid {
-    grid-template-columns: 1fr !important;
-    gap: 32px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 28px 14px !important;
+  }
+  .footer-brand-col {
+    grid-column: 1 / -1 !important;
+  }
+  .footer-links-col {
+    grid-column: span 1 !important;
+  }
+  .footer-newsletter-col {
+    grid-column: 1 / -1 !important;
   }
 
   /* --- Sponsors --- */

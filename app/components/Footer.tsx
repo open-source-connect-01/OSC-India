@@ -114,7 +114,7 @@ export default function Footer() {
         {/* Main 4-Column Grid */}
         <div className="footer-main-grid">
           {/* Column 1: Brand */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div className="footer-brand-col">
             <Link
               href="/"
               style={{
@@ -141,15 +141,16 @@ export default function Footer() {
               />
             </Link>
             <p
+              className="footer-brand-desc"
               style={{
                 fontSize: "14px",
                 color: "#9ca3af",
                 lineHeight: 1.65,
                 maxWidth: "320px",
-                marginBottom: "28px",
+                marginBottom: "24px",
               }}
             >
-              The ultimate destination for open source enthusiasts. Connecting innovators, developers, and mentors in a India ecosystem.
+              The ultimate destination for open source enthusiasts. Connecting innovators, developers, and mentors in India&apos;s ecosystem.
             </p>
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -169,28 +170,30 @@ export default function Footer() {
           </div>
 
           {/* Column 2: RESOURCES */}
-          <div>
+          <div className="footer-links-col">
             <h4
+              className="footer-col-title"
               style={{
                 fontWeight: 700,
                 fontSize: "12px",
-                color: "#9ca3af",
+                color: "#e5e7eb",
                 letterSpacing: "1.5px",
                 textTransform: "uppercase",
-                marginBottom: "20px",
+                marginBottom: "18px",
               }}
             >
               RESOURCES
             </h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {resourceLinks.map((item) => (
-                <li key={item.name} style={{ marginBottom: "14px" }}>
+                <li key={item.name} style={{ marginBottom: "12px" }}>
                   <Link
                     href={item.href}
                     target={item.href.startsWith("http") ? "_blank" : undefined}
                     rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="footer-nav-link"
                     style={{
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#9ca3af",
                       textDecoration: "none",
                       transition: "color 0.2s ease",
@@ -206,28 +209,30 @@ export default function Footer() {
           </div>
 
           {/* Column 3: APPLY */}
-          <div>
+          <div className="footer-links-col">
             <h4
+              className="footer-col-title"
               style={{
                 fontWeight: 700,
                 fontSize: "12px",
-                color: "#9ca3af",
+                color: "#e5e7eb",
                 letterSpacing: "1.5px",
                 textTransform: "uppercase",
-                marginBottom: "20px",
+                marginBottom: "18px",
               }}
             >
               APPLY
             </h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {applyLinks.map((item) => (
-                <li key={item.name} style={{ marginBottom: "14px" }}>
+                <li key={item.name} style={{ marginBottom: "12px" }}>
                   <Link
                     href={item.href}
                     target={item.href.startsWith("http") ? "_blank" : undefined}
                     rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="footer-nav-link"
                     style={{
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#9ca3af",
                       textDecoration: "none",
                       transition: "color 0.2s ease",
@@ -243,8 +248,9 @@ export default function Footer() {
           </div>
 
           {/* Column 4: Newsletter Card */}
-          <div>
+          <div className="footer-newsletter-col">
             <div
+              className="footer-newsletter-card"
               style={{
                 background: "#0c0c0e",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -372,6 +378,7 @@ export default function Footer() {
 
         {/* Bottom Bar: Copyright & Legal Links */}
         <div
+          className="footer-bottom-bar"
           style={{
             display: "flex",
             alignItems: "center",
@@ -379,6 +386,8 @@ export default function Footer() {
             flexWrap: "wrap",
             gap: "16px",
             marginTop: "64px",
+            paddingTop: "24px",
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
           }}
         >
           <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
