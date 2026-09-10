@@ -200,11 +200,16 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       user.user_metadata?.preferred_username ||
       null;
 
+    const identityAvatar =
+      user.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
+      user.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
+
     const avatar =
       profile?.avatar_url ||
       user.user_metadata?.avatar_url ||
       user.user_metadata?.picture ||
-      null;
+      identityAvatar ||
+      (github ? `https://avatars.githubusercontent.com/${github}` : null);
 
     const role = profile?.role || "contributor";
     const isAdmin = Boolean(profile?.is_admin || profile?.role === "admin");

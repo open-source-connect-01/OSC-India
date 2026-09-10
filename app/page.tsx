@@ -21,9 +21,9 @@ export default function Home() {
           backgroundColor: "#000000",
         }}
       >
-        {/* Full span background image starting from Hero top and extending into About Us */}
+        {/* Desktop full span background image */}
         <div
-          className="hero-bg-container"
+          className="hero-bg-container hidden md:block"
           style={{
             position: "absolute",
             top: 0,
@@ -79,6 +79,42 @@ export default function Home() {
               right: 0,
               height: "140px",
               background: "linear-gradient(to bottom, transparent, #000000)",
+            }}
+          />
+        </div>
+
+        {/* Mobile Background: Reference design cyberpunk robot backdrop */}
+        <div
+          className="hero-mobile-bg-container block md:hidden"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "100dvh",
+            zIndex: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          <Image
+            src="/hero-mobile-bg.png"
+            alt="Open Source Connect India Artwork"
+            fill
+            priority
+            style={{
+              objectFit: "cover",
+              objectPosition: "center top",
+            }}
+          />
+
+          {/* Dark cinematic gradient overlays for pristine readability */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.65) 65%, rgba(0,0,0,0.98) 100%)",
             }}
           />
         </div>

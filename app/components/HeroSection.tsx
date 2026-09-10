@@ -68,14 +68,26 @@ export default function HeroSection() {
               marginBottom: "22px",
             }}
           >
-            <div className="hero-title-line-1">
-              <span className="tricolor-gradient">Open Source</span>
+            {/* Desktop Headline */}
+            <div className="hidden md:block">
+              <div className="hero-title-line-1">
+                <span className="tricolor-gradient">Open Source</span>
+              </div>
+              <div className="hero-title-line-2">
+                <span className="tricolor-gradient">Connect India</span>
+                <span className="hero-year-tag" style={{ color: "#FF8822" }}>
+                  2026
+                </span>
+              </div>
             </div>
-            <div className="hero-title-line-2">
-              <span className="tricolor-gradient">Connect India</span>
-              <span className="hero-year-tag" style={{ color: "#FF8822" }}>
-                2026
-              </span>
+
+            {/* Mobile Headline matching Image 1 */}
+            <div className="block md:hidden" style={{ fontSize: "clamp(34px, 9.5vw, 44px)", lineHeight: 1.15, letterSpacing: "-1px" }}>
+              <div style={{ color: "#FF7518", fontWeight: 800 }}>Open Source</div>
+              <div style={{ fontWeight: 800 }}>
+                <span style={{ color: "#ffffff" }}>Connect </span>
+                <span style={{ color: "#22C55E" }}>India</span>
+              </div>
             </div>
           </h1>
 
@@ -84,9 +96,9 @@ export default function HeroSection() {
             className="hero-subtitle"
             style={{
               fontSize: "15.5px",
-              color: "#9ca3af",
+              color: "#e5e7eb",
               lineHeight: 1.65,
-              marginBottom: "32px",
+              marginBottom: "30px",
               maxWidth: "480px",
               fontWeight: 400,
             }}
@@ -100,9 +112,9 @@ export default function HeroSection() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "16px",
+              gap: "14px",
               flexWrap: "wrap",
-              marginBottom: "16px",
+              marginBottom: "18px",
             }}
           >
             {/* Register Now Button */}
@@ -114,7 +126,7 @@ export default function HeroSection() {
               style={{
                 background: "#FF7518",
                 color: "#ffffff",
-                padding: "13px 30px",
+                padding: "13px 28px",
                 borderRadius: "10px",
                 textDecoration: "none",
                 fontWeight: 700,
@@ -146,7 +158,7 @@ export default function HeroSection() {
                 background: "rgba(8, 8, 8, 0.9)",
                 border: "1.5px solid #FF6500",
                 borderRadius: "10px",
-                padding: "10px 24px",
+                padding: "11px 22px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -157,13 +169,13 @@ export default function HeroSection() {
               <span
                 style={{
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  fontSize: "18px",
+                  fontSize: "17px",
                   fontWeight: 800,
                   color: "#ffffff",
-                  letterSpacing: "3px",
+                  letterSpacing: "1.5px",
                 }}
               >
-                {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
+                {timeLeft.hours} : {timeLeft.minutes} : {timeLeft.seconds}
               </span>
             </div>
           </div>
@@ -196,17 +208,62 @@ export default function HeroSection() {
               <circle cx="16" cy="15" r="1" fill="#FF7518" />
             </svg>
             <span
+              className="hero-date-text"
               style={{
                 fontSize: "15px",
                 fontWeight: 700,
-                color: "#ffffff",
+                color: "#FF7518",
                 letterSpacing: "0.2px",
               }}
             >
-              September 1, 2026
+              September 1-30, 2026
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Downward Scroll Indicator Chevron matching reference Image 1 */}
+      <div
+        className="hero-scroll-indicator"
+        style={{
+          position: "absolute",
+          bottom: "24px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 3,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Link
+          href="#about"
+          aria-label="Scroll down to About Us section"
+          style={{
+            color: "#FF7518",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textDecoration: "none",
+            padding: "8px",
+            transition: "all 0.2s ease",
+          }}
+          className="hover:scale-110 active:scale-95"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#FF7518"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="animate-bounce"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </Link>
       </div>
     </section>
   );
