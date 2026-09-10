@@ -63,21 +63,47 @@ function CheckIcon({ className, style }: { className?: string; style?: React.CSS
   );
 }
 
+const CHAKRA_SPOKES = [
+  { x2: 32.0, y2: 18.0 },
+  { x2: 31.52, y2: 21.62 },
+  { x2: 30.12, y2: 25.0 },
+  { x2: 27.9, y2: 27.9 },
+  { x2: 25.0, y2: 30.12 },
+  { x2: 21.62, y2: 31.52 },
+  { x2: 18.0, y2: 32.0 },
+  { x2: 14.38, y2: 31.52 },
+  { x2: 11.0, y2: 30.12 },
+  { x2: 8.1, y2: 27.9 },
+  { x2: 5.88, y2: 25.0 },
+  { x2: 4.48, y2: 21.62 },
+  { x2: 4.0, y2: 18.0 },
+  { x2: 4.48, y2: 14.38 },
+  { x2: 5.88, y2: 11.0 },
+  { x2: 8.1, y2: 8.1 },
+  { x2: 11.0, y2: 5.88 },
+  { x2: 14.38, y2: 4.48 },
+  { x2: 18.0, y2: 4.0 },
+  { x2: 21.62, y2: 4.48 },
+  { x2: 25.0, y2: 5.88 },
+  { x2: 27.9, y2: 8.1 },
+  { x2: 30.12, y2: 11.0 },
+  { x2: 31.52, y2: 14.38 },
+];
+
 function AshokaChakraIcon({ size = 18 }: { size?: number }) {
-  const spokes = Array.from({ length: 12 }, (_, i) => i * 15);
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="18" cy="18" r="16" stroke="#FF7518" strokeWidth="1.8" />
       <circle cx="18" cy="18" r="14" stroke="rgba(255, 117, 24, 0.3)" strokeWidth="0.8" />
       <circle cx="18" cy="18" r="3.5" fill="#FF7518" />
       <circle cx="18" cy="18" r="1.5" fill="#FFFFFF" />
-      {spokes.map((angle) => (
+      {CHAKRA_SPOKES.map((spoke, idx) => (
         <line
-          key={angle}
+          key={idx}
           x1="18"
           y1="18"
-          x2={18 + 14 * Math.cos((angle * Math.PI) / 180)}
-          y2={18 + 14 * Math.sin((angle * Math.PI) / 180)}
+          x2={spoke.x2}
+          y2={spoke.y2}
           stroke="#FF7518"
           strokeWidth="1.2"
         />
@@ -401,71 +427,9 @@ function BadgeContent({
                   <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.18), transparent)' }} />
                 </div>
 
-                {/* Avatar with Tricolor Ring and Refined Glow */}
+                {/* Avatar with Seamless Tricolor Ring and Precision Neon Glow */}
                 <div style={{ position: 'relative', width: '210px', height: '210px', margin: '14px auto 0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                  {/* Diffused ambient light emitters behind ring (NO muddy edges) */}
-                  <div 
-                    style={{ 
-                      position: 'absolute', 
-                      top: '12px', 
-                      right: '12px', 
-                      width: '90px', 
-                      height: '90px', 
-                      borderRadius: '50%',
-                      background: '#FF7518',
-                      opacity: 0.32,
-                      filter: 'blur(22px)',
-                      pointerEvents: 'none',
-                      zIndex: 0,
-                    }} 
-                  />
-                  <div 
-                    style={{ 
-                      position: 'absolute', 
-                      top: '55px', 
-                      right: '8px', 
-                      width: '50px', 
-                      height: '70px', 
-                      borderRadius: '50%',
-                      background: '#FFFFFF',
-                      opacity: 0.18,
-                      filter: 'blur(16px)',
-                      pointerEvents: 'none',
-                      zIndex: 0,
-                    }} 
-                  />
-                  <div 
-                    style={{ 
-                      position: 'absolute', 
-                      bottom: '8px', 
-                      left: '36px', 
-                      right: '36px', 
-                      height: '46px', 
-                      borderRadius: '50%',
-                      background: '#00C853',
-                      opacity: 0.28,
-                      filter: 'blur(18px)',
-                      pointerEvents: 'none',
-                      zIndex: 0,
-                    }} 
-                  />
-
-                  {/* Recessed dark circular track */}
-                  <div 
-                    style={{ 
-                      position: 'absolute', 
-                      width: '196px', 
-                      height: '196px', 
-                      borderRadius: '50%',
-                      background: 'radial-gradient(circle, #0e1625 0%, #0a101b 80%, #070c14 100%)',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
-                      boxShadow: 'inset 0 0 16px rgba(0, 0, 0, 0.8), 0 4px 20px rgba(0, 0, 0, 0.5)',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                    }} 
-                  />
-
-                  {/* SVG Tricolor Ring with Neon Glow */}
+                  {/* SVG Tricolor Ring with Seamless Butt Joints and Zero-Clipping Filters */}
                   <svg 
                     width="210" 
                     height="210" 
@@ -475,53 +439,86 @@ function BadgeContent({
                     style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none' }}
                   >
                     <defs>
-                      <filter id="neonOrangeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#FF7518" floodOpacity="0.9" />
-                        <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#FF7518" floodOpacity="0.45" />
+                      {/* Non-clipping Gaussian Blur for soft ambient backlight */}
+                      <filter id="wideAmbientBlur" filterUnits="userSpaceOnUse" x="0" y="0" width="210" height="210">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
                       </filter>
-                      <filter id="neonGreenGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00C853" floodOpacity="0.9" />
-                        <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#00C853" floodOpacity="0.45" />
+
+                      {/* Non-clipping Neon Glows covering entire SVG canvas */}
+                      <filter id="neonOrange" filterUnits="userSpaceOnUse" x="0" y="0" width="210" height="210">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#FF7518" floodOpacity="1" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#FF7518" floodOpacity="0.8" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#FF7518" floodOpacity="0.35" />
                       </filter>
-                      <filter id="neonWhiteGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#FFFFFF" floodOpacity="0.9" />
+
+                      <filter id="neonGreen" filterUnits="userSpaceOnUse" x="0" y="0" width="210" height="210">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#00C853" floodOpacity="1" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#00C853" floodOpacity="0.8" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#00C853" floodOpacity="0.35" />
+                      </filter>
+
+                      <filter id="neonWhite" filterUnits="userSpaceOnUse" x="0" y="0" width="210" height="210">
+                        <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#FFFFFF" floodOpacity="0.9" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#FFFFFF" floodOpacity="0.4" />
                       </filter>
                     </defs>
 
-                    {/* Subtle outer track circle */}
-                    <circle cx="105" cy="105" r="94" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+                    {/* Subtle outer track hairline circle */}
+                    <circle cx="105" cy="105" r="95" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" fill="none" />
 
-                    {/* Saffron / Orange top arc */}
+                    {/* --- Ambient Backlight Rays (Orange & Green only, no white boxes) --- */}
                     <path 
-                      d="M 30.68 70.35 A 82 82 0 0 1 179.32 139.65" 
+                      d="M 28.971 74.282 A 82 82 0 1 1 178.701 140.946" 
                       stroke="#FF7518" 
-                      strokeWidth="5" 
-                      strokeLinecap="round"
-                      filter="url(#neonOrangeGlow)"
+                      strokeWidth="14" 
+                      strokeLinecap="butt"
+                      opacity="0.22"
+                      filter="url(#wideAmbientBlur)"
                     />
-                    {/* White transition notch right */}
                     <path 
-                      d="M 179.32 139.65 A 82 82 0 0 1 169.62 155.49" 
-                      stroke="#FFFFFF" 
-                      strokeWidth="5" 
-                      strokeLinecap="round"
-                      filter="url(#neonWhiteGlow)"
-                    />
-                    {/* Green bottom arc */}
-                    <path 
-                      d="M 169.62 155.49 A 82 82 0 0 1 24.79 87.95" 
+                      d="M 167.816 157.709 A 82 82 0 0 1 23.798 93.588" 
                       stroke="#00C853" 
-                      strokeWidth="5" 
-                      strokeLinecap="round"
-                      filter="url(#neonGreenGlow)"
+                      strokeWidth="14" 
+                      strokeLinecap="butt"
+                      opacity="0.18"
+                      filter="url(#wideAmbientBlur)"
                     />
-                    {/* White transition notch left */}
+
+                    {/* --- Seamless Continuous 360° Tricolor Ring --- */}
+                    {/* Saffron / Orange Arc */}
                     <path 
-                      d="M 24.79 87.95 A 82 82 0 0 1 30.68 70.35" 
+                      d="M 28.971 74.282 A 82 82 0 1 1 178.701 140.946" 
+                      stroke="#FF7518" 
+                      strokeWidth="4.5" 
+                      strokeLinecap="butt"
+                      filter="url(#neonOrange)"
+                    />
+
+                    {/* White Right Transition Notch */}
+                    <path 
+                      d="M 178.701 140.946 A 82 82 0 0 1 167.816 157.709" 
                       stroke="#FFFFFF" 
-                      strokeWidth="5" 
-                      strokeLinecap="round"
-                      filter="url(#neonWhiteGlow)"
+                      strokeWidth="4.5" 
+                      strokeLinecap="butt"
+                      filter="url(#neonWhite)"
+                    />
+
+                    {/* Green Bottom Arc */}
+                    <path 
+                      d="M 167.816 157.709 A 82 82 0 0 1 23.798 93.588" 
+                      stroke="#00C853" 
+                      strokeWidth="4.5" 
+                      strokeLinecap="butt"
+                      filter="url(#neonGreen)"
+                    />
+
+                    {/* White Left Transition Notch */}
+                    <path 
+                      d="M 23.798 93.588 A 82 82 0 0 1 28.971 74.282" 
+                      stroke="#FFFFFF" 
+                      strokeWidth="4.5" 
+                      strokeLinecap="butt"
+                      filter="url(#neonWhite)"
                     />
                   </svg>
 
@@ -534,14 +531,15 @@ function BadgeContent({
                       width: '148px',
                       height: '148px',
                       borderRadius: '50%',
-                      background: '#0b121e',
+                      background: '#090e18',
+                      border: '1.5px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
                       cursor: photoUrl ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                      boxShadow: '0 0 12px rgba(0, 0, 0, 0.85)',
+                      boxShadow: '0 0 18px rgba(0, 0, 0, 0.95), inset 0 0 14px rgba(0, 0, 0, 0.85)',
                       zIndex: 2,
                     }}
                     onMouseDown={handleMouseDown}
@@ -589,7 +587,7 @@ function BadgeContent({
                         position: 'absolute', 
                         inset: 0, 
                         borderRadius: '50%', 
-                        boxShadow: 'inset 0 0 18px rgba(0, 0, 0, 0.75)', 
+                        boxShadow: 'inset 0 0 14px rgba(0, 0, 0, 0.7)', 
                         pointerEvents: 'none',
                         zIndex: 3,
                       }} 
@@ -600,17 +598,17 @@ function BadgeContent({
                   <div 
                     style={{
                       position: 'absolute',
-                      left: '156px',
-                      top: '141px',
+                      left: '149px',
+                      top: '149px',
                       width: '28px',
                       height: '28px',
                       borderRadius: '50%',
                       background: roleColor,
-                      border: '2.5px solid #0a101b',
+                      border: '2.5px solid #080d16',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: `0 0 14px ${roleColor}b3, 0 3px 8px rgba(0, 0, 0, 0.6)`,
+                      boxShadow: `0 0 12px rgba(255, 117, 24, 0.75), 0 2px 6px rgba(0, 0, 0, 0.7)`,
                       zIndex: 5,
                     }}
                   >
