@@ -232,10 +232,10 @@ input:autofill {
     z-index: 2 !important;
   }
   .hero-title {
-    font-size: clamp(26px, 7.6vw, 42px) !important;
+    font-size: clamp(32px, 8.8vw, 46px) !important;
     line-height: 1.15 !important;
     margin-bottom: 16px !important;
-    letter-spacing: -0.8px !important;
+    letter-spacing: -1px !important;
   }
   .hero-subtitle {
     font-size: 15px !important;
@@ -461,9 +461,10 @@ input:autofill {
     padding: 0 16px !important;
   }
   .hero-title {
-    font-size: clamp(30px, 8.8vw, 38px) !important;
-    line-height: 1.12 !important;
+    font-size: clamp(28px, 8.2vw, 38px) !important;
+    line-height: 1.15 !important;
     margin-bottom: 14px !important;
+    letter-spacing: -0.8px !important;
   }
   .hero-subtitle {
     font-size: 14px !important;
