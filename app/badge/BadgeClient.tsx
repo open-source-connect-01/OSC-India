@@ -273,6 +273,10 @@ function BadgeContent({
           }
         }
 
+        if (typeof document !== "undefined" && (document as any).fonts) {
+          await (document as any).fonts.ready;
+        }
+
         const canvas = await html2canvas(badgeRef.current, {
           backgroundColor: null,
           scale: 3, 
@@ -316,6 +320,23 @@ function BadgeContent({
                 if (bottomBar.children[0]) (bottomBar.children[0] as HTMLElement).style.borderBottomLeftRadius = '24px';
                 if (bottomBar.children[2]) (bottomBar.children[2] as HTMLElement).style.borderBottomRightRadius = '24px';
               }
+
+              // 5. Hide cloned role pill so html2canvas doesn't draw it with broken text metrics
+              const clonedPill = clonedBadge.querySelector('.role-pill') as HTMLElement;
+              if (clonedPill) {
+                clonedPill.style.visibility = 'hidden';
+              }
+
+              // 6. Ensure avatar container has no dark inset shadow and image has 100% full brightness
+              const avatarContainer = clonedBadge.querySelector('.avatar-photo-container') as HTMLElement;
+              if (avatarContainer) {
+                avatarContainer.style.boxShadow = 'none';
+              }
+              const avatarImg = clonedBadge.querySelector('.avatar-photo-img') as HTMLImageElement;
+              if (avatarImg) {
+                avatarImg.style.filter = 'none';
+                avatarImg.style.opacity = '1';
+              }
             }
           },
         });
@@ -342,6 +363,92 @@ function BadgeContent({
           ctx.closePath();
           ctx.clip();
           ctx.drawImage(canvas, 0, 0);
+
+          // Direct pixel-perfect vector drawing of Role Pill on canvas
+          if (badgeRef.current) {
+            const badgeEl = badgeRef.current;
+            const badgeRect = badgeEl.getBoundingClientRect();
+            const pillEl = badgeEl.querySelector('.role-pill') as HTMLElement;
+            if (pillEl) {
+              const pillRect = pillEl.getBoundingClientRect();
+              const scaleFactor = canvas.width / badgeRect.width;
+
+              const pillW = pillRect.width * scaleFactor;
+              const pillH = pillRect.height * scaleFactor;
+              const pillX = (canvas.width - pillW) / 2;
+              const pillY = (pillRect.top - badgeRect.top) * (canvas.height / badgeRect.height);
+
+              const pillRadius = pillH / 2;
+              const centerY = pillY + pillH / 2;
+
+              ctx.save();
+
+              // 1. Draw Pill Capsule Background & Glow
+              ctx.beginPath();
+              if (typeof (ctx as any).roundRect === 'function') {
+                (ctx as any).roundRect(pillX, pillY, pillW, pillH, pillRadius);
+              } else {
+                ctx.moveTo(pillX + pillRadius, pillY);
+                ctx.arcTo(pillX + pillW, pillY, pillX + pillW, pillY + pillH, pillRadius);
+                ctx.arcTo(pillX + pillW, pillY + pillH, pillX, pillY + pillH, pillRadius);
+                ctx.arcTo(pillX, pillY + pillH, pillX, pillY, pillRadius);
+                ctx.arcTo(pillX, pillY, pillX + pillW, pillY, pillRadius);
+                ctx.closePath();
+              }
+              ctx.fillStyle = 'rgba(15, 22, 33, 0.98)';
+              ctx.shadowColor = roleColor;
+              ctx.shadowBlur = 12 * scaleFactor;
+              ctx.fill();
+
+              // 2. Draw Pill Border
+              ctx.shadowBlur = 0;
+              ctx.strokeStyle = roleBorder;
+              ctx.lineWidth = 1 * scaleFactor;
+              ctx.stroke();
+
+              // 3. Measure & Draw Dot and Text on the exact same centerY
+              const fontSize = 11 * scaleFactor;
+              ctx.font = `800 ${fontSize}px var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+
+              const charSpacing = 0.16 * fontSize;
+              let textWidth = 0;
+              for (let i = 0; i < roleText.length; i++) {
+                textWidth += ctx.measureText(roleText[i]).width;
+                if (i < roleText.length - 1) textWidth += charSpacing;
+              }
+
+              const dotDiameter = 6 * scaleFactor;
+              const dotRadius = dotDiameter / 2;
+              const gap = 7 * scaleFactor;
+              const totalContentWidth = dotDiameter + gap + textWidth;
+              const startX = pillX + (pillW - totalContentWidth) / 2;
+
+              // 4. Glowing Dot (locked to centerY)
+              const dotCenterX = startX + dotRadius;
+              ctx.beginPath();
+              ctx.arc(dotCenterX, centerY, dotRadius, 0, Math.PI * 2);
+              ctx.fillStyle = roleColor;
+              ctx.shadowColor = roleColor;
+              ctx.shadowBlur = 6 * scaleFactor;
+              ctx.fill();
+
+              // 5. Uppercase Text (locked to centerY)
+              ctx.shadowBlur = 0;
+              ctx.fillStyle = roleColor;
+              ctx.textBaseline = 'middle';
+              ctx.textAlign = 'left';
+
+              let curX = startX + dotDiameter + gap;
+              for (let i = 0; i < roleText.length; i++) {
+                const ch = roleText[i];
+                ctx.fillText(ch, curX, centerY);
+                curX += ctx.measureText(ch).width + charSpacing;
+              }
+
+              ctx.restore();
+            }
+          }
+
           url = outputCanvas.toDataURL("image/png");
         } else {
           url = canvas.toDataURL("image/png");
@@ -667,8 +774,9 @@ function BadgeContent({
                     style={{ display: 'none' }}
                   />
 
-                  {/* Inner Photo Container with Recessed Shadow */}
+                  {/* Inner Photo Container */}
                   <div 
+                    className="avatar-photo-container"
                     style={{
                       position: 'absolute',
                       top: '28px',
@@ -684,8 +792,8 @@ function BadgeContent({
                       justifyContent: 'center',
                       overflow: 'hidden',
                       cursor: photoUrl ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-                      boxShadow: '0 0 16px rgba(0, 0, 0, 0.95), inset 0 0 12px rgba(0, 0, 0, 0.85)',
-                      zIndex: 2,
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
+                      zIndex: 4,
                     }}
                     onClick={() => {
                       if (!photoUrl) {
@@ -710,6 +818,7 @@ function BadgeContent({
                     {photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img 
+                        className="avatar-photo-img"
                         src={photoUrl} 
                         alt="Avatar" 
                         style={{ 
@@ -718,7 +827,9 @@ function BadgeContent({
                           objectFit: 'cover',
                           transform: `scale(${scale}) rotate(${rotation}deg) translate(${position.x / scale}px, ${position.y / scale}px)`,
                           transformOrigin: 'center center',
-                          pointerEvents: 'none'
+                          pointerEvents: 'none',
+                          filter: 'none',
+                          opacity: 1,
                         }} 
                         onError={(e) => {
                           const target = e.currentTarget;
@@ -736,18 +847,6 @@ function BadgeContent({
                         </span>
                       </div>
                     )}
-
-                    {/* Inner Vignette Depth Overlay */}
-                    <div 
-                      style={{ 
-                        position: 'absolute', 
-                        inset: 0, 
-                        borderRadius: '50%', 
-                        boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.7)', 
-                        pointerEvents: 'none',
-                        zIndex: 3,
-                      }} 
-                    />
                   </div>
 
                   {/* Verified Checkmark Badge at ~4:30 o'clock */}
@@ -797,7 +896,7 @@ function BadgeContent({
                 <h2 
                   style={{ 
                     color: '#FFFFFF', 
-                    fontSize: '21px', 
+                    fontSize: (name && name.length > 16) ? '18px' : '21px', 
                     fontWeight: 800, 
                     marginBottom: '8px',
                     textAlign: 'center',
@@ -813,34 +912,51 @@ function BadgeContent({
 
                 {/* Role Pill */}
                 <div 
+                  className="role-pill"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '7px',
-                    padding: '5px 16px',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    height: '24px',
+                    padding: '0 14px',
                     borderRadius: '9999px',
                     background: 'rgba(15, 22, 33, 0.95)',
                     border: `1px solid ${roleBorder}`,
-                    boxShadow: `0 0 14px ${roleBg.replace('0.1', '0.25')}`,
-                    zIndex: 2,
-                    marginBottom: '10px',
+                    boxShadow: `0 0 12px ${roleBg.replace('0.1', '0.25')}`,
+                    zIndex: 4,
+                    marginBottom: '8px',
+                    lineHeight: '1',
+                    boxSizing: 'border-box',
                   }}
                 >
-                  <div 
+                  <span 
+                    className="role-dot"
                     style={{
+                      display: 'inline-block',
                       width: '6px',
                       height: '6px',
+                      minWidth: '6px',
+                      minHeight: '6px',
                       borderRadius: '50%',
                       background: roleColor,
                       boxShadow: `0 0 6px ${roleColor}`,
+                      marginRight: '7px',
+                      verticalAlign: 'middle',
+                      flexShrink: 0,
                     }}
                   />
                   <span 
+                    className="role-text"
                     style={{
+                      display: 'inline-block',
                       color: roleColor,
                       fontSize: '11px',
                       fontWeight: 800,
                       letterSpacing: '0.16em',
+                      lineHeight: '1',
+                      verticalAlign: 'middle',
+                      textTransform: 'uppercase',
                     }}
                   >
                     {roleText}
