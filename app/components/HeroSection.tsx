@@ -216,7 +216,7 @@ export default function HeroSection() {
                 letterSpacing: "0.2px",
               }}
             >
-              September 1, 2026
+              September 1-30, 2026
             </span>
           </div>
         </div>
