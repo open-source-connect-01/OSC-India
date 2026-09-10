@@ -113,9 +113,17 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           className="logo-link"
           style={{ textDecoration: "none", justifySelf: "start", display: "flex", alignItems: "center" }}
         >
-          {/* Using plain img avoids Next.js Image width/height prop vs CSS mismatch warning */}
+          {/* Desktop full logo with text */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Open Source Connect India" className="navbar-logo" />
+          <img src="/logo.png" alt="Open Source Connect India" className="navbar-logo hidden md:block" />
+          {/* Mobile emblem logo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/mobile-logo.png"
+            alt="Open Source Connect India"
+            className="navbar-logo-mobile block md:hidden"
+            style={{ width: "36px", height: "36px", objectFit: "contain" }}
+          />
         </Link>
 
         {/* Desktop Nav */}
@@ -393,17 +401,82 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          style={{ display: "none", background: "none", border: "none", color: "#fff", cursor: "pointer", padding: "4px", justifySelf: "end" }}
-          aria-label="Toggle menu"
+        {/* Mobile Right Controls: Sign Button + Hamburger Menu matching reference design */}
+        <div
+          className="mobile-right-controls"
+          style={{
+            display: "none",
+            alignItems: "center",
+            gap: "12px",
+            justifySelf: "end",
+          }}
         >
-          <div style={{ width: "24px", height: "2px", background: "#fff", marginBottom: "5px", borderRadius: "2px", transition: "transform 0.2s", transform: mobileOpen ? "rotate(45deg) translateY(7px)" : "none" }} />
-          <div style={{ width: "24px", height: "2px", background: "#fff", marginBottom: "5px", borderRadius: "2px", opacity: mobileOpen ? 0 : 1, transition: "opacity 0.2s" }} />
-          <div style={{ width: "24px", height: "2px", background: "#fff", borderRadius: "2px", transition: "transform 0.2s", transform: mobileOpen ? "rotate(-45deg) translateY(-7px)" : "none" }} />
-        </button>
+          {profile ? (
+            <Link
+              href="/dashboard"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+              title="Dashboard"
+            >
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  background: "#1c1c1f",
+                  border: "1.5px solid var(--orange)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt={profile.name || "Avatar"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>{profile.name?.[0] || "U"}</span>
+                )}
+              </div>
+            </Link>
+          ) : (
+            <Link
+              href="/sign-in"
+              className="mobile-sign-btn"
+              style={{
+                color: "#ffffff",
+                textDecoration: "none",
+                fontSize: "13.5px",
+                fontWeight: 600,
+                padding: "6px 14px",
+                borderRadius: "8px",
+                border: "1.5px solid #FF7518",
+                background: "rgba(0, 0, 0, 0.4)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s ease",
+              }}
+            >
+              Sign
+            </Link>
+          )}
+
+          {/* Mobile Hamburger */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: "4px" }}
+            aria-label="Toggle menu"
+          >
+            <div style={{ width: "22px", height: "2px", background: "#fff", marginBottom: "5px", borderRadius: "2px", transition: "transform 0.2s", transform: mobileOpen ? "rotate(45deg) translateY(7px)" : "none" }} />
+            <div style={{ width: "22px", height: "2px", background: "#fff", marginBottom: "5px", borderRadius: "2px", opacity: mobileOpen ? 0 : 1, transition: "opacity 0.2s" }} />
+            <div style={{ width: "22px", height: "2px", background: "#fff", borderRadius: "2px", transition: "transform 0.2s", transform: mobileOpen ? "rotate(-45deg) translateY(-7px)" : "none" }} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}

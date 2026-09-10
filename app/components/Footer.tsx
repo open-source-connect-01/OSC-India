@@ -123,11 +123,21 @@ export default function Footer() {
                 marginBottom: "20px",
               }}
             >
+              {/* Desktop full logo */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
                 alt="Open Source Connect India"
-                className="navbar-logo"
+                className="footer-logo hidden md:block"
+                style={{ height: "46px", width: "auto", objectFit: "contain" }}
+              />
+              {/* Mobile emblem logo */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/mobile-logo.png"
+                alt="Open Source Connect India"
+                className="footer-logo-mobile block md:hidden"
+                style={{ width: "42px", height: "42px", objectFit: "contain" }}
               />
             </Link>
             <p
