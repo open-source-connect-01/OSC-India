@@ -232,10 +232,10 @@ input:autofill {
     z-index: 2 !important;
   }
   .hero-title {
-    font-size: clamp(34px, 9.2vw, 44px) !important;
-    line-height: 1.12 !important;
+    font-size: clamp(26px, 7.6vw, 42px) !important;
+    line-height: 1.15 !important;
     margin-bottom: 16px !important;
-    letter-spacing: -1px !important;
+    letter-spacing: -0.8px !important;
   }
   .hero-subtitle {
     font-size: 15px !important;
