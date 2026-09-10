@@ -90,13 +90,13 @@ const CHAKRA_SPOKES = [
   { x2: 31.52, y2: 14.38 },
 ];
 
-function AshokaChakraIcon({ size = 18 }: { size?: number }) {
+function AshokaChakraIcon({ size = 18, color = "#FFFFFF" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="18" cy="18" r="16" stroke="#FF7518" strokeWidth="1.8" />
-      <circle cx="18" cy="18" r="14" stroke="rgba(255, 117, 24, 0.3)" strokeWidth="0.8" />
-      <circle cx="18" cy="18" r="3.5" fill="#FF7518" />
-      <circle cx="18" cy="18" r="1.5" fill="#FFFFFF" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))' }}>
+      <circle cx="18" cy="18" r="16" stroke={color} strokeWidth="1.8" />
+      <circle cx="18" cy="18" r="14" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="0.8" />
+      <circle cx="18" cy="18" r="3.5" fill={color} />
+      <circle cx="18" cy="18" r="1.5" fill="#0d1522" />
       {CHAKRA_SPOKES.map((spoke, idx) => (
         <line
           key={idx}
@@ -104,11 +104,11 @@ function AshokaChakraIcon({ size = 18 }: { size?: number }) {
           y1="18"
           x2={spoke.x2}
           y2={spoke.y2}
-          stroke="#FF7518"
+          stroke={color}
           strokeWidth="1.2"
         />
       ))}
-      <circle cx="18" cy="18" r="8" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="0.6" strokeDasharray="1.5 1.5" />
+      <circle cx="18" cy="18" r="8" stroke="rgba(255, 255, 255, 0.45)" strokeWidth="0.6" strokeDasharray="1.5 1.5" />
     </svg>
   );
 }
@@ -293,9 +293,9 @@ function BadgeContent({
           
           {/* LEFT: Live Preview */}
           <div className="w-full flex flex-col items-center flex-1 box-border" style={{ minWidth: 0, maxWidth: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', width: '100%', maxWidth: '340px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px', width: '100%', maxWidth: '300px' }}>
               <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
-              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.22em', color: '#9ca3af' }}>LIVE PREVIEW</span>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.22em', color: '#9ca3af' }}>LIVE PREVIEW</span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
             </div>
 
@@ -303,11 +303,11 @@ function BadgeContent({
             <div 
               style={{
                 position: 'relative',
-                padding: 'clamp(8px, 3vw, 16px)',
-                borderRadius: '32px',
+                padding: 'clamp(6px, 2.5vw, 12px)',
+                borderRadius: '28px',
                 background: 'rgba(255, 255, 255, 0.02)',
                 width: '100%',
-                maxWidth: '368px',
+                maxWidth: '324px',
                 display: 'flex',
                 justifyContent: 'center'
               }}
@@ -318,8 +318,8 @@ function BadgeContent({
                   position: 'absolute', 
                   inset: '-4px', 
                   background: 'radial-gradient(ellipse at 50% 15%, rgba(255, 117, 24, 0.18) 0%, transparent 65%), radial-gradient(ellipse at 50% 85%, rgba(0, 200, 83, 0.15) 0%, transparent 65%)', 
-                  filter: 'blur(32px)', 
-                  borderRadius: '36px', 
+                  filter: 'blur(28px)', 
+                  borderRadius: '32px', 
                   zIndex: 0,
                   pointerEvents: 'none',
                 }} 
@@ -331,16 +331,16 @@ function BadgeContent({
                 style={{
                   position: 'relative',
                   width: '100%',
-                  maxWidth: '340px',
+                  maxWidth: '300px',
                   margin: '0 auto',
                   background: 'linear-gradient(180deg, #0d1522 0%, #080c14 100%)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '28px',
+                  borderRadius: '24px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  padding: '24px 20px 20px',
-                  boxShadow: '0 25px 65px -12px rgba(0, 0, 0, 0.95), 0 0 45px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+                  padding: '18px 16px 14px',
+                  boxShadow: '0 20px 55px -10px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
                   zIndex: 1,
                   overflow: 'hidden',
                   boxSizing: 'border-box'
@@ -353,7 +353,7 @@ function BadgeContent({
                     top: 0, 
                     left: 0, 
                     right: 0, 
-                    height: '6px', 
+                    height: '5px', 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr 1fr', 
                     zIndex: 10 
@@ -371,7 +371,7 @@ function BadgeContent({
                     bottom: 0, 
                     left: 0, 
                     right: 0, 
-                    height: '6px', 
+                    height: '5px', 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr 1fr', 
                     zIndex: 10 
@@ -397,19 +397,19 @@ function BadgeContent({
                 />
 
                 {/* Badge Header: Emblem + Tricolor Text */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', zIndex: 2 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/mobile-logo.png" 
                     alt="OSCI Logo" 
-                    style={{ width: '38px', height: '38px', objectFit: 'contain' }}
+                    style={{ width: '33px', height: '33px', objectFit: 'contain' }}
                     crossOrigin="anonymous"
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: '1.2' }}>
-                    <span style={{ color: '#FF7518', fontWeight: 800, fontSize: '15.5px', letterSpacing: '-0.2px' }}>
+                    <span style={{ color: '#FF7518', fontWeight: 800, fontSize: '14px', letterSpacing: '-0.2px' }}>
                       Open Source
                     </span>
-                    <span style={{ fontWeight: 800, fontSize: '15.5px', letterSpacing: '-0.2px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '-0.2px' }}>
                       <span style={{ color: '#FFFFFF' }}>Connect </span>
                       <span style={{ color: '#00D26A' }}>India</span>
                     </span>
@@ -417,22 +417,22 @@ function BadgeContent({
                 </div>
 
                 {/* Divider Line with 3 Tricolor Dots */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '210px', margin: '14px auto 0', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '180px', margin: '11px auto 0', zIndex: 2 }}>
                   <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18))' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 8px' }}>
-                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FF7518' }} />
-                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FFFFFF' }} />
-                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00D26A' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0 7px' }}>
+                    <div style={{ width: '3.5px', height: '3.5px', borderRadius: '50%', background: '#FF7518' }} />
+                    <div style={{ width: '3.5px', height: '3.5px', borderRadius: '50%', background: '#FFFFFF' }} />
+                    <div style={{ width: '3.5px', height: '3.5px', borderRadius: '50%', background: '#00D26A' }} />
                   </div>
                   <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.18), transparent)' }} />
                 </div>
 
                 {/* Avatar with Seamless Tricolor Ring and Precision Neon Glow */}
-                <div style={{ position: 'relative', width: '210px', height: '210px', margin: '14px auto 0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <div style={{ position: 'relative', width: '186px', height: '186px', margin: '11px auto 0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                   {/* SVG Tricolor Ring with Seamless Butt Joints and Zero-Clipping Filters */}
                   <svg 
-                    width="210" 
-                    height="210" 
+                    width="186" 
+                    height="186" 
                     viewBox="0 0 210 210" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -526,10 +526,10 @@ function BadgeContent({
                   <div 
                     style={{
                       position: 'absolute',
-                      top: '31px',
-                      left: '31px',
-                      width: '148px',
-                      height: '148px',
+                      top: '28px',
+                      left: '28px',
+                      width: '130px',
+                      height: '130px',
                       borderRadius: '50%',
                       background: '#090e18',
                       border: '1.5px solid rgba(255, 255, 255, 0.08)',
@@ -539,7 +539,7 @@ function BadgeContent({
                       justifyContent: 'center',
                       overflow: 'hidden',
                       cursor: photoUrl ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                      boxShadow: '0 0 18px rgba(0, 0, 0, 0.95), inset 0 0 14px rgba(0, 0, 0, 0.85)',
+                      boxShadow: '0 0 16px rgba(0, 0, 0, 0.95), inset 0 0 12px rgba(0, 0, 0, 0.85)',
                       zIndex: 2,
                     }}
                     onMouseDown={handleMouseDown}
@@ -574,8 +574,8 @@ function BadgeContent({
                       />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <UserIcon style={{ width: '38px', height: '38px', color: '#475569' }} />
-                        <span style={{ color: '#64748b', fontSize: '10px', fontWeight: 700, letterSpacing: '0.14em', marginTop: '8px' }}>
+                        <UserIcon style={{ width: '34px', height: '34px', color: '#475569' }} />
+                        <span style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em', marginTop: '6px' }}>
                           UPLOAD PHOTO
                         </span>
                       </div>
@@ -587,7 +587,7 @@ function BadgeContent({
                         position: 'absolute', 
                         inset: 0, 
                         borderRadius: '50%', 
-                        boxShadow: 'inset 0 0 14px rgba(0, 0, 0, 0.7)', 
+                        boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.7)', 
                         pointerEvents: 'none',
                         zIndex: 3,
                       }} 
@@ -598,30 +598,30 @@ function BadgeContent({
                   <div 
                     style={{
                       position: 'absolute',
-                      left: '149px',
-                      top: '149px',
-                      width: '28px',
-                      height: '28px',
+                      left: '132px',
+                      top: '132px',
+                      width: '25px',
+                      height: '25px',
                       borderRadius: '50%',
                       background: roleColor,
                       border: '2.5px solid #080d16',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: `0 0 12px rgba(255, 117, 24, 0.75), 0 2px 6px rgba(0, 0, 0, 0.7)`,
+                      boxShadow: `0 0 10px rgba(255, 117, 24, 0.75), 0 2px 5px rgba(0, 0, 0, 0.7)`,
                       zIndex: 5,
                     }}
                   >
                     {person === 'mentor' ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                       </svg>
                     ) : person === 'project-admin' ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
                       </svg>
                     ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -629,10 +629,10 @@ function BadgeContent({
                 </div>
 
                 {/* Chakra Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '170px', margin: '14px auto 10px', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '150px', margin: '11px auto 8px', zIndex: 2 }}>
                   <div style={{ flex: 1, height: '1.5px', background: 'linear-gradient(90deg, transparent, #FF7518)' }} />
-                  <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center' }}>
-                    <AshokaChakraIcon size={18} />
+                  <div style={{ padding: '0 7px', display: 'flex', alignItems: 'center' }}>
+                    <AshokaChakraIcon size={16} />
                   </div>
                   <div style={{ flex: 1, height: '1.5px', background: 'linear-gradient(90deg, #00C853, transparent)' }} />
                 </div>
@@ -641,9 +641,9 @@ function BadgeContent({
                 <h2 
                   style={{ 
                     color: '#FFFFFF', 
-                    fontSize: '24px', 
+                    fontSize: '21px', 
                     fontWeight: 800, 
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                     textAlign: 'center',
                     zIndex: 2,
                     wordBreak: 'break-word',
@@ -660,31 +660,31 @@ function BadgeContent({
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 20px',
+                    gap: '7px',
+                    padding: '5px 16px',
                     borderRadius: '9999px',
                     background: 'rgba(15, 22, 33, 0.95)',
                     border: `1px solid ${roleBorder}`,
-                    boxShadow: `0 0 16px ${roleBg.replace('0.1', '0.25')}`,
+                    boxShadow: `0 0 14px ${roleBg.replace('0.1', '0.25')}`,
                     zIndex: 2,
-                    marginBottom: '12px',
+                    marginBottom: '10px',
                   }}
                 >
                   <div 
                     style={{
-                      width: '7px',
-                      height: '7px',
+                      width: '6px',
+                      height: '6px',
                       borderRadius: '50%',
                       background: roleColor,
-                      boxShadow: `0 0 8px ${roleColor}`,
+                      boxShadow: `0 0 6px ${roleColor}`,
                     }}
                   />
                   <span 
                     style={{
                       color: roleColor,
-                      fontSize: '12px',
+                      fontSize: '11px',
                       fontWeight: 800,
-                      letterSpacing: '0.18em',
+                      letterSpacing: '0.16em',
                     }}
                   >
                     {roleText}
@@ -692,24 +692,24 @@ function BadgeContent({
                 </div>
 
                 {/* Year */}
-                <div style={{ color: '#93c5fd', fontSize: '15px', fontWeight: 800, letterSpacing: '0.08em', zIndex: 2 }}>
+                <div style={{ color: '#93c5fd', fontSize: '13.5px', fontWeight: 800, letterSpacing: '0.08em', zIndex: 2 }}>
                   • 2026 •
                 </div>
 
                 {/* Powered By */}
-                <div style={{ color: '#9ca3af', fontSize: '11px', fontStyle: 'italic', fontWeight: 500, marginTop: '2px', marginBottom: '6px', zIndex: 2 }}>
+                <div style={{ color: '#9ca3af', fontSize: '10px', fontStyle: 'italic', fontWeight: 500, marginTop: '2px', marginBottom: '5px', zIndex: 2 }}>
                   Powered By
                 </div>
 
                 {/* NexFellow Sponsor Logo */}
-                <div style={{ display: 'flex', justifyContent: 'center', zIndex: 2, marginBottom: '18px' }}>
-                  <NexFellowLogo style={{ width: '116px', height: '28px' }} />
+                <div style={{ display: 'flex', justifyContent: 'center', zIndex: 2, marginBottom: '14px' }}>
+                  <NexFellowLogo style={{ width: '104px', height: '25px' }} />
                 </div>
               </div>
             </div>
 
-            <p style={{ color: '#6b7280', fontSize: '12.5px', marginTop: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF7518' }}></span>
+            <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{ width: '5.5px', height: '5.5px', borderRadius: '50%', background: '#FF7518' }}></span>
               Updates live as you type
             </p>
           </div>
