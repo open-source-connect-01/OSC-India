@@ -278,8 +278,75 @@ function BadgeContent({
           scale: 3, 
           useCORS: true,
           logging: false,
+          onclone: (clonedDoc) => {
+            const clonedBadge = clonedDoc.querySelector('.badge-container') as HTMLElement;
+            if (clonedBadge) {
+              // 1. Remove all outer box shadows so html2canvas bounds match the card exactly
+              clonedBadge.style.boxShadow = 'none';
+              clonedBadge.style.filter = 'none';
+              clonedBadge.style.margin = '0';
+              clonedBadge.style.width = '300px';
+              clonedBadge.style.maxWidth = '300px';
+              clonedBadge.style.minWidth = '300px';
+
+              // 2. Remove harsh textShadow artifacts in html2canvas
+              clonedBadge.querySelectorAll('h2, span, p, div').forEach((node) => {
+                const el = node as HTMLElement;
+                if (el.style && el.style.textShadow) {
+                  el.style.textShadow = 'none';
+                }
+              });
+
+              // 3. Ensure top flag bar is flush with card's top rounded corners
+              const topBar = clonedBadge.children[0] as HTMLElement;
+              if (topBar) {
+                topBar.style.borderTopLeftRadius = '24px';
+                topBar.style.borderTopRightRadius = '24px';
+                topBar.style.overflow = 'hidden';
+                if (topBar.children[0]) (topBar.children[0] as HTMLElement).style.borderTopLeftRadius = '24px';
+                if (topBar.children[2]) (topBar.children[2] as HTMLElement).style.borderTopRightRadius = '24px';
+              }
+
+              // 4. Ensure bottom flag bar is flush with card's bottom rounded corners
+              const bottomBar = clonedBadge.children[1] as HTMLElement;
+              if (bottomBar) {
+                bottomBar.style.borderBottomLeftRadius = '24px';
+                bottomBar.style.borderBottomRightRadius = '24px';
+                bottomBar.style.overflow = 'hidden';
+                if (bottomBar.children[0]) (bottomBar.children[0] as HTMLElement).style.borderBottomLeftRadius = '24px';
+                if (bottomBar.children[2]) (bottomBar.children[2] as HTMLElement).style.borderBottomRightRadius = '24px';
+              }
+            }
+          },
         });
-        const url = canvas.toDataURL("image/png");
+
+        // Ensure razor-sharp rounded corners with pure alpha transparency outside the card
+        const outputCanvas = document.createElement("canvas");
+        outputCanvas.width = canvas.width;
+        outputCanvas.height = canvas.height;
+        const ctx = outputCanvas.getContext("2d");
+        let url = "";
+
+        if (ctx) {
+          const cornerRadius = 24 * (canvas.width / 300);
+          ctx.beginPath();
+          ctx.moveTo(cornerRadius, 0);
+          ctx.lineTo(canvas.width - cornerRadius, 0);
+          ctx.arcTo(canvas.width, 0, canvas.width, cornerRadius, cornerRadius);
+          ctx.lineTo(canvas.width, canvas.height - cornerRadius);
+          ctx.arcTo(canvas.width, canvas.height, canvas.width - cornerRadius, canvas.height, cornerRadius);
+          ctx.lineTo(cornerRadius, canvas.height);
+          ctx.arcTo(0, canvas.height, 0, canvas.height - cornerRadius, cornerRadius);
+          ctx.lineTo(0, cornerRadius);
+          ctx.arcTo(0, 0, cornerRadius, 0, cornerRadius);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(canvas, 0, 0);
+          url = outputCanvas.toDataURL("image/png");
+        } else {
+          url = canvas.toDataURL("image/png");
+        }
+
         const link = document.createElement("a");
         link.download = `OSCI-Badge-${name || roleText}.png`;
         link.href = url;
@@ -419,12 +486,15 @@ function BadgeContent({
                     height: '5px', 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr 1fr', 
+                    borderTopLeftRadius: '24px',
+                    borderTopRightRadius: '24px',
+                    overflow: 'hidden',
                     zIndex: 10 
                   }}
                 >
-                  <div style={{ background: '#FF7518' }} />
+                  <div style={{ background: '#FF7518', borderTopLeftRadius: '24px' }} />
                   <div style={{ background: '#FFFFFF' }} />
-                  <div style={{ background: '#00A843' }} />
+                  <div style={{ background: '#00A843', borderTopRightRadius: '24px' }} />
                 </div>
 
                 {/* Bottom Indian Flag Accent Bar */}
@@ -437,12 +507,15 @@ function BadgeContent({
                     height: '5px', 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr 1fr', 
+                    borderBottomLeftRadius: '24px',
+                    borderBottomRightRadius: '24px',
+                    overflow: 'hidden',
                     zIndex: 10 
                   }}
                 >
-                  <div style={{ background: '#FF7518' }} />
+                  <div style={{ background: '#FF7518', borderBottomLeftRadius: '24px' }} />
                   <div style={{ background: '#FFFFFF' }} />
-                  <div style={{ background: '#00A843' }} />
+                  <div style={{ background: '#00A843', borderBottomRightRadius: '24px' }} />
                 </div>
 
                 {/* Ambient lighting accents inside badge */}
