@@ -565,3 +565,139 @@ export async function adminLogoutAction(): Promise<{ success: boolean }> {
   return { success: true };
 }
 
+/**
+ * Permanently deletes a user from public.profiles and auth.users.
+ * Strict rules:
+ * - Requires Super Admin privileges.
+ * - Prevents deleting oneself.
+ * - Prevents deleting root super admin accounts (ADMIN_PORTAL_EMAIL or sayanghosh1887@gmail.com).
+ * - Purges public.profiles, dependent records, and Supabase auth accounts.
+ */
+export async function deleteUserAction(
+  targetUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const currentAdmin = await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    if (!targetUserId || typeof targetUserId !== "string") {
+      return { success: false, error: "Invalid user ID provided." };
+    }
+
+    // 1. Self-deletion check by ID
+    if (currentAdmin.user.id === targetUserId) {
+      return { success: false, error: "You cannot delete your own admin account." };
+    }
+
+    // 2. Fetch target user's profile and auth information
+    let targetEmail: string | null = null;
+
+    try {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("id, email, role, is_admin")
+        .eq("id", targetUserId)
+        .maybeSingle();
+
+      if (profile?.email) {
+        targetEmail = profile.email;
+      }
+    } catch (e) {
+      console.warn("Notice: reading target profile before deletion:", e);
+    }
+
+    try {
+      const { data: authData } = await admin.auth.admin.getUserById(targetUserId);
+      if (authData?.user) {
+        if (!targetEmail) {
+          targetEmail = authData.user.email || (authData.user.user_metadata?.email as string) || null;
+        }
+      }
+    } catch (e) {
+      console.warn("Notice: reading target auth user before deletion:", e);
+    }
+
+    // 3. Root Admin Protection Checks
+    const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
+    const primaryAdminEmail = "sayanghosh1887@gmail.com";
+
+    if (targetEmail) {
+      const cleanTargetEmail = targetEmail.toLowerCase().trim();
+      if (cleanTargetEmail === rootAdminEmail || cleanTargetEmail === primaryAdminEmail) {
+        return { success: false, error: "The primary root administrator account cannot be deleted." };
+      }
+
+      if (
+        currentAdmin.user.email &&
+        cleanTargetEmail === currentAdmin.user.email.toLowerCase().trim()
+      ) {
+        return { success: false, error: "You cannot delete your own account." };
+      }
+    }
+
+    // 4. Delete user from public.profiles by id and email
+    try {
+      await admin.from("profiles").delete().eq("id", targetUserId);
+    } catch (dbErr) {
+      console.warn("Notice: deleting from profiles by id:", dbErr);
+    }
+
+    if (targetEmail) {
+      try {
+        await admin.from("profiles").delete().ilike("email", targetEmail);
+      } catch (dbErr) {
+        console.warn("Notice: deleting from profiles by email:", dbErr);
+      }
+    }
+
+    // 5. Delete any linked child tables if present in database (contributions, leaderboard_stats)
+    try {
+      await admin.from("contributions").delete().eq("user_id", targetUserId);
+    } catch (_) {}
+
+    try {
+      await admin.from("leaderboard_stats").delete().eq("user_id", targetUserId);
+    } catch (_) {}
+
+    // 6. Delete from Supabase auth.users
+    try {
+      const { error: authErr } = await admin.auth.admin.deleteUser(targetUserId);
+      if (authErr) {
+        console.warn("Notice: auth.admin.deleteUser warning:", authErr.message);
+      }
+    } catch (authErr) {
+      console.warn("Notice: auth.admin.deleteUser exception:", authErr);
+    }
+
+    // 7. If target user had an email, also purge any duplicate auth identities matching that email
+    if (targetEmail) {
+      try {
+        const { data: usersList } = await admin.auth.admin.listUsers();
+        if (usersList?.users) {
+          const matchingAuthUsers = usersList.users.filter(
+            (u) => u.email?.toLowerCase().trim() === targetEmail!.toLowerCase().trim()
+          );
+          for (const u of matchingAuthUsers) {
+            if (u.id !== targetUserId) {
+              await admin.auth.admin.deleteUser(u.id);
+            }
+          }
+        }
+      } catch (authPurgeErr) {
+        console.warn("Notice: purging duplicate auth accounts by email:", authPurgeErr);
+      }
+    }
+
+    // 8. Revalidate cached routes
+    revalidatePath("/admin");
+    revalidatePath("/leaderboard");
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to delete user.";
+    return { success: false, error: message };
+  }
+}
+
+

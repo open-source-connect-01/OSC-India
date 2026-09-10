@@ -4,7 +4,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, adminLogoutAction, getAdminData } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, deleteUserAction, adminLogoutAction, getAdminData } from "@/lib/actions/admin";
 import { createProjectAction, deleteProjectAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
 
 // Icons
@@ -204,6 +204,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string; email?: string } | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const [newProject, setNewProject] = useState<NewProjectInput>({
     title: "",
@@ -242,6 +244,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       if (e.key === "Escape") {
         if (projectToDelete && !deletingProjectId) {
           setProjectToDelete(null);
+        } else if (userToDelete && !deletingUserId) {
+          setUserToDelete(null);
         } else if (showAddProjectModal && !isSubmittingProject) {
           setShowAddProjectModal(false);
         }
@@ -249,7 +253,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddProjectModal, projectToDelete, deletingProjectId, isSubmittingProject]);
+  }, [showAddProjectModal, projectToDelete, deletingProjectId, isSubmittingProject, userToDelete, deletingUserId]);
 
   // Filter projects
   const filteredProjects = projects.filter((p) => {
@@ -328,6 +332,37 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       showToast(err?.message || "Failed to delete project.", "error");
     } finally {
       setDeletingProjectId(null);
+    }
+  };
+
+  // Prompt Delete User Confirmation Modal
+  const handlePromptDeleteUser = (user: Profile) => {
+    setUserToDelete({
+      id: user.id,
+      name: user.full_name || "Anonymous User",
+      email: user.email || undefined,
+    });
+  };
+
+  // Confirm Delete User
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    const { id: targetId, name: targetName } = userToDelete;
+
+    setDeletingUserId(targetId);
+    try {
+      const res = await deleteUserAction(targetId);
+      if (res.success) {
+        setProfiles((prev) => prev.filter((p) => p.id !== targetId));
+        showToast(`User "${targetName}" removed permanently .`, "success");
+        setUserToDelete(null);
+      } else {
+        showToast(res.error || "Failed to delete user.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to delete user.", "error");
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -1014,7 +1049,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                   <th style={{ padding: "18px 22px" }}>SCORE</th>
                   <th style={{ padding: "18px 22px" }}>PRS / REPOS</th>
                   <th style={{ padding: "18px 22px" }}>BADGES</th>
-                  <th style={{ padding: "18px 22px", textAlign: "right" }}>ACTIONS</th>
+                  <th style={{ padding: "18px 22px", textAlign: "right", whiteSpace: "nowrap" }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -1184,39 +1219,79 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: "16px 22px", textAlign: "right" }}>
-                        {user.github ? (
+                      <td style={{ padding: "16px 22px", textAlign: "right", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", whiteSpace: "nowrap" }}>
+                          {user.github ? (
+                            <button
+                              onClick={() => handleSingleSync(user)}
+                              disabled={syncingId === user.id || deletingUserId === user.id}
+                              style={{ 
+                                background: "rgba(255,117,24,0.08)", 
+                                border: "1px solid rgba(255,117,24,0.25)", 
+                                color: "#FF8822", 
+                                padding: "7px 14px", 
+                                borderRadius: "10px", 
+                                fontSize: "12px", 
+                                fontWeight: 600, 
+                                cursor: syncingId === user.id || deletingUserId === user.id ? "not-allowed" : "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                whiteSpace: "nowrap",
+                                flexShrink: 0,
+                                transition: "all 0.2s"
+                              }}
+                              className="hover:bg-[rgba(255,117,24,0.18)] active:scale-[0.97] whitespace-nowrap"
+                            >
+                              <RefreshCwIcon className={`w-3.5 h-3.5 shrink-0 ${syncingId === user.id ? "animate-spin" : ""}`} />
+                              <span style={{ whiteSpace: "nowrap" }}>{syncingId === user.id ? "Syncing..." : "Sync PRs"}</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSetGithub(user.id)}
+                              disabled={deletingUserId === user.id}
+                              style={{ 
+                                background: "rgba(255,255,255,0.03)", 
+                                border: "1px solid rgba(255,255,255,0.08)", 
+                                color: "#9ca3af", 
+                                padding: "7px 14px", 
+                                borderRadius: "10px", 
+                                fontSize: "12px", 
+                                cursor: deletingUserId === user.id ? "not-allowed" : "pointer", 
+                                whiteSpace: "nowrap",
+                                flexShrink: 0,
+                                transition: "all 0.2s" 
+                              }}
+                              className="hover:text-white hover:border-[rgba(255,255,255,0.2)] whitespace-nowrap"
+                            >
+                              + Set GitHub
+                            </button>
+                          )}
+
+                          {/* Delete User Button */}
                           <button
-                            onClick={() => handleSingleSync(user)}
-                            disabled={syncingId === user.id}
-                            style={{ 
-                              background: "rgba(255,117,24,0.08)", 
-                              border: "1px solid rgba(255,117,24,0.25)", 
-                              color: "#FF8822", 
-                              padding: "7px 14px", 
-                              borderRadius: "10px", 
-                              fontSize: "12px", 
-                              fontWeight: 600, 
-                              cursor: syncingId === user.id ? "not-allowed" : "pointer",
+                            onClick={() => handlePromptDeleteUser(user)}
+                            disabled={deletingUserId === user.id}
+                            title={`Delete ${user.full_name || "User"} from database`}
+                            style={{
+                              background: "rgba(239,68,68,0.08)",
+                              border: "1px solid rgba(239,68,68,0.22)",
+                              color: "#f87171",
+                              padding: "7px 10px",
+                              borderRadius: "10px",
+                              fontSize: "12px",
+                              cursor: deletingUserId === user.id ? "not-allowed" : "pointer",
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "6px",
+                              justifyContent: "center",
+                              flexShrink: 0,
                               transition: "all 0.2s"
                             }}
-                            className="hover:bg-[rgba(255,117,24,0.18)] active:scale-[0.97]"
+                            className="hover:bg-[rgba(239,68,68,0.18)] hover:border-[rgba(239,68,68,0.4)] active:scale-[0.96]"
                           >
-                            <RefreshCwIcon className={`w-3.5 h-3.5 ${syncingId === user.id ? "animate-spin" : ""}`} />
-                            <span>{syncingId === user.id ? "Syncing..." : "Sync PRs"}</span>
+                            <Trash2Icon className="w-3.5 h-3.5 shrink-0" />
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => handleSetGithub(user.id)}
-                            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#9ca3af", padding: "7px 14px", borderRadius: "10px", fontSize: "12px", cursor: "pointer", transition: "all 0.2s" }}
-                            className="hover:text-white hover:border-[rgba(255,255,255,0.2)]"
-                          >
-                            + Set GitHub
-                          </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -2041,6 +2116,160 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                   <>
                     <Trash2Icon className="w-3.5 h-3.5" />
                     <span>Yes, Remove</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove User Confirmation Modal */}
+    {userToDelete && (
+      <div 
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-user-dialog-title"
+        aria-describedby="delete-user-dialog-desc"
+        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        style={{ 
+          background: "rgba(0, 0, 0, 0.8)", 
+          backdropFilter: "blur(14px)", 
+          WebkitBackdropFilter: "blur(14px)" 
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !deletingUserId) {
+            setUserToDelete(null);
+          }
+        }}
+      >
+        <div 
+          style={{ 
+            width: "100%", 
+            maxWidth: "460px", 
+            background: "linear-gradient(180deg, #17171d 0%, #0d0d11 100%)", 
+            border: "1px solid rgba(239, 68, 68, 0.3)", 
+            borderRadius: "20px", 
+            boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.12)",
+            overflow: "hidden",
+            animation: "toastSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+          }}
+        >
+          {/* Crimson accent line */}
+          <div style={{ height: "3px", width: "100%", background: "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" }} />
+
+          <div style={{ padding: "28px 26px 24px" }}>
+            {/* Top row: Alert Icon and Close Button */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+              <div 
+                style={{ 
+                  width: "48px", 
+                  height: "48px", 
+                  borderRadius: "14px", 
+                  background: "rgba(239, 68, 68, 0.12)", 
+                  border: "1px solid rgba(239, 68, 68, 0.25)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  color: "#f87171",
+                  boxShadow: "0 0 20px rgba(239, 68, 68, 0.15)"
+                }}
+              >
+                <Trash2Icon className="w-5 h-5" />
+              </div>
+
+              <button 
+                onClick={() => !deletingUserId && setUserToDelete(null)}
+                disabled={Boolean(deletingUserId)}
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.04)", 
+                  border: "1px solid rgba(255, 255, 255, 0.08)", 
+                  color: "#9ca3af", 
+                  width: "32px", 
+                  height: "32px", 
+                  borderRadius: "10px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: deletingUserId ? "not-allowed" : "pointer" 
+                }}
+                className="hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+                title="Cancel"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Title & Description */}
+            <h3 
+              id="delete-user-dialog-title"
+              style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 10px", letterSpacing: "-0.02em" }}
+            >
+              Delete User Permanently?
+            </h3>
+
+            <p id="delete-user-dialog-desc" style={{ fontSize: "14px", color: "#9ca3af", lineHeight: "1.55", margin: "0 0 24px" }}>
+              Are you sure you want to permanently delete{" "}
+              <span style={{ color: "#ffffff", fontWeight: 700 }}>
+                {userToDelete.name}
+              </span>
+              {userToDelete.email ? ` (${userToDelete.email})` : ""}?
+            </p>
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                disabled={Boolean(deletingUserId)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  color: "white",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: deletingUserId ? "not-allowed" : "pointer",
+                  transition: "all 0.15s"
+                }}
+                className="hover:bg-[rgba(255,255,255,0.08)] active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteUser}
+                disabled={Boolean(deletingUserId)}
+                style={{
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  border: "none",
+                  color: "white",
+                  padding: "10px 22px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: deletingUserId ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 16px rgba(239, 68, 68, 0.35)",
+                  transition: "all 0.15s",
+                  opacity: deletingUserId ? 0.8 : 1
+                }}
+                className="hover:shadow-[0_6px_22px_rgba(239,68,68,0.5)] active:scale-[0.98]"
+              >
+                {deletingUserId ? (
+                  <>
+                    <RefreshCwIcon className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2Icon className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
                   </>
                 )}
               </button>
