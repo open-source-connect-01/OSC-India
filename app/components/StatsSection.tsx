@@ -71,194 +71,44 @@ export default function StatsSection() {
           </p>
         </div>
 
-        {/* Top 2 Cards: 24/7 Community Support and 100% Open Source */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "20px",
-            marginBottom: "20px",
-          }}
-        >
+        {/* Top 2 Highlight Cards: 24/7 Community Support and 100% Open Source */}
+        <div className="stats-features-grid">
           {/* Card 1: 24/7 Community Support */}
-          <div
-            style={{
-              background: "rgba(255, 255, 255, 0.04)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "16px",
-              padding: "clamp(24px, 4vw, 32px)",
-              transition: "border-color 0.2s ease, transform 0.2s ease",
-            }}
-            className="hover:border-white/20 transition-all"
-          >
-            <div
-              style={{
-                fontSize: "clamp(32px, 4.5vw, 38px)",
-                fontWeight: 800,
-                color: "var(--orange)",
-                marginBottom: "8px",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              24/7
-            </div>
-            <div
-              style={{
-                fontSize: "16px",
-                fontWeight: 700,
-                color: "#ffffff",
-                marginBottom: "4px",
-              }}
-            >
-              Community Support
-            </div>
-            <div
-              style={{
-                fontSize: "13.5px",
-                color: "#9ca3af",
-              }}
-            >
-              Always available
-            </div>
+          <div className="stats-feature-card">
+            <div className="stats-feature-number">24/7</div>
+            <div className="stats-feature-title">Community Support</div>
+            <div className="stats-feature-desc">Always available</div>
           </div>
 
           {/* Card 2: 100% Open Source */}
-          <div
-            style={{
-              background: "rgba(255, 255, 255, 0.04)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "16px",
-              padding: "clamp(24px, 4vw, 32px)",
-              transition: "border-color 0.2s ease, transform 0.2s ease",
-            }}
-            className="hover:border-white/20 transition-all"
-          >
-            <div
-              style={{
-                fontSize: "clamp(32px, 4.5vw, 38px)",
-                fontWeight: 800,
-                color: "var(--orange)",
-                marginBottom: "8px",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              100%
-            </div>
-            <div
-              style={{
-                fontSize: "16px",
-                fontWeight: 700,
-                color: "#ffffff",
-                marginBottom: "4px",
-              }}
-            >
-              Open Source
-            </div>
-            <div
-              style={{
-                fontSize: "13.5px",
-                color: "#9ca3af",
-              }}
-            >
-              Completely transparent
-            </div>
+          <div className="stats-feature-card">
+            <div className="stats-feature-number">100%</div>
+            <div className="stats-feature-title">Open Source</div>
+            <div className="stats-feature-desc">Completely transparent</div>
           </div>
         </div>
 
         {/* Bottom Card: 3-column metrics (50+ Active Projects, 500+ Contributors, 25+ Cities) */}
-        <div
-          style={{
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            padding: "clamp(24px, 4vw, 32px)",
-            transition: "border-color 0.2s ease, transform 0.2s ease",
-          }}
-          className="hover:border-white/20 transition-all"
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "24px",
-              textAlign: "center",
-            }}
-          >
+        <div className="stats-metrics-card">
+          <div className="stats-metrics-inner">
             {/* 50+ Active Projects */}
-            <div>
-              <div
-                style={{
-                  fontSize: "clamp(30px, 4vw, 36px)",
-                  fontWeight: 800,
-                  color: "var(--orange)",
-                  marginBottom: "6px",
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.1,
-                }}
-              >
-                50+
-              </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#9ca3af",
-                  fontWeight: 500,
-                }}
-              >
-                Active Projects
-              </div>
+            <div className="stats-metric-col">
+              <div className="stats-metric-number">50+</div>
+              <div className="stats-metric-label">Active Projects</div>
+              <div className="stats-metric-divider" />
             </div>
 
             {/* 500+ Contributors */}
-            <div>
-              <div
-                style={{
-                  fontSize: "clamp(30px, 4vw, 36px)",
-                  fontWeight: 800,
-                  color: "var(--orange)",
-                  marginBottom: "6px",
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.1,
-                }}
-              >
-                500+
-              </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#9ca3af",
-                  fontWeight: 500,
-                }}
-              >
-                Contributors
-              </div>
+            <div className="stats-metric-col">
+              <div className="stats-metric-number">500+</div>
+              <div className="stats-metric-label">Contributors</div>
+              <div className="stats-metric-divider" />
             </div>
 
             {/* 25+ Cities */}
-            <div>
-              <div
-                style={{
-                  fontSize: "clamp(30px, 4vw, 36px)",
-                  fontWeight: 800,
-                  color: "var(--orange)",
-                  marginBottom: "6px",
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.1,
-                }}
-              >
-                25+
-              </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#9ca3af",
-                  fontWeight: 500,
-                }}
-              >
-                Cities
-              </div>
+            <div className="stats-metric-col">
+              <div className="stats-metric-number">25+</div>
+              <div className="stats-metric-label">Cities</div>
             </div>
           </div>
         </div>
