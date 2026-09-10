@@ -28,29 +28,37 @@ export async function POST(request: Request) {
     // 1. Check for existing profile by user.id or email
     let { data: existingProfile } = await admin
       .from("profiles")
-      .select("id, email, github")
+      .select("id, email, github, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
 
     if (!existingProfile && userEmail) {
       const { data: byEmail } = await admin
         .from("profiles")
-        .select("id, email, github")
+        .select("id, email, github, avatar_url")
         .ilike("email", userEmail)
         .maybeSingle();
       if (byEmail) existingProfile = byEmail;
     }
 
+    const githubAvatar = `https://avatars.githubusercontent.com/${github}`;
     if (existingProfile) {
+      const updates: any = { github, updated_at: new Date().toISOString() };
+      if (!existingProfile.avatar_url) {
+        updates.avatar_url =
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          githubAvatar;
+      }
       await admin
         .from("profiles")
-        .update({ github, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq("id", existingProfile.id);
 
       if (userEmail) {
         await admin
           .from("profiles")
-          .update({ github, updated_at: new Date().toISOString() })
+          .update(updates)
           .ilike("email", userEmail);
       }
     } else {
@@ -59,7 +67,7 @@ export async function POST(request: Request) {
         email: userEmail || user.email || "",
         github,
         full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Contributor",
-        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || githubAvatar,
         role: "contributor",
         score: 0,
         merged_prs: 0,

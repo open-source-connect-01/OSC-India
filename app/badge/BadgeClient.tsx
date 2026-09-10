@@ -137,6 +137,8 @@ function NexFellowLogo({ className, style }: { className?: string; style?: React
 
 import { useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas";
+import { getClientProfile } from "@/lib/auth/client";
+import { createClient } from "@/lib/supabase/client";
 
 export interface BadgeContentProps {
   userId?: string;
@@ -177,6 +179,48 @@ function BadgeContent({
   const [name, setName] = useState(initialName || "");
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialAvatar || null);
   const badgeRef = useRef<HTMLDivElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Client-side fallback to fetch profile/avatar if not supplied initially by SSR
+  useEffect(() => {
+    if (!photoUrl || !name) {
+      getClientProfile().then((clientProf) => {
+        if (!photoUrl && clientProf?.avatar) {
+          setPhotoUrl(clientProf.avatar);
+        }
+        if (!name && clientProf?.name) {
+          setName(clientProf.name);
+        }
+      });
+    }
+  }, [photoUrl, name]);
+
+  // Listen to active Supabase auth changes
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && !photoUrl) {
+        const u = session.user;
+        const identAvatar =
+          u.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
+          u.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
+        const gHandle = u.user_metadata?.user_name || u.user_metadata?.preferred_username;
+        const av =
+          u.user_metadata?.avatar_url ||
+          u.user_metadata?.picture ||
+          identAvatar ||
+          (gHandle ? `https://avatars.githubusercontent.com/${gHandle}` : null);
+        if (av) {
+          setPhotoUrl(av);
+        }
+        if (!name) {
+          const nm = u.user_metadata?.full_name || u.user_metadata?.name || gHandle || (u.email ? u.email.split("@")[0] : "");
+          if (nm) setName(nm);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [photoUrl, name]);
   
   // Image Controls State
   const [scale, setScale] = useState(1);
@@ -210,6 +254,25 @@ function BadgeContent({
 
     if (badgeRef.current) {
       try {
+        // If photoUrl is external, proxy it to base64 to ensure clean canvas export without CORS taint
+        if (photoUrl && photoUrl.startsWith("http") && typeof window !== "undefined" && !photoUrl.startsWith(window.location.origin)) {
+          try {
+            const proxyRes = await fetch(`/api/badge/proxy-image?url=${encodeURIComponent(photoUrl)}`);
+            if (proxyRes.ok) {
+              const blob = await proxyRes.blob();
+              const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              setPhotoUrl(base64);
+              await new Promise((r) => setTimeout(r, 120));
+            }
+          } catch (proxyErr) {
+            console.warn("Notice: proxy image conversion for canvas:", proxyErr);
+          }
+        }
+
         const canvas = await html2canvas(badgeRef.current, {
           backgroundColor: null,
           scale: 3, 
@@ -522,6 +585,15 @@ function BadgeContent({
                     />
                   </svg>
 
+                  {/* Hidden file input for direct circle click */}
+                  <input 
+                    ref={avatarFileInputRef}
+                    type="file" 
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+
                   {/* Inner Photo Container with Recessed Shadow */}
                   <div 
                     style={{
@@ -538,9 +610,14 @@ function BadgeContent({
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
-                      cursor: photoUrl ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                      cursor: photoUrl ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
                       boxShadow: '0 0 16px rgba(0, 0, 0, 0.95), inset 0 0 12px rgba(0, 0, 0, 0.85)',
                       zIndex: 2,
+                    }}
+                    onClick={() => {
+                      if (!photoUrl) {
+                        avatarFileInputRef.current?.click();
+                      }
                     }}
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
@@ -570,10 +647,16 @@ function BadgeContent({
                           transformOrigin: 'center center',
                           pointerEvents: 'none'
                         }} 
-                        crossOrigin="anonymous"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.dataset.retried && photoUrl && photoUrl.startsWith("http")) {
+                            target.dataset.retried = "true";
+                            target.src = `/api/badge/proxy-image?url=${encodeURIComponent(photoUrl)}`;
+                          }
+                        }}
                       />
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none' }}>
                         <UserIcon style={{ width: '34px', height: '34px', color: '#475569' }} />
                         <span style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em', marginTop: '6px' }}>
                           UPLOAD PHOTO
