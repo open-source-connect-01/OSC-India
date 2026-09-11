@@ -301,33 +301,124 @@ function BadgeContent({
                 }
               });
 
-              // 3. Ensure top flag bar is flush with card's top rounded corners
-              const topBar = clonedBadge.children[0] as HTMLElement;
+              // 3. Ensure top flag bar is flush with card's top rounded corners and has 3 equal stripes
+              const topBar = (clonedBadge.querySelector('.flag-bar-top') || clonedBadge.children[0]) as HTMLElement;
               if (topBar) {
+                topBar.style.display = 'flex';
+                topBar.style.width = '100%';
+                topBar.style.height = '5px';
                 topBar.style.borderTopLeftRadius = '24px';
                 topBar.style.borderTopRightRadius = '24px';
                 topBar.style.overflow = 'hidden';
-                if (topBar.children[0]) (topBar.children[0] as HTMLElement).style.borderTopLeftRadius = '24px';
-                if (topBar.children[2]) (topBar.children[2] as HTMLElement).style.borderTopRightRadius = '24px';
+                const c0 = topBar.children[0] as HTMLElement;
+                const c1 = topBar.children[1] as HTMLElement;
+                const c2 = topBar.children[2] as HTMLElement;
+                if (c0) { c0.style.width = '33.333%'; c0.style.height = '100%'; c0.style.borderTopLeftRadius = '24px'; c0.style.background = '#FF7518'; }
+                if (c1) { c1.style.width = '33.334%'; c1.style.height = '100%'; c1.style.background = '#FFFFFF'; }
+                if (c2) { c2.style.width = '33.333%'; c2.style.height = '100%'; c2.style.borderTopRightRadius = '24px'; c2.style.background = '#00A843'; }
               }
 
-              // 4. Ensure bottom flag bar is flush with card's bottom rounded corners
-              const bottomBar = clonedBadge.children[1] as HTMLElement;
+              // 4. Ensure bottom flag bar is flush with card's bottom rounded corners and has 3 equal stripes
+              const bottomBar = (clonedBadge.querySelector('.flag-bar-bottom') || clonedBadge.children[1]) as HTMLElement;
               if (bottomBar) {
+                bottomBar.style.display = 'flex';
+                bottomBar.style.width = '100%';
+                bottomBar.style.height = '5px';
                 bottomBar.style.borderBottomLeftRadius = '24px';
                 bottomBar.style.borderBottomRightRadius = '24px';
                 bottomBar.style.overflow = 'hidden';
-                if (bottomBar.children[0]) (bottomBar.children[0] as HTMLElement).style.borderBottomLeftRadius = '24px';
-                if (bottomBar.children[2]) (bottomBar.children[2] as HTMLElement).style.borderBottomRightRadius = '24px';
+                const c0 = bottomBar.children[0] as HTMLElement;
+                const c1 = bottomBar.children[1] as HTMLElement;
+                const c2 = bottomBar.children[2] as HTMLElement;
+                if (c0) { c0.style.width = '33.333%'; c0.style.height = '100%'; c0.style.borderBottomLeftRadius = '24px'; c0.style.background = '#FF7518'; }
+                if (c1) { c1.style.width = '33.334%'; c1.style.height = '100%'; c1.style.background = '#FFFFFF'; }
+                if (c2) { c2.style.width = '33.333%'; c2.style.height = '100%'; c2.style.borderBottomRightRadius = '24px'; c2.style.background = '#00A843'; }
               }
 
-              // 5. Hide cloned role pill so html2canvas doesn't draw it with broken text metrics
+              // 5. Fix badge header alignment: use HTML table so emblem logo and 2-line text are 100% vertically centered
+              const clonedHeader = clonedBadge.querySelector('.badge-header') as HTMLElement;
+              if (clonedHeader) {
+                const imgEl = clonedHeader.querySelector('img') as HTMLImageElement;
+                const imgSrc = imgEl ? imgEl.src : '/mobile-logo.png';
+
+                clonedHeader.style.display = 'block';
+                clonedHeader.style.margin = '0 auto';
+                clonedHeader.style.padding = '0';
+                clonedHeader.style.width = 'fit-content';
+                clonedHeader.innerHTML = `
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; border-collapse: collapse; border-spacing: 0; border: none; padding: 0;">
+                    <tbody>
+                      <tr>
+                        <td valign="middle" style="vertical-align: middle; padding: 0 9px 0 0; border: none; line-height: 0; font-size: 0;">
+                          <img src="${imgSrc}" alt="OSCI Logo" style="width: 33px; height: 33px; display: block; object-fit: contain; border: none;" />
+                        </td>
+                        <td valign="middle" style="vertical-align: middle; text-align: left; border: none; padding: 0; line-height: 1.2;">
+                          <div style="color: #FF7518; font-weight: 800; font-size: 14px; letter-spacing: -0.2px; line-height: 1.2; font-family: Inter, system-ui, -apple-system, sans-serif;">Open Source</div>
+                          <div style="font-weight: 800; font-size: 14px; letter-spacing: -0.2px; line-height: 1.2; font-family: Inter, system-ui, -apple-system, sans-serif;"><span style="color: #FFFFFF;">Connect </span><span style="color: #00D26A;">India</span></div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                `;
+              }
+
+              // 6. Fix header dots divider: ensure gradient lines and 3 dots render with exact spacing
+              const clonedDotsDivider = clonedBadge.querySelector('.header-dots-divider') as HTMLElement;
+              if (clonedDotsDivider) {
+                clonedDotsDivider.innerHTML = `
+                  <table cellpadding="0" cellspacing="0" border="0" style="width: 180px; margin: 0 auto; border-collapse: collapse; border-spacing: 0; border: none; padding: 0;">
+                    <tbody>
+                      <tr>
+                        <td valign="middle" style="vertical-align: middle; border: none; padding: 0; width: 42%;">
+                          <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18));"></div>
+                        </td>
+                        <td valign="middle" align="center" style="vertical-align: middle; text-align: center; border: none; padding: 0 7px; white-space: nowrap; line-height: 0; font-size: 0; width: 16%;">
+                          <span style="display: inline-block; width: 3.5px; height: 3.5px; border-radius: 50%; background: #FF7518; margin: 0 2.5px;"></span>
+                          <span style="display: inline-block; width: 3.5px; height: 3.5px; border-radius: 50%; background: #FFFFFF; margin: 0 2.5px;"></span>
+                          <span style="display: inline-block; width: 3.5px; height: 3.5px; border-radius: 50%; background: #00D26A; margin: 0 2.5px;"></span>
+                        </td>
+                        <td valign="middle" style="vertical-align: middle; border: none; padding: 0; width: 42%;">
+                          <div style="width: 100%; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.18), transparent);"></div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                `;
+              }
+
+              // 7. Fix role pill for html2canvas: use a table inside the 24px capsule so the 6px dot
+              //    and 11px uppercase text are perfectly vertically centered and match the live preview exactly
               const clonedPill = clonedBadge.querySelector('.role-pill') as HTMLElement;
               if (clonedPill) {
-                clonedPill.style.visibility = 'hidden';
+                clonedPill.style.display = 'block';
+                clonedPill.style.margin = '0 auto 8px auto';
+                clonedPill.style.height = '24px';
+                clonedPill.style.width = 'fit-content';
+                clonedPill.style.padding = '0 14px';
+                clonedPill.style.borderRadius = '9999px';
+                clonedPill.style.background = 'rgba(15, 22, 33, 0.95)';
+                clonedPill.style.border = `1px solid ${roleBorder}`;
+                clonedPill.style.boxShadow = `0 0 12px ${roleBg.replace('0.1', '0.25')}`;
+                clonedPill.style.boxSizing = 'border-box';
+                clonedPill.style.overflow = 'hidden';
+
+                clonedPill.innerHTML = `
+                  <table cellpadding="0" cellspacing="0" border="0" style="height: 22px; margin: 0 auto; border-collapse: collapse; border-spacing: 0; border: none; padding: 0;">
+                    <tbody>
+                      <tr style="height: 22px;">
+                        <td valign="middle" style="vertical-align: middle; padding: 0 7px 0 0; border: none; line-height: 0; font-size: 0;">
+                          <div style="width: 6px; height: 6px; min-width: 6px; min-height: 6px; border-radius: 50%; background: ${roleColor}; box-shadow: 0 0 6px ${roleColor}; display: block;"></div>
+                        </td>
+                        <td valign="middle" style="vertical-align: middle; border: none; padding: 0; color: ${roleColor}; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; line-height: 1; text-transform: uppercase; white-space: nowrap; font-family: Inter, system-ui, -apple-system, sans-serif;">
+                          ${roleText}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                `;
               }
 
-              // 6. Ensure avatar container has no dark inset shadow and image has 100% full brightness
+              // 8. Ensure avatar container has no dark inset shadow and image has 100% full brightness
               const avatarContainer = clonedBadge.querySelector('.avatar-photo-container') as HTMLElement;
               if (avatarContainer) {
                 avatarContainer.style.boxShadow = 'none';
@@ -363,91 +454,6 @@ function BadgeContent({
           ctx.closePath();
           ctx.clip();
           ctx.drawImage(canvas, 0, 0);
-
-          // Direct pixel-perfect vector drawing of Role Pill on canvas
-          if (badgeRef.current) {
-            const badgeEl = badgeRef.current;
-            const badgeRect = badgeEl.getBoundingClientRect();
-            const pillEl = badgeEl.querySelector('.role-pill') as HTMLElement;
-            if (pillEl) {
-              const pillRect = pillEl.getBoundingClientRect();
-              const scaleFactor = canvas.width / badgeRect.width;
-
-              const pillW = pillRect.width * scaleFactor;
-              const pillH = pillRect.height * scaleFactor;
-              const pillX = (canvas.width - pillW) / 2;
-              const pillY = (pillRect.top - badgeRect.top) * (canvas.height / badgeRect.height);
-
-              const pillRadius = pillH / 2;
-              const centerY = pillY + pillH / 2;
-
-              ctx.save();
-
-              // 1. Draw Pill Capsule Background & Glow
-              ctx.beginPath();
-              if (typeof (ctx as any).roundRect === 'function') {
-                (ctx as any).roundRect(pillX, pillY, pillW, pillH, pillRadius);
-              } else {
-                ctx.moveTo(pillX + pillRadius, pillY);
-                ctx.arcTo(pillX + pillW, pillY, pillX + pillW, pillY + pillH, pillRadius);
-                ctx.arcTo(pillX + pillW, pillY + pillH, pillX, pillY + pillH, pillRadius);
-                ctx.arcTo(pillX, pillY + pillH, pillX, pillY, pillRadius);
-                ctx.arcTo(pillX, pillY, pillX + pillW, pillY, pillRadius);
-                ctx.closePath();
-              }
-              ctx.fillStyle = 'rgba(15, 22, 33, 0.98)';
-              ctx.shadowColor = roleColor;
-              ctx.shadowBlur = 12 * scaleFactor;
-              ctx.fill();
-
-              // 2. Draw Pill Border
-              ctx.shadowBlur = 0;
-              ctx.strokeStyle = roleBorder;
-              ctx.lineWidth = 1 * scaleFactor;
-              ctx.stroke();
-
-              // 3. Measure & Draw Dot and Text on the exact same centerY
-              const fontSize = 11 * scaleFactor;
-              ctx.font = `800 ${fontSize}px var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-
-              const charSpacing = 0.16 * fontSize;
-              let textWidth = 0;
-              for (let i = 0; i < roleText.length; i++) {
-                textWidth += ctx.measureText(roleText[i]).width;
-                if (i < roleText.length - 1) textWidth += charSpacing;
-              }
-
-              const dotDiameter = 6 * scaleFactor;
-              const dotRadius = dotDiameter / 2;
-              const gap = 7 * scaleFactor;
-              const totalContentWidth = dotDiameter + gap + textWidth;
-              const startX = pillX + (pillW - totalContentWidth) / 2;
-
-              // 4. Glowing Dot (locked to centerY)
-              const dotCenterX = startX + dotRadius;
-              ctx.beginPath();
-              ctx.arc(dotCenterX, centerY, dotRadius, 0, Math.PI * 2);
-              ctx.fillStyle = roleColor;
-              ctx.shadowColor = roleColor;
-              ctx.shadowBlur = 6 * scaleFactor;
-              ctx.fill();
-
-              // 5. Uppercase Text (locked to centerY)
-              ctx.shadowBlur = 0;
-              ctx.fillStyle = roleColor;
-              ctx.textBaseline = 'middle';
-              ctx.textAlign = 'left';
-
-              let curX = startX + dotDiameter + gap;
-              for (let i = 0; i < roleText.length; i++) {
-                const ch = roleText[i];
-                ctx.fillText(ch, curX, centerY);
-                curX += ctx.measureText(ch).width + charSpacing;
-              }
-
-              ctx.restore();
-            }
-          }
 
           url = outputCanvas.toDataURL("image/png");
         } else {
@@ -585,44 +591,46 @@ function BadgeContent({
               >
                 {/* Top Indian Flag Accent Bar */}
                 <div 
+                  className="flag-bar-top"
                   style={{ 
                     position: 'absolute', 
                     top: 0, 
                     left: 0, 
                     right: 0, 
                     height: '5px', 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr 1fr', 
+                    display: 'flex', 
+                    width: '100%',
                     borderTopLeftRadius: '24px',
                     borderTopRightRadius: '24px',
                     overflow: 'hidden',
                     zIndex: 10 
                   }}
                 >
-                  <div style={{ background: '#FF7518', borderTopLeftRadius: '24px' }} />
-                  <div style={{ background: '#FFFFFF' }} />
-                  <div style={{ background: '#00A843', borderTopRightRadius: '24px' }} />
+                  <div style={{ flex: 1, width: '33.333%', height: '100%', background: '#FF7518', borderTopLeftRadius: '24px' }} />
+                  <div style={{ flex: 1, width: '33.334%', height: '100%', background: '#FFFFFF' }} />
+                  <div style={{ flex: 1, width: '33.333%', height: '100%', background: '#00A843', borderTopRightRadius: '24px' }} />
                 </div>
 
                 {/* Bottom Indian Flag Accent Bar */}
                 <div 
+                  className="flag-bar-bottom"
                   style={{ 
                     position: 'absolute', 
                     bottom: 0, 
                     left: 0, 
                     right: 0, 
                     height: '5px', 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr 1fr', 
+                    display: 'flex', 
+                    width: '100%',
                     borderBottomLeftRadius: '24px',
                     borderBottomRightRadius: '24px',
                     overflow: 'hidden',
                     zIndex: 10 
                   }}
                 >
-                  <div style={{ background: '#FF7518', borderBottomLeftRadius: '24px' }} />
-                  <div style={{ background: '#FFFFFF' }} />
-                  <div style={{ background: '#00A843', borderBottomRightRadius: '24px' }} />
+                  <div style={{ flex: 1, width: '33.333%', height: '100%', background: '#FF7518', borderBottomLeftRadius: '24px' }} />
+                  <div style={{ flex: 1, width: '33.334%', height: '100%', background: '#FFFFFF' }} />
+                  <div style={{ flex: 1, width: '33.333%', height: '100%', background: '#00A843', borderBottomRightRadius: '24px' }} />
                 </div>
 
                 {/* Ambient lighting accents inside badge */}
@@ -640,7 +648,7 @@ function BadgeContent({
                 />
 
                 {/* Badge Header: Emblem + Tricolor Text */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', zIndex: 2 }}>
+                <div className="badge-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', zIndex: 2 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/mobile-logo.png" 
@@ -660,7 +668,7 @@ function BadgeContent({
                 </div>
 
                 {/* Divider Line with 3 Tricolor Dots */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '180px', margin: '11px auto 0', zIndex: 2 }}>
+                <div className="header-dots-divider" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '180px', margin: '11px auto 0', zIndex: 2 }}>
                   <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18))' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0 7px' }}>
                     <div style={{ width: '3.5px', height: '3.5px', borderRadius: '50%', background: '#FF7518' }} />

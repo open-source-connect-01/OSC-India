@@ -68,26 +68,14 @@ export default function HeroSection() {
               marginBottom: "22px",
             }}
           >
-            {/* Desktop Headline */}
-            <div className="hidden md:block">
-              <div className="hero-title-line-1">
-                <span className="tricolor-gradient">Open Source</span>
-              </div>
-              <div className="hero-title-line-2">
-                <span className="tricolor-gradient">Connect India</span>
-                <span className="hero-year-tag" style={{ color: "#FF8822" }}>
-                  2026
-                </span>
-              </div>
+            <div className="hero-title-line-1">
+              <span className="tricolor-gradient">Open Source</span>
             </div>
-
-            {/* Mobile Headline matching Image 1 */}
-            <div className="block md:hidden" style={{ fontSize: "clamp(34px, 9.5vw, 44px)", lineHeight: 1.15, letterSpacing: "-1px" }}>
-              <div style={{ color: "#FF7518", fontWeight: 800 }}>Open Source</div>
-              <div style={{ fontWeight: 800 }}>
-                <span style={{ color: "#ffffff" }}>Connect </span>
-                <span style={{ color: "#22C55E" }}>India</span>
-              </div>
+            <div className="hero-title-line-2">
+              <span className="tricolor-gradient">Connect India</span>
+              <span className="hero-year-tag" style={{ color: "#FF8822" }}>
+                2026
+              </span>
             </div>
           </h1>
 
