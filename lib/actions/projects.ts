@@ -29,78 +29,7 @@ export interface NewProjectInput {
   forks?: string;
 }
 
-const DEFAULT_PROJECTS: ProjectItem[] = [
-  {
-    id: "default-osc-india",
-    title: "OSC-India Platform",
-    description: "Official web platform and dashboard for Open Source Connect India community.",
-    githubUrl: "https://github.com/open-source-connect-01/OSC-India",
-    language: "TypeScript",
-    accentColor: "#FF7518",
-    stars: "1.2k",
-    forks: "340",
-  },
-  {
-    id: "default-cloudnative",
-    title: "CloudNative Orchestrator",
-    description: "A modern container orchestration platform built for scalability and performance.",
-    githubUrl: "https://github.com/OSC-India/cloudnative-orchestrator",
-    language: "Go",
-    accentColor: "#22d3ee",
-    stars: "12.5k",
-    forks: "2.3k",
-  },
-  {
-    id: "default-dataflow",
-    title: "DataFlow Pipeline",
-    description: "Real-time data processing framework with distributed architecture.",
-    githubUrl: "https://github.com/OSC-India/dataflow-pipeline",
-    language: "Python",
-    accentColor: "#34d399",
-    stars: "8.9k",
-    forks: "1.5k",
-  },
-  {
-    id: "default-reactui",
-    title: "ReactUI Components",
-    description: "Comprehensive component library with accessibility-first design.",
-    githubUrl: "https://github.com/OSC-India/reactui-components",
-    language: "TypeScript",
-    accentColor: "#f472b6",
-    stars: "15.2k",
-    forks: "3.1k",
-  },
-  {
-    id: "default-ml-vision",
-    title: "ML Vision Toolkit",
-    description: "Computer vision library powered by cutting-edge machine learning models.",
-    githubUrl: "https://github.com/OSC-India/ml-vision-toolkit",
-    language: "Python",
-    accentColor: "#ef4444",
-    stars: "9.8k",
-    forks: "1.9k",
-  },
-  {
-    id: "default-secureauth",
-    title: "SecureAuth Framework",
-    description: "Enterprise-grade authentication and authorization solution.",
-    githubUrl: "https://github.com/OSC-India/secureauth-framework",
-    language: "Rust",
-    accentColor: "#3b82f6",
-    stars: "6.7k",
-    forks: "987",
-  },
-  {
-    id: "default-devops",
-    title: "DevOps Automation",
-    description: "Complete CI/CD automation suite for modern development workflows.",
-    githubUrl: "https://github.com/OSC-India/devops-automation",
-    language: "JavaScript",
-    accentColor: "#f97316",
-    stars: "11.3k",
-    forks: "2.4k",
-  },
-];
+const DEFAULT_PROJECTS: ProjectItem[] = [];
 
 const LOCAL_STORAGE_FILE = path.join(process.cwd(), "data", "custom-projects.json");
 
@@ -198,7 +127,7 @@ function parseProjectFromDb(row: any): ProjectItem {
 
 /**
  * Fetches all active projects directly from the Supabase database.
- * When DB is reachable, it is the single source of truth.
+ * When DB is reachable, it is the single source of truth (including an empty list).
  */
 export async function getProjects(): Promise<ProjectItem[]> {
   try {
@@ -207,17 +136,23 @@ export async function getProjects(): Promise<ProjectItem[]> {
       .from("projects")
       .select("*");
 
-    if (!error && data && data.length > 0) {
+    // When the database query succeeds (error is null and data is an array):
+    // Even if data is empty ([]), that is the database reality (e.g. all projects were deleted).
+    if (!error && Array.isArray(data)) {
       const projects = data.map(parseProjectFromDb);
-      // Sync local backup store
+      // Synchronize local cache to mirror database state exactly
       writeLocalCustomProjects(projects);
       return projects;
     }
+
+    if (error) {
+      console.warn("Supabase notice when querying projects table:", error.message);
+    }
   } catch (err) {
-    console.warn("Notice: reading projects table from Supabase:", err);
+    console.warn("Notice: reading projects table from Supabase failed:", err);
   }
 
-  // Fallback to local store only if database query failed (e.g. offline sandbox)
+  // Fallback to local store ONLY if the database connection / network failed
   const localProjects = readLocalCustomProjects();
   if (localProjects.length > 0) {
     return localProjects;
@@ -293,7 +228,7 @@ export async function createProjectAction(
 }
 
 /**
- * Deletes a project directly from the Supabase database.
+ * Permanently deletes a project directly from the Supabase database.
  */
 export async function deleteProjectAction(
   projectId: string
@@ -303,29 +238,106 @@ export async function deleteProjectAction(
     return { success: false, error: "Unauthorized. Admin credentials required to delete projects." };
   }
 
+  if (!projectId || !projectId.trim()) {
+    return { success: false, error: "Project ID is required." };
+  }
+
+  const cleanId = projectId.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
   try {
     const admin = createAdminClient();
-    const { error } = await admin
-      .from("projects")
-      .delete()
-      .eq("id", projectId);
 
-    if (error) {
-      console.error("Failed to delete project from Supabase DB:", error);
-      return { success: false, error: `Database error: ${error.message}` };
+    // 1. Clean up associated contributions if any to satisfy foreign key constraints
+    if (isUuid) {
+      try {
+        await admin.from("contributions").delete().eq("project_id", cleanId);
+      } catch (e) {
+        console.warn("Notice: cleaning linked contributions for project:", e);
+      }
+    }
+
+    // 2. Permanently delete from Supabase database
+    if (isUuid) {
+      const { error } = await admin
+        .from("projects")
+        .delete()
+        .eq("id", cleanId);
+
+      if (error) {
+        console.error("Failed to delete project from Supabase DB:", error);
+        return { success: false, error: `Database error: ${error.message}` };
+      }
+    } else {
+      // If not a UUID, delete by matching repo url or name
+      const { error } = await admin
+        .from("projects")
+        .delete()
+        .or(`github_repo_url.eq.${cleanId},name.eq.${cleanId}`);
+
+      if (error) {
+        console.error("Failed to delete project by repo/name from DB:", error);
+      }
     }
   } catch (err: any) {
     console.error("Database project deletion exception:", err);
     return { success: false, error: err?.message || "Failed to delete project from database." };
   }
 
-  // Also sync local backup
+  // 3. Keep local backup cache synchronized
   const localCustom = readLocalCustomProjects();
-  const filtered = localCustom.filter((p) => p.id !== projectId);
+  const filtered = localCustom.filter(
+    (p) => p.id !== cleanId && p.githubUrl !== cleanId && p.title.toLowerCase() !== cleanId.toLowerCase()
+  );
   writeLocalCustomProjects(filtered);
 
   revalidatePath("/projects");
   revalidatePath("/admin");
 
   return { success: true };
+}
+
+/**
+ * Permanently removes ALL projects from the Supabase database and local store.
+ * Strictly restricted to authorized administrators.
+ */
+export async function deleteAllProjectsAction(): Promise<{ success: boolean; count?: number; error?: string }> {
+  const isAuthorized = await checkAdminAuth();
+  if (!isAuthorized) {
+    return { success: false, error: "Unauthorized. Admin credentials required to delete projects." };
+  }
+
+  try {
+    const admin = createAdminClient();
+
+    // 1. Clean up linked contributions to prevent foreign key issues
+    try {
+      await admin.from("contributions").delete().not("project_id", "is", null);
+    } catch (e) {
+      console.warn("Notice: cleaning linked contributions:", e);
+    }
+
+    // 2. Permanently delete all records from projects table in Supabase
+    const { data, error } = await admin
+      .from("projects")
+      .delete()
+      .not("id", "is", null)
+      .select();
+
+    if (error) {
+      console.error("Failed to delete all projects from Supabase DB:", error);
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+
+    // 3. Clear local backup cache completely
+    writeLocalCustomProjects([]);
+
+    revalidatePath("/projects");
+    revalidatePath("/admin");
+
+    return { success: true, count: data ? data.length : 0 };
+  } catch (err: any) {
+    console.error("Database deleteAllProjectsAction exception:", err);
+    return { success: false, error: err?.message || "Failed to delete all projects from database." };
+  }
 }

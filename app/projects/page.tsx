@@ -45,20 +45,38 @@ export default async function ProjectsPage() {
         </div>
 
         {/* Cards grid — responsive via CSS class */}
-        <div className="projects-grid">
-          {projects.map((project) => (
-            <ProjectCard 
-              key={project.id || project.githubUrl} 
-              title={project.title}
-              description={project.description}
-              language={project.language}
-              stars={project.stars || "0"}
-              forks={project.forks || "0"}
-              githubUrl={project.githubUrl}
-              accentColor={project.accentColor || "#FF7518"}
-            />
-          ))}
-        </div>
+        {projects.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "80px 24px",
+              background: "rgba(255, 255, 255, 0.02)",
+              borderRadius: "16px",
+              border: "1px dashed rgba(255, 255, 255, 0.1)",
+              maxWidth: "540px",
+              margin: "0 auto 60px",
+            }}
+          >
+            <p style={{ fontSize: "16px", color: "#9ca3af", margin: 0 }}>
+              No projects added yet.
+            </p>
+          </div>
+        ) : (
+          <div className="projects-grid">
+            {projects.map((project) => (
+              <ProjectCard 
+                key={project.id || project.githubUrl} 
+                title={project.title}
+                description={project.description}
+                language={project.language}
+                stars={project.stars || "0"}
+                forks={project.forks || "0"}
+                githubUrl={project.githubUrl}
+                accentColor={project.accentColor || "#FF7518"}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <Footer />

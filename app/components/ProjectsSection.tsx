@@ -2,62 +2,15 @@
 import Link from "next/link";
 
 export default function ProjectsSection() {
-  const projects = [
-    {
-      name: "CloudNative Orchestrator",
-      language: "Go",
-      dotColor: "#06b6d4",
-      accentColor: "#22d3ee",
-      desc: "A modern container orchestration platform built for scalability and performance",
-      stars: "12.5k",
-      forks: "2.3k",
-    },
-    {
-      name: "DataFlow Pipeline",
-      language: "Python",
-      dotColor: "#3b82f6",
-      accentColor: "#34d399",
-      desc: "Real-time data processing framework with distributed architecture",
-      stars: "8.9k",
-      forks: "1.5k",
-    },
-    {
-      name: "ReactUI Components",
-      language: "TypeScript",
-      dotColor: "#3b82f6",
-      accentColor: "#f472b6",
-      desc: "Comprehensive component library with accessibility-first design",
-      stars: "15.2k",
-      forks: "3.1k",
-    },
-    {
-      name: "ML Vision Toolkit",
-      language: "Python",
-      dotColor: "#3b82f6",
-      accentColor: "#ef4444",
-      desc: "Computer vision library powered by cutting-edge machine learning models",
-      stars: "9.8k",
-      forks: "1.9k",
-    },
-    {
-      name: "SecureAuth Framework",
-      language: "Rust",
-      dotColor: "#f97316",
-      accentColor: "#3b82f6",
-      desc: "Enterprise-grade authentication and authorization solution",
-      stars: "6.7k",
-      forks: "987",
-    },
-    {
-      name: "DevOps Automation",
-      language: "JavaScript",
-      dotColor: "#eab308",
-      accentColor: "#f97316",
-      desc: "Complete CI/CD automation suite for modern development workflows",
-      stars: "11.3k",
-      forks: "2.4k",
-    },
-  ];
+  const projects: {
+    name: string;
+    language: string;
+    dotColor: string;
+    accentColor: string;
+    desc: string;
+    stars: string;
+    forks: string;
+  }[] = [];
 
   return (
     <section
