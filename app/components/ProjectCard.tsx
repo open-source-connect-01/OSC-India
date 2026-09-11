@@ -78,6 +78,9 @@ const languageColors: Record<string, string> = {
   "TypeScript": "#3b82f6", // Blue
   "Rust": "#f97316",       // Orange
   "JavaScript": "#eab308", // Yellow
+  "C++": "#ec4899",        // Pink
+  "Dart": "#0284c7",       // Sky
+  "Flutter": "#0284c7",    // Sky
 };
 
 export default function ProjectCard({

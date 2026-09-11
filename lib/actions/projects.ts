@@ -31,74 +31,174 @@ export interface NewProjectInput {
 
 const DEFAULT_PROJECTS: ProjectItem[] = [
   {
-    id: "default-osc-india",
-    title: "OSC-India Platform",
-    description: "Official web platform and dashboard for Open Source Connect India community.",
-    githubUrl: "https://github.com/open-source-connect-01/OSC-India",
-    language: "TypeScript",
+    id: "662dbbb3-6e77-42ef-99af-57273a1c36e1",
+    title: "Truxify – Broker-Free Freight Marketplace",
+    description: "Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers. It addresses broker commissions, empty return trips, inefficient truck discovery, payment delays, and limited shipment visibility through ML-powered matching, route optimization, live tracking, blockchain-based escrow, voice AI, and automation.",
+    githubUrl: "https://github.com/KanishJebaMathewM/Truxify",
+    language: "Flutter",
     accentColor: "#FF7518",
-    stars: "1.2k",
-    forks: "340",
+    stars: "23",
+    forks: "113",
   },
   {
-    id: "default-cloudnative",
-    title: "CloudNative Orchestrator",
-    description: "A modern container orchestration platform built for scalability and performance.",
-    githubUrl: "https://github.com/OSC-India/cloudnative-orchestrator",
-    language: "Go",
-    accentColor: "#22d3ee",
-    stars: "12.5k",
-    forks: "2.3k",
-  },
-  {
-    id: "default-dataflow",
-    title: "DataFlow Pipeline",
-    description: "Real-time data processing framework with distributed architecture.",
-    githubUrl: "https://github.com/OSC-India/dataflow-pipeline",
+    id: "ce0a4ddd-a220-4f05-bf3a-24b949761c40",
+    title: "Customer Segmentation and Churn Prediction",
+    description: "An end-to-end Machine Learning and Predictive Analytics pipeline that identifies customer behavior patterns and predicts churn risks. It uses K-Means clustering for customer segmentation and a Random Forest classifier for churn prediction, with model optimization and evaluation using ROC-AUC and confusion matrix analysis.",
+    githubUrl: "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
     language: "Python",
-    accentColor: "#34d399",
-    stars: "8.9k",
-    forks: "1.5k",
+    accentColor: "#3b82f6",
+    stars: "0",
+    forks: "0",
   },
   {
-    id: "default-reactui",
-    title: "ReactUI Components",
-    description: "Comprehensive component library with accessibility-first design.",
-    githubUrl: "https://github.com/OSC-India/reactui-components",
-    language: "TypeScript",
-    accentColor: "#f472b6",
-    stars: "15.2k",
-    forks: "3.1k",
+    id: "7c93a1c9-b8f4-4bce-ba8b-a18032728165",
+    title: "AdapTQ",
+    description: "AdapTQ is a production-grade C++17 KV cache quantization engine for Large Language Model inference on edge and memory-constrained systems.",
+    githubUrl: "https://github.com/l3tchupkt/adaptq",
+    language: "C++",
+    accentColor: "#a855f7",
+    stars: "3",
+    forks: "0",
   },
   {
-    id: "default-ml-vision",
-    title: "ML Vision Toolkit",
-    description: "Computer vision library powered by cutting-edge machine learning models.",
-    githubUrl: "https://github.com/OSC-India/ml-vision-toolkit",
+    id: "775d868d-332d-42c8-ad8d-a5c0f7041464",
+    title: "Bolcap",
+    description: "Bolcap is an AI-powered video captioning system featuring viral-moment clipping and a Hinglish caption engine. It uses Whisper for word-level transcription, natural Hinglish romanization, customizable animated captions, and exports burned MP4 or alpha-overlay MOV files.",
+    githubUrl: "https://github.com/AdityaPainuli/clippings-vids",
     language: "Python",
     accentColor: "#ef4444",
-    stars: "9.8k",
-    forks: "1.9k",
+    stars: "0",
+    forks: "0",
   },
   {
-    id: "default-secureauth",
-    title: "SecureAuth Framework",
-    description: "Enterprise-grade authentication and authorization solution.",
-    githubUrl: "https://github.com/OSC-India/secureauth-framework",
-    language: "Rust",
-    accentColor: "#3b82f6",
-    stars: "6.7k",
-    forks: "987",
+    id: "f6cc1cbd-b614-4415-9abb-c5316d3b95ff",
+    title: "Air Quality Intelligence Platform",
+    description: "A local-first, open-source data engineering and analytics platform for real-time air-quality monitoring, anomaly detection, and near-term PM2.5 forecasting. It ingests data from OpenAQ and Open-Meteo, validates and processes sensor data, detects pollution anomalies, trains forecasting models, and provides results through an API and interactive dashboard.",
+    githubUrl: "https://github.com/AseemPrasad/Air-Quality-Intelligence",
+    language: "Python",
+    accentColor: "#10b981",
+    stars: "0",
+    forks: "0",
   },
   {
-    id: "default-devops",
-    title: "DevOps Automation",
-    description: "Complete CI/CD automation suite for modern development workflows.",
-    githubUrl: "https://github.com/OSC-India/devops-automation",
+    id: "585baad7-e2ca-46aa-bc1d-12d1040abb9e",
+    title: "EcoVision",
+    description: "EcoVision is an AI-based environmental monitoring project that uses computer vision and data analysis to identify waste, monitor environmental conditions, and promote proper waste management. It aims to support cleaner surroundings through smart, technology-driven environmental solutions.",
+    githubUrl: "https://github.com/Sushmitha-2007/Eco-vision",
+    language: "Python",
+    accentColor: "#22c55e",
+    stars: "1",
+    forks: "0",
+  },
+  {
+    id: "9f889e2e-df21-4901-b349-cde7943b689d",
+    title: "SecureFlow",
+    description: "SecureFlow integrates with GitHub through a GitHub App and webhooks to analyze pull requests for security issues. Its AI engine uses Groq's Llama 3.1 to analyze code diffs and provide security findings, explanations, and remediation steps through a centralized dashboard.",
+    githubUrl: "https://github.com/GauravKarakoti/Secureflow",
+    language: "TypeScript",
+    accentColor: "#6366f1",
+    stars: "4",
+    forks: "45",
+  },
+  {
+    id: "86052217-73a6-4f0a-80b1-3288fd3e4388",
+    title: "LawSaathi-RAG",
+    description: "LawSaathi-RAG benchmarks different Retrieval-Augmented Generation architectures for Indian legal question answering. It evaluates retrieval approaches such as BM25 and dense retrieval to determine their effectiveness for Indian legal document QA, with reproducible code, datasets, and evaluation results.",
+    githubUrl: "https://github.com/SidakSethi-Singh/LawSathi-Rag",
+    language: "Python",
+    accentColor: "#eab308",
+    stars: "1",
+    forks: "0",
+  },
+  {
+    id: "89e45dfc-04fa-4f20-8686-ced183db0de4",
+    title: "AI Product Factory",
+    description: "AI Product Factory is an open-source agentic platform that helps developers and non-technical founders transform product ideas into implementation-ready software projects. It connects AI models, generates evidence-backed plans, designs architectures, and coordinates specialized AI agents to generate, test, and improve applications.",
+    githubUrl: "https://github.com/logeshv586-code/AIproductfactory",
+    language: "TypeScript",
+    accentColor: "#ec4899",
+    stars: "0",
+    forks: "0",
+  },
+  {
+    id: "f61fb2ac-2858-4965-a3c6-e24ee653384b",
+    title: "InnoVision",
+    description: "InnoVision is an AI-powered learning platform that dynamically generates structured and engaging courses from any topic. It aims to overcome limitations of traditional courses by providing a flexible and adaptive learning experience powered by AI and machine learning.",
+    githubUrl: "https://github.com/ItsVikasA/Innovision-Open-Source",
     language: "JavaScript",
+    accentColor: "#38bdf8",
+    stars: "0",
+    forks: "1",
+  },
+  {
+    id: "db1a69c6-e71d-4ba8-87ff-922af70bc5bc",
+    title: "CreatorOS",
+    description: "CreatorOS is an open-source all-in-one dashboard for creators to manage their business from a single platform. It combines bio links, DM automation, CRM, analytics, and content planning, reducing the need to use multiple separate creator tools.",
+    githubUrl: "https://github.com/aashutoshkumarbhardwaj/CreatorOs",
+    language: "JavaScript",
+    accentColor: "#f43f5e",
+    stars: "28",
+    forks: "54",
+  },
+  {
+    id: "28593cc9-2bda-4cab-b139-9c748ffcd434",
+    title: "JugaadLang",
+    description: "JugaadLang is a modern programming language designed with Hindi keywords for Indian developers. It provides an alternative programming experience where developers can write code using familiar Hindi terminology.",
+    githubUrl: "https://github.com/JugaadLang/jugaadlang",
+    language: "Python",
     accentColor: "#f97316",
-    stars: "11.3k",
-    forks: "2.4k",
+    stars: "10",
+    forks: "21",
+  },
+  {
+    id: "513cc16c-ecb2-4723-84a8-ed66f217aaf8",
+    title: "AI Stock Analyzer",
+    description: "A web-based stock analysis application built with React and Flask. It provides interactive stock visualizations and uses machine learning-based techniques for stock price prediction and analysis.",
+    githubUrl: "https://github.com/SrigadaAkshayKumar/stock",
+    language: "Python",
+    accentColor: "#14b8a6",
+    stars: "32",
+    forks: "89",
+  },
+  {
+    id: "3a31685f-daff-4b73-aaa2-817c2abda189",
+    title: "WalletWise",
+    description: "WalletWise is a comprehensive financial guidance platform designed to help students, early-career professionals, and other users manage their finances. Beyond basic expense tracking, it combines behavioral insights, predictive analytics, and real-time financial advisory features to help users make better financial decisions.",
+    githubUrl: "https://github.com/SoumyaMishra-7/WalletWise",
+    language: "JavaScript",
+    accentColor: "#10b981",
+    stars: "17",
+    forks: "59",
+  },
+  {
+    id: "d77fa34f-61da-44b5-828b-c4da597f9c3a",
+    title: "Dockfleet",
+    description: "Dockfleet is a free and open-source, local-first orchestration tool that helps solo developers and small teams run and manage multiple projects on a single machine or VPS using Docker containers.",
+    githubUrl: "https://github.com/pratyushjha06/Dockfleet",
+    language: "Python",
+    accentColor: "#0284c7",
+    stars: "8",
+    forks: "3",
+  },
+  {
+    id: "103bf228-a981-40d3-98dd-19ff4da0fda8",
+    title: "TCalc — AI Coding Context & Token Intelligence Toolkit",
+    description: "TCalc is an open-source, local-first developer toolkit for understanding and optimizing AI coding context and token usage. It analyzes repositories, estimates token consumption, identifies token-heavy files, recommends AI models, estimates context fit and cost, generates repository maps, and integrates with tools such as Cursor, Claude Code, Continue, Cline, Roo, and MCP-compatible clients while keeping source code local.",
+    githubUrl: "https://github.com/Sandesh13fr/TCalc",
+    language: "TypeScript",
+    accentColor: "#8b5cf6",
+    stars: "1",
+    forks: "0",
+  },
+  {
+    id: "114895df-f5da-4eea-b3f6-00c5c27f9e72",
+    title: "AtomicBinding",
+    description: "AtomicBinding is a dual-source content platform where documentation lives in Git while application content is managed through a custom CMS. Both sources are normalized into a single typed content graph consumed by one frontend, with six build gates providing validation and quality control between the content graph and production.",
+    githubUrl: "https://github.com/SrishtiSonam/AtomicBinding",
+    language: "TypeScript",
+    accentColor: "#06b6d4",
+    stars: "0",
+    forks: "0",
   },
 ];
 
@@ -198,7 +298,7 @@ function parseProjectFromDb(row: any): ProjectItem {
 
 /**
  * Fetches all active projects directly from the Supabase database.
- * When DB is reachable, it is the single source of truth.
+ * When DB is reachable, it is the single source of truth (including an empty list).
  */
 export async function getProjects(): Promise<ProjectItem[]> {
   try {
@@ -207,23 +307,29 @@ export async function getProjects(): Promise<ProjectItem[]> {
       .from("projects")
       .select("*");
 
-    if (!error && data && data.length > 0) {
+    // When the database query succeeds (error is null and data is an array):
+    // Even if data is empty ([]), that is the database reality (e.g. all projects were deleted).
+    if (!error && Array.isArray(data)) {
       const projects = data.map(parseProjectFromDb);
-      // Sync local backup store
+      // Synchronize local cache to mirror database state exactly
       writeLocalCustomProjects(projects);
       return projects;
     }
+
+    if (error) {
+      console.warn("Supabase notice when querying projects table:", error.message);
+    }
   } catch (err) {
-    console.warn("Notice: reading projects table from Supabase:", err);
+    console.warn("Notice: reading projects table from Supabase failed:", err);
   }
 
-  // Fallback to local store only if database query failed (e.g. offline sandbox)
+  // Fallback to local store ONLY if the database connection / network failed
   const localProjects = readLocalCustomProjects();
   if (localProjects.length > 0) {
     return localProjects;
   }
 
-  return [];
+  return DEFAULT_PROJECTS;
 }
 
 /**
@@ -293,7 +399,7 @@ export async function createProjectAction(
 }
 
 /**
- * Deletes a project directly from the Supabase database.
+ * Permanently deletes a project directly from the Supabase database.
  */
 export async function deleteProjectAction(
   projectId: string
@@ -303,29 +409,106 @@ export async function deleteProjectAction(
     return { success: false, error: "Unauthorized. Admin credentials required to delete projects." };
   }
 
+  if (!projectId || !projectId.trim()) {
+    return { success: false, error: "Project ID is required." };
+  }
+
+  const cleanId = projectId.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
   try {
     const admin = createAdminClient();
-    const { error } = await admin
-      .from("projects")
-      .delete()
-      .eq("id", projectId);
 
-    if (error) {
-      console.error("Failed to delete project from Supabase DB:", error);
-      return { success: false, error: `Database error: ${error.message}` };
+    // 1. Clean up associated contributions if any to satisfy foreign key constraints
+    if (isUuid) {
+      try {
+        await admin.from("contributions").delete().eq("project_id", cleanId);
+      } catch (e) {
+        console.warn("Notice: cleaning linked contributions for project:", e);
+      }
+    }
+
+    // 2. Permanently delete from Supabase database
+    if (isUuid) {
+      const { error } = await admin
+        .from("projects")
+        .delete()
+        .eq("id", cleanId);
+
+      if (error) {
+        console.error("Failed to delete project from Supabase DB:", error);
+        return { success: false, error: `Database error: ${error.message}` };
+      }
+    } else {
+      // If not a UUID, delete by matching repo url or name
+      const { error } = await admin
+        .from("projects")
+        .delete()
+        .or(`github_repo_url.eq.${cleanId},name.eq.${cleanId}`);
+
+      if (error) {
+        console.error("Failed to delete project by repo/name from DB:", error);
+      }
     }
   } catch (err: any) {
     console.error("Database project deletion exception:", err);
     return { success: false, error: err?.message || "Failed to delete project from database." };
   }
 
-  // Also sync local backup
+  // 3. Keep local backup cache synchronized
   const localCustom = readLocalCustomProjects();
-  const filtered = localCustom.filter((p) => p.id !== projectId);
+  const filtered = localCustom.filter(
+    (p) => p.id !== cleanId && p.githubUrl !== cleanId && p.title.toLowerCase() !== cleanId.toLowerCase()
+  );
   writeLocalCustomProjects(filtered);
 
   revalidatePath("/projects");
   revalidatePath("/admin");
 
   return { success: true };
+}
+
+/**
+ * Permanently removes ALL projects from the Supabase database and local store.
+ * Strictly restricted to authorized administrators.
+ */
+export async function deleteAllProjectsAction(): Promise<{ success: boolean; count?: number; error?: string }> {
+  const isAuthorized = await checkAdminAuth();
+  if (!isAuthorized) {
+    return { success: false, error: "Unauthorized. Admin credentials required to delete projects." };
+  }
+
+  try {
+    const admin = createAdminClient();
+
+    // 1. Clean up linked contributions to prevent foreign key issues
+    try {
+      await admin.from("contributions").delete().not("project_id", "is", null);
+    } catch (e) {
+      console.warn("Notice: cleaning linked contributions:", e);
+    }
+
+    // 2. Permanently delete all records from projects table in Supabase
+    const { data, error } = await admin
+      .from("projects")
+      .delete()
+      .not("id", "is", null)
+      .select();
+
+    if (error) {
+      console.error("Failed to delete all projects from Supabase DB:", error);
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+
+    // 3. Clear local backup cache completely
+    writeLocalCustomProjects([]);
+
+    revalidatePath("/projects");
+    revalidatePath("/admin");
+
+    return { success: true, count: data ? data.length : 0 };
+  } catch (err: any) {
+    console.error("Database deleteAllProjectsAction exception:", err);
+    return { success: false, error: err?.message || "Failed to delete all projects from database." };
+  }
 }

@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
 import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, deleteUserAction, adminLogoutAction, getAdminData } from "@/lib/actions/admin";
-import { createProjectAction, deleteProjectAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
+import { createProjectAction, deleteProjectAction, deleteAllProjectsAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
 
 // Icons
 function FolderPlusIcon({ className }: { className?: string }) {
@@ -204,6 +204,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [showDeleteAllProjectsModal, setShowDeleteAllProjectsModal] = useState(false);
+  const [isDeletingAllProjects, setIsDeletingAllProjects] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string; email?: string } | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
@@ -244,6 +246,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       if (e.key === "Escape") {
         if (projectToDelete && !deletingProjectId) {
           setProjectToDelete(null);
+        } else if (showDeleteAllProjectsModal && !isDeletingAllProjects) {
+          setShowDeleteAllProjectsModal(false);
         } else if (userToDelete && !deletingUserId) {
           setUserToDelete(null);
         } else if (showAddProjectModal && !isSubmittingProject) {
@@ -253,7 +257,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddProjectModal, projectToDelete, deletingProjectId, isSubmittingProject, userToDelete, deletingUserId]);
+  }, [showAddProjectModal, projectToDelete, deletingProjectId, showDeleteAllProjectsModal, isDeletingAllProjects, isSubmittingProject, userToDelete, deletingUserId]);
 
   // Filter projects
   const filteredProjects = projects.filter((p) => {
@@ -332,6 +336,25 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       showToast(err?.message || "Failed to delete project.", "error");
     } finally {
       setDeletingProjectId(null);
+    }
+  };
+
+  // Confirm Delete All Projects
+  const handleConfirmDeleteAllProjects = async () => {
+    setIsDeletingAllProjects(true);
+    try {
+      const res = await deleteAllProjectsAction();
+      if (res.success) {
+        setProjects([]);
+        showToast("All projects have been permanently removed from the database.", "success");
+        setShowDeleteAllProjectsModal(false);
+      } else {
+        showToast(res.error || "Failed to remove all projects.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to remove all projects.", "error");
+    } finally {
+      setIsDeletingAllProjects(false);
     }
   };
 
@@ -902,6 +925,30 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {activeTab === "projects" && projects.length > 0 && (
+              <button
+                onClick={() => setShowDeleteAllProjectsModal(true)}
+                style={{
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  color: "#f87171",
+                  padding: "8px 14px",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s"
+                }}
+                className="hover:bg-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.4)] active:scale-[0.98]"
+              >
+                <Trash2Icon className="w-3.5 h-3.5" />
+                <span>Remove All Projects</span>
+              </button>
+            )}
+
             <button
               onClick={() => setShowAddProjectModal(true)}
               style={{
@@ -1600,54 +1647,104 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     )}
 
     {/* Add New Project Modal */}
+    {/* Add New Project Modal */}
     {showAddProjectModal && (
       <div 
         role="dialog"
         aria-modal="true"
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        style={{ background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+        aria-labelledby="add-project-modal-title"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+        style={{ 
+          background: "rgba(0, 0, 0, 0.85)", 
+          backdropFilter: "blur(16px)", 
+          WebkitBackdropFilter: "blur(16px)" 
+        }}
         onClick={(e) => {
-          if (e.target === e.currentTarget) setShowAddProjectModal(false);
+          if (e.target === e.currentTarget && !isSubmittingProject) {
+            setShowAddProjectModal(false);
+          }
         }}
       >
         <div 
           style={{ 
             width: "100%", 
-            maxWidth: "600px", 
-            background: "linear-gradient(180deg, #15151a 0%, #0d0d11 100%)", 
+            maxWidth: "620px", 
+            maxHeight: "min(92vh, 880px)",
+            display: "flex",
+            flexDirection: "column",
+            background: "linear-gradient(180deg, #16161b 0%, #0d0d11 100%)", 
             border: "1px solid rgba(255,255,255,0.12)", 
             borderRadius: "20px", 
-            boxShadow: "0 25px 60px -15px rgba(0,0,0,0.85), 0 0 30px rgba(255,117,24,0.1)",
-            overflow: "hidden"
+            boxShadow: "0 25px 70px -15px rgba(0,0,0,0.95), 0 0 35px rgba(255,117,24,0.1)",
+            overflow: "hidden",
+            animation: "toastSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
           }}
         >
+          {/* Top glowing orange accent bar */}
+          <div style={{ height: "3px", width: "100%", flexShrink: 0, background: "linear-gradient(90deg, #FF7518 0%, #FF4500 50%, #f97316 100%)" }} />
+
           {/* Modal Header */}
-          <div style={{ padding: "22px 26px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ padding: "20px 26px 16px", flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#FF8822", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", marginBottom: "4px" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#FF8822", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", marginBottom: "4px" }}>
                 <FolderPlusIcon className="w-3.5 h-3.5" />
                 <span>PROJECT REPOSITORY DIRECTORY</span>
               </div>
-              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "white", margin: 0 }}>Add New Project</h3>
-              <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "4px", margin: 0 }}>
+              <h3 id="add-project-modal-title" style={{ fontSize: "21px", fontWeight: 800, color: "white", margin: 0, letterSpacing: "-0.02em" }}>
+                Add New Project
+              </h3>
+              <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "3px", margin: 0 }}>
                 Register a repository to showcase in the OSC India public directory.
               </p>
             </div>
             <button 
-              onClick={() => setShowAddProjectModal(false)}
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#9ca3af", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              className="hover:text-white hover:border-[rgba(255,255,255,0.2)]"
+              onClick={() => !isSubmittingProject && setShowAddProjectModal(false)}
+              disabled={isSubmittingProject}
+              style={{ 
+                background: "rgba(255,255,255,0.04)", 
+                border: "1px solid rgba(255,255,255,0.08)", 
+                color: "#9ca3af", 
+                width: "32px", 
+                height: "32px", 
+                borderRadius: "10px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                cursor: isSubmittingProject ? "not-allowed" : "pointer" 
+              }}
+              className="hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+              title="Close"
             >
               <XIcon className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Modal Form */}
-          <form onSubmit={handleAddProject} style={{ padding: "24px 26px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          {/* Modal Form with Scrollable Body */}
+          <form 
+            onSubmit={handleAddProject} 
+            style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              flex: 1, 
+              minHeight: 0, 
+              overflow: "hidden" 
+            }}
+          >
+            {/* Scrollable inputs container */}
+            <div 
+              style={{ 
+                flex: 1, 
+                overflowY: "auto", 
+                padding: "22px 26px", 
+                display: "flex", 
+                flexDirection: "column", 
+                gap: "18px" 
+              }}
+              className="custom-scrollbar"
+            >
               {/* Project Title */}
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                   PROJECT TITLE <span style={{ color: "#FF7518" }}>*</span>
                 </label>
                 <input
@@ -1663,17 +1760,24 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                     borderRadius: "10px",
                     padding: "10px 14px",
                     color: "white",
-                    fontSize: "13px",
-                    outline: "none"
+                    fontSize: "13.5px",
+                    outline: "none",
+                    transition: "border-color 0.2s, box-shadow 0.2s"
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
 
               {/* GitHub URL */}
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                   GITHUB REPOSITORY URL <span style={{ color: "#FF7518" }}>*</span>
                 </label>
                 <input
@@ -1689,17 +1793,24 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                     borderRadius: "10px",
                     padding: "10px 14px",
                     color: "white",
-                    fontSize: "13px",
-                    outline: "none"
+                    fontSize: "13.5px",
+                    outline: "none",
+                    transition: "border-color 0.2s, box-shadow 0.2s"
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
 
               {/* Tech / Primary Language */}
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                   PRIMARY LANGUAGE / STACK
                 </label>
                 <input
@@ -1714,40 +1825,52 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                     borderRadius: "10px",
                     padding: "10px 14px",
                     color: "white",
-                    fontSize: "13px",
+                    fontSize: "13.5px",
                     outline: "none",
-                    marginBottom: "8px"
+                    marginBottom: "8px",
+                    transition: "border-color 0.2s, box-shadow 0.2s"
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
                 {/* Quick Preset Buttons */}
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["TypeScript", "Python", "Go", "Rust", "React", "JavaScript", "Java", "C++"].map((l) => (
-                    <button
-                      type="button"
-                      key={l}
-                      onClick={() => setNewProject({ ...newProject, language: l })}
-                      style={{
-                        background: newProject.language === l ? "rgba(255,117,24,0.15)" : "rgba(255,255,255,0.03)",
-                        border: newProject.language === l ? "1px solid #FF7518" : "1px solid rgba(255,255,255,0.08)",
-                        color: newProject.language === l ? "#FF8822" : "#9ca3af",
-                        padding: "4px 10px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        cursor: "pointer"
-                      }}
-                    >
-                      {l}
-                    </button>
-                  ))}
+                  {["TypeScript", "Python", "Go", "Rust", "React", "JavaScript", "Java", "C++"].map((l) => {
+                    const isSelected = (newProject.language || "").toLowerCase() === l.toLowerCase();
+                    return (
+                      <button
+                        type="button"
+                        key={l}
+                        onClick={() => setNewProject({ ...newProject, language: l })}
+                        style={{
+                          background: isSelected ? "rgba(255,117,24,0.15)" : "rgba(255,255,255,0.03)",
+                          border: isSelected ? "1px solid #FF7518" : "1px solid rgba(255,255,255,0.08)",
+                          color: isSelected ? "#FF8822" : "#9ca3af",
+                          padding: "4px 10px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all 0.15s"
+                        }}
+                        className={!isSelected ? "hover:text-white hover:bg-[rgba(255,255,255,0.06)]" : ""}
+                      >
+                        {l}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Accent Color Selection */}
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "8px", letterSpacing: "0.04em" }}>
                   ACCENT THEME COLOR
                 </label>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -1760,34 +1883,83 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                     { name: "Red", hex: "#ef4444" },
                     { name: "Blue", hex: "#3b82f6" },
                     { name: "Amber", hex: "#f59e0b" },
-                  ].map((col) => (
-                    <button
-                      type="button"
-                      key={col.hex}
-                      onClick={() => setNewProject({ ...newProject, accentColor: col.hex })}
-                      title={col.name}
+                  ].map((col) => {
+                    const isSelected = (newProject.accentColor || "#FF7518").toLowerCase() === col.hex.toLowerCase();
+                    return (
+                      <button
+                        type="button"
+                        key={col.hex}
+                        onClick={() => setNewProject({ ...newProject, accentColor: col.hex })}
+                        title={col.name}
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "50%",
+                          background: col.hex,
+                          border: isSelected ? "3px solid white" : "2px solid rgba(0,0,0,0.35)",
+                          boxShadow: isSelected ? `0 0 12px ${col.hex}, 0 0 4px white` : "0 2px 6px rgba(0,0,0,0.4)",
+                          cursor: "pointer",
+                          transform: isSelected ? "scale(1.15)" : "scale(1)",
+                          transition: "all 0.15s"
+                        }}
+                      />
+                    );
+                  })}
+
+                  {/* Clean Custom Color Picker */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "4px" }}>
+                    <label
+                      title="Custom Hex Picker"
                       style={{
+                        position: "relative",
                         width: "28px",
                         height: "28px",
                         borderRadius: "50%",
-                        background: col.hex,
-                        border: newProject.accentColor === col.hex ? "3px solid white" : "2px solid rgba(0,0,0,0.4)",
-                        boxShadow: newProject.accentColor === col.hex ? `0 0 12px ${col.hex}` : "none",
+                        background: "conic-gradient(from 180deg at 50% 50%, #FF0000 0deg, #FFFF00 60deg, #00FF00 120deg, #00FFFF 180deg, #0000FF 240deg, #FF00FF 300deg, #FF0000 360deg)",
+                        padding: "2px",
                         cursor: "pointer",
-                        transform: newProject.accentColor === col.hex ? "scale(1.15)" : "scale(1)",
-                        transition: "all 0.15s"
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                        border: "2px solid rgba(255,255,255,0.25)"
                       }}
-                    />
-                  ))}
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "6px" }}>
-                    <input
-                      type="color"
-                      value={newProject.accentColor || "#FF7518"}
-                      onChange={(e) => setNewProject({ ...newProject, accentColor: e.target.value })}
-                      style={{ width: "28px", height: "28px", padding: 0, border: "none", borderRadius: "50%", cursor: "pointer", background: "none" }}
-                    />
-                    <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "monospace" }}>
-                      {newProject.accentColor}
+                    >
+                      <input
+                        type="color"
+                        value={newProject.accentColor || "#FF7518"}
+                        onChange={(e) => setNewProject({ ...newProject, accentColor: e.target.value })}
+                        style={{
+                          opacity: 0,
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          cursor: "pointer"
+                        }}
+                      />
+                      <span 
+                        style={{ 
+                          width: "14px", 
+                          height: "14px", 
+                          borderRadius: "50%", 
+                          background: newProject.accentColor || "#FF7518", 
+                          border: "1.5px solid white", 
+                          pointerEvents: "none" 
+                        }} 
+                      />
+                    </label>
+
+                    <span style={{ 
+                      fontSize: "12px", 
+                      fontFamily: "monospace", 
+                      background: "rgba(255,255,255,0.05)", 
+                      border: "1px solid rgba(255,255,255,0.1)", 
+                      padding: "3px 8px", 
+                      borderRadius: "6px", 
+                      color: "#d1d5db" 
+                    }}>
+                      {newProject.accentColor || "#FF7518"}
                     </span>
                   </div>
                 </div>
@@ -1795,7 +1967,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
 
               {/* Description */}
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                   DESCRIPTION
                 </label>
                 <textarea
@@ -1812,17 +1984,25 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                     color: "white",
                     fontSize: "13px",
                     outline: "none",
-                    resize: "vertical"
+                    resize: "vertical",
+                    lineHeight: 1.5,
+                    transition: "border-color 0.2s, box-shadow 0.2s"
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#FF7518";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
 
               {/* Initial Stats (Stars & Forks) */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                     STARS (DISPLAY)
                   </label>
                   <input
@@ -1837,15 +2017,22 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                       borderRadius: "10px",
                       padding: "10px 14px",
                       color: "white",
-                      fontSize: "13px",
-                      outline: "none"
+                      fontSize: "13.5px",
+                      outline: "none",
+                      transition: "border-color 0.2s, box-shadow 0.2s"
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#FF7518";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.02em" }}>
+                  <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#d1d5db", marginBottom: "6px", letterSpacing: "0.04em" }}>
                     FORKS (DISPLAY)
                   </label>
                   <input
@@ -1860,57 +2047,120 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                       borderRadius: "10px",
                       padding: "10px 14px",
                       color: "white",
-                      fontSize: "13px",
-                      outline: "none"
+                      fontSize: "13.5px",
+                      outline: "none",
+                      transition: "border-color 0.2s, box-shadow 0.2s"
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "#FF7518")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#FF7518";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.12)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   />
                 </div>
               </div>
 
-              {/* Card Live Preview */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "12px", padding: "14px" }}>
-                <div style={{ fontSize: "10px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.08em", marginBottom: "8px" }}>
+              {/* Card Live Preview (Matches real ProjectCard) */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: "8px" }}>
                   PREVIEW CARD (HOW IT WILL APPEAR IN /PROJECTS)
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: newProject.accentColor || "#FF7518", boxShadow: `0 0 8px ${newProject.accentColor || "#FF7518"}`, marginTop: "5px" }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "white" }}>
-                      {newProject.title || "Project Title"}
+                <div 
+                  style={{ 
+                    backgroundColor: "#131315", 
+                    borderRadius: "14px", 
+                    border: "1px solid rgba(255, 255, 255, 0.08)", 
+                    borderTop: `3.5px solid ${newProject.accentColor || "#FF7518"}`, 
+                    padding: "20px 22px",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.6)" 
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                    <div 
+                      style={{ 
+                        width: "36px", 
+                        height: "36px", 
+                        borderRadius: "10px", 
+                        backgroundColor: "rgba(255, 255, 255, 0.05)", 
+                        border: "1px solid rgba(255, 255, 255, 0.08)", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center",
+                        color: "#e5e7eb" 
+                      }}
+                    >
+                      <FolderGitIcon className="w-4 h-4" />
                     </div>
-                    <div style={{ fontSize: "11px", color: "#9ca3af", margin: "2px 0 4px" }}>
-                      {newProject.description || "Project summary description will appear here..."}
+                    <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b7280", letterSpacing: "0.08em" }}>
+                      LIVE PREVIEW
+                    </span>
+                  </div>
+
+                  <h4 style={{ fontSize: "16px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px", letterSpacing: "-0.2px" }}>
+                    {newProject.title.trim() || "Project Title"}
+                  </h4>
+
+                  <p style={{ fontSize: "12.5px", color: "#9ca3af", lineHeight: "1.5", margin: "0 0 16px", minHeight: "20px" }}>
+                    {newProject.description?.trim() || "Short description of the repository and what contributors will build or improve..."}
+                  </p>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "14px" }}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: newProject.accentColor || "#FF7518", display: "inline-block" }} />
+                    <span style={{ fontSize: "12px", fontWeight: 500, color: "#e5e7eb" }}>
+                      {newProject.language || "TypeScript"}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", color: "#9ca3af", fontSize: "12px" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ color: "#fbbf24" }}>★</span> {newProject.stars?.trim() || "0"}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <GitForkIcon className="w-3.5 h-3.5" /> {newProject.forks?.trim() || "0"}
+                      </span>
                     </div>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "10px", color: "#6b7280" }}>
-                      <span style={{ color: "#d1d5db" }}>{newProject.language || "TypeScript"}</span>
-                      <span>•</span>
-                      <span style={{ color: "#fbbf24" }}>★ {newProject.stars || "0"}</span>
-                      <span>•</span>
-                      <span>⑂ {newProject.forks || "0"}</span>
-                    </div>
+                    <span style={{ color: "#FF7518", fontWeight: 600, fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      View Project
+                      <ExternalLinkIcon className="w-3 h-3" />
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Buttons */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px", paddingTop: "18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            {/* Modal Buttons (Fixed bottom footer) */}
+            <div 
+              style={{ 
+                display: "flex", 
+                justifyContent: "flex-end", 
+                gap: "10px", 
+                padding: "16px 26px", 
+                flexShrink: 0,
+                borderTop: "1px solid rgba(255,255,255,0.08)", 
+                background: "rgba(13, 13, 17, 0.95)",
+                backdropFilter: "blur(12px)"
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setShowAddProjectModal(false)}
+                disabled={isSubmittingProject}
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.1)",
                   color: "white",
-                  padding: "10px 18px",
+                  padding: "10px 20px",
                   borderRadius: "10px",
                   fontSize: "13px",
                   fontWeight: 600,
-                  cursor: "pointer"
+                  cursor: isSubmittingProject ? "not-allowed" : "pointer",
+                  transition: "all 0.15s"
                 }}
-                className="hover:bg-[rgba(255,255,255,0.08)]"
+                className="hover:bg-[rgba(255,255,255,0.08)] active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -1921,18 +2171,19 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
                   background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
                   border: "none",
                   color: "white",
-                  padding: "10px 22px",
+                  padding: "10px 24px",
                   borderRadius: "10px",
                   fontSize: "13px",
                   fontWeight: 700,
                   cursor: isSubmittingProject ? "not-allowed" : "pointer",
                   opacity: isSubmittingProject ? 0.75 : 1,
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   gap: "8px",
-                  boxShadow: "0 4px 16px rgba(255, 117, 24, 0.3)"
+                  boxShadow: "0 4px 18px rgba(255, 117, 24, 0.35)",
+                  transition: "all 0.15s"
                 }}
-                className="hover:shadow-[0_6px_22px_rgba(255,117,24,0.45)] active:scale-[0.98]"
+                className="hover:shadow-[0_6px_24px_rgba(255,117,24,0.5)] active:scale-[0.98]"
               >
                 {isSubmittingProject ? (
                   <>
@@ -1959,7 +2210,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-desc"
-        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         style={{ 
           background: "rgba(0, 0, 0, 0.8)", 
           backdropFilter: "blur(14px)", 
@@ -2125,6 +2376,176 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       </div>
     )}
 
+    {/* Remove All Projects Confirmation Modal */}
+    {showDeleteAllProjectsModal && (
+      <div 
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-all-projects-dialog-title"
+        aria-describedby="delete-all-projects-dialog-desc"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        style={{ 
+          background: "rgba(0, 0, 0, 0.8)", 
+          backdropFilter: "blur(14px)", 
+          WebkitBackdropFilter: "blur(14px)" 
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isDeletingAllProjects) {
+            setShowDeleteAllProjectsModal(false);
+          }
+        }}
+      >
+        <div 
+          style={{ 
+            width: "100%", 
+            maxWidth: "480px", 
+            background: "linear-gradient(180deg, #17171d 0%, #0d0d11 100%)", 
+            border: "1px solid rgba(239, 68, 68, 0.35)", 
+            borderRadius: "20px", 
+            boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.15)",
+            overflow: "hidden",
+            animation: "toastSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+          }}
+        >
+          {/* Crimson accent line */}
+          <div style={{ height: "3px", width: "100%", background: "linear-gradient(90deg, #ef4444 0%, #f97316 100%)" }} />
+
+          <div style={{ padding: "28px 26px 24px" }}>
+            {/* Top row: Alert Icon and Close Button */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+              <div 
+                style={{ 
+                  width: "48px", 
+                  height: "48px", 
+                  borderRadius: "14px", 
+                  background: "rgba(239, 68, 68, 0.12)", 
+                  border: "1px solid rgba(239, 68, 68, 0.25)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  color: "#f87171",
+                  boxShadow: "0 0 20px rgba(239, 68, 68, 0.15)"
+                }}
+              >
+                <Trash2Icon className="w-5 h-5" />
+              </div>
+
+              <button 
+                onClick={() => !isDeletingAllProjects && setShowDeleteAllProjectsModal(false)}
+                disabled={Boolean(isDeletingAllProjects)}
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.04)", 
+                  border: "1px solid rgba(255, 255, 255, 0.08)", 
+                  color: "#9ca3af", 
+                  width: "32px", 
+                  height: "32px", 
+                  borderRadius: "10px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: isDeletingAllProjects ? "not-allowed" : "pointer" 
+                }}
+                className="hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+                title="Cancel"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Title & Description */}
+            <h3 
+              id="delete-all-projects-dialog-title"
+              style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 10px", letterSpacing: "-0.02em" }}
+            >
+              Permanently Remove All Projects?
+            </h3>
+
+            <p id="delete-all-projects-dialog-desc" style={{ fontSize: "14px", color: "#9ca3af", lineHeight: "1.55", margin: "0 0 18px" }}>
+              Are you sure you want to permanently delete all{" "}
+              <strong style={{ color: "#ffffff" }}>{projects.length} projects</strong> from the database? This cannot be undone.
+            </p>
+
+            {/* Warning callout banner */}
+            <div 
+              style={{ 
+                display: "flex", 
+                alignItems: "flex-start", 
+                gap: "10px", 
+                padding: "12px 14px", 
+                borderRadius: "12px", 
+                background: "rgba(239, 68, 68, 0.08)", 
+                border: "1px solid rgba(239, 68, 68, 0.22)", 
+                marginBottom: "24px" 
+              }}
+            >
+              <AlertCircleIcon className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <span style={{ fontSize: "12px", color: "#fca5a5", lineHeight: "1.45" }}>
+                All projects will be permanently wiped from the database and will not appear in the <strong style={{ color: "#ffffff" }}>/projects</strong> directory or on page reload.
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllProjectsModal(false)}
+                disabled={Boolean(isDeletingAllProjects)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  color: "white",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: isDeletingAllProjects ? "not-allowed" : "pointer",
+                  transition: "all 0.15s"
+                }}
+                className="hover:bg-[rgba(255,255,255,0.08)] active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAllProjects}
+                disabled={Boolean(isDeletingAllProjects)}
+                style={{
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  border: "none",
+                  color: "white",
+                  padding: "10px 22px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: isDeletingAllProjects ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 16px rgba(239, 68, 68, 0.35)",
+                  transition: "all 0.15s",
+                  opacity: isDeletingAllProjects ? 0.8 : 1
+                }}
+                className="hover:shadow-[0_6px_22px_rgba(239,68,68,0.5)] active:scale-[0.98]"
+              >
+                {isDeletingAllProjects ? (
+                  <>
+                    <RefreshCwIcon className="w-3.5 h-3.5 animate-spin" />
+                    <span>Removing All...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2Icon className="w-3.5 h-3.5" />
+                    <span>Yes, Remove All Projects</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Remove User Confirmation Modal */}
     {userToDelete && (
       <div 
@@ -2132,7 +2553,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
         aria-modal="true"
         aria-labelledby="delete-user-dialog-title"
         aria-describedby="delete-user-dialog-desc"
-        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         style={{ 
           background: "rgba(0, 0, 0, 0.8)", 
           backdropFilter: "blur(14px)", 
