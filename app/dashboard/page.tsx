@@ -174,7 +174,7 @@ export default async function DashboardPage() {
         {/* GitHub Link Banner (shown when GitHub not connected) */}
         {!githubUsername && (
           <div style={{ width: "100%", marginBottom: "24px" }}>
-            <GitHubLinkCard />
+            <GitHubLinkCard userId={user.id} />
           </div>
         )}
 
