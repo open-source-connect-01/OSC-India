@@ -619,11 +619,10 @@ export async function deleteUserAction(
 
     // 3. Root Admin Protection Checks
     const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
-    const primaryAdminEmail = "sayanghosh1887@gmail.com";
 
     if (targetEmail) {
       const cleanTargetEmail = targetEmail.toLowerCase().trim();
-      if (cleanTargetEmail === rootAdminEmail || cleanTargetEmail === primaryAdminEmail) {
+      if (cleanTargetEmail === rootAdminEmail) {
         return { success: false, error: "The primary root administrator account cannot be deleted." };
       }
 
