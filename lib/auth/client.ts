@@ -22,15 +22,23 @@ export async function signInWithOAuth(
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
 
+    const options: any = {
+      redirectTo,
+      skipBrowserRedirect: true,
+    };
+
+    if (provider === "github") {
+      options.scopes = "read:user user:email";
+    } else if (provider === "google") {
+      options.queryParams = {
+        access_type: "offline",
+        prompt: "consent",
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-        },
-      },
+      options,
     });
 
     if (error) {
@@ -85,34 +93,20 @@ export async function signInWithGoogleIdToken(
 }
 
 /**
- * Links a GitHub identity to the currently authenticated user via Supabase OAuth.
- * After linking, the auth callback will sync the github handle to profiles.
+ * Connects a GitHub account to the currently logged in user.
+ * Initiates standard GitHub OAuth (same as Sign In with GitHub),
+ * setting an osc_linking_user_id cookie so the callback links this GitHub handle
+ * directly to the user's existing profile without identity conflicts.
  */
-export async function linkGithubAccount(): Promise<{ error?: string }> {
+export async function linkGithubAccount(userId?: string): Promise<{ error?: string }> {
   try {
-    const supabase = createClient();
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const redirectTo = `${origin}/auth/callback?next=/dashboard`;
-
-    const { data, error } = await supabase.auth.linkIdentity({
-      provider: "github",
-      options: {
-        redirectTo,
-      },
-    });
-
-    if (error) {
-      return { error: error.message };
+    if (typeof document !== "undefined" && userId) {
+      document.cookie = `osc_linking_user_id=${encodeURIComponent(userId)}; path=/; max-age=600; SameSite=Lax`;
     }
-
-    if (data?.url) {
-      window.location.href = data.url;
-    }
-
-    return {};
+    return await signInWithOAuth("github", "/dashboard?linked=github");
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : undefined;
-    return { error: message || "Failed to link GitHub account" };
+    return { error: message || "Failed to initiate GitHub connection" };
   }
 }
 

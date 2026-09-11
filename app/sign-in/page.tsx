@@ -28,9 +28,20 @@ function SignInContent() {
       ? rawNext
       : "/dashboard";
   const urlError = searchParams.get("error");
+  const getFriendlyError = (err: string | null) => {
+    if (!err) return null;
+    const lower = err.toLowerCase();
+    if (lower.includes("bad_oauth_state") || lower.includes("state has expired")) {
+      return "Your sign-in session expired or was interrupted. Please click 'Sign in with GitHub' again to start a fresh login.";
+    }
+    if (lower.includes("pkce")) {
+      return "Authentication verification failed across domains. Please try signing in again.";
+    }
+    return err;
+  };
 
   const [profile, setProfile] = useState<ClientProfilePayload | null | undefined>(undefined);
-  const [errorMessage, setErrorMessage] = useState<string | null>(urlError || null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(getFriendlyError(urlError));
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"github" | "google" | null>(null);
 

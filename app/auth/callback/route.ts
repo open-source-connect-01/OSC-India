@@ -1,16 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { syncUserProfile } from "@/lib/auth/syncProfile";
+import { syncGitHubContribution } from "@/lib/actions/github";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const { searchParams } = requestUrl;
   const code = searchParams.get("code");
   const rawNext = searchParams.get("next") ?? "/dashboard";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const errorParam = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
+
+  // Dynamically resolve public origin respecting reverse proxy headers (e.g. Vercel, Cloudflare)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const isLocalEnv = process.env.NODE_ENV === "development" && !forwardedHost;
+  const origin = isLocalEnv
+    ? requestUrl.origin
+    : forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : requestUrl.origin;
 
   if (errorParam) {
     console.error("Auth provider callback error:", errorParam, errorDescription);
@@ -23,31 +37,94 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Ensure user profile exists in public.profiles (guaranteed auto-provisioning)
+      const cookieStore = await cookies();
+      const linkingUserId = cookieStore.get("osc_linking_user_id")?.value;
+
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (user) {
-          await syncUserProfile(user);
+          const incomingGithub =
+            user.user_metadata?.user_name ||
+            user.user_metadata?.preferred_username ||
+            null;
+
+          if (linkingUserId && incomingGithub) {
+            const admin = createAdminClient();
+
+            // 1. Fetch profile of the linking user (e.g. Google user)
+            const { data: linkingProfile } = await admin
+              .from("profiles")
+              .select("*")
+              .eq("id", linkingUserId)
+              .maybeSingle();
+
+            // 2. Clear any stale profile row holding this github handle
+            await admin
+              .from("profiles")
+              .update({ github: null, updated_at: new Date().toISOString() })
+              .eq("github", incomingGithub)
+              .neq("id", linkingUserId)
+              .neq("id", user.id);
+
+            const githubAvatar = user.user_metadata?.avatar_url || `https://avatars.githubusercontent.com/${incomingGithub}`;
+
+            // 3. Link github to target user profile (linkingUserId)
+            await admin
+              .from("profiles")
+              .update({
+                github: incomingGithub,
+                avatar_url: githubAvatar,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", linkingUserId);
+
+            // 4. If current session user.id is different, ensure user.id profile is unified
+            if (user.id !== linkingUserId) {
+              await admin
+                .from("profiles")
+                .upsert({
+                  id: user.id,
+                  email: user.email || linkingProfile?.email || null,
+                  full_name: linkingProfile?.full_name || user.user_metadata?.full_name || incomingGithub,
+                  avatar_url: githubAvatar,
+                  github: incomingGithub,
+                  role: linkingProfile?.role || "contributor",
+                  is_admin: linkingProfile?.is_admin || false,
+                  score: linkingProfile?.score || 0,
+                  merged_prs: linkingProfile?.merged_prs || 0,
+                  projects_count: linkingProfile?.projects_count || 0,
+                  badges_created: linkingProfile?.badges_created || 0,
+                  tech_stack: linkingProfile?.tech_stack || [],
+                  updated_at: new Date().toISOString(),
+                });
+            }
+
+            // 5. Immediately trigger GitHub contribution sync
+            try {
+              await syncGitHubContribution(linkingUserId, incomingGithub);
+              if (user.id !== linkingUserId) {
+                await syncGitHubContribution(user.id, incomingGithub);
+              }
+            } catch (syncErr: any) {
+              console.warn("GitHub contribution sync warning during link:", syncErr?.message);
+            }
+          } else {
+            await syncUserProfile(user);
+          }
         }
       } catch (profileErr: any) {
         console.error("Profile auto-provisioning warning:", profileErr?.message);
         // Non-blocking so user can still access session
       }
 
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
+      const response = NextResponse.redirect(`${origin}${next}`);
+      if (linkingUserId) {
+        response.cookies.delete("osc_linking_user_id");
       }
+      return response;
     }
 
     console.error("Supabase OAuth code exchange error:", error.message);

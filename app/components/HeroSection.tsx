@@ -5,15 +5,15 @@ import Link from "next/link";
 export default function HeroSection() {
   // Countdown timer calculation
   const [timeLeft, setTimeLeft] = useState({
-    hours: "05",
-    minutes: "25",
-    seconds: "40",
+    hours: "00",
+    minutes: "00",
+    seconds: "00",
   });
 
   useEffect(() => {
     const targetDate = new Date("2026-09-01T09:00:00+05:30").getTime();
 
-    const interval = setInterval(() => {
+    const updateTimer = () => {
       const now = new Date().getTime();
       const difference = targetDate - now;
 
@@ -27,8 +27,17 @@ export default function HeroSection() {
           minutes: String(minutes).padStart(2, "0"),
           seconds: String(seconds).padStart(2, "0"),
         });
+      } else {
+        setTimeLeft({
+          hours: "00",
+          minutes: "00",
+          seconds: "00",
+        });
       }
-    }, 1000);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
   }, []);

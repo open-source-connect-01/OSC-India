@@ -124,15 +124,19 @@ export async function signInWithOAuthServerAction(
   const safeNext = nextUrl.startsWith("/") && !nextUrl.startsWith("//") ? nextUrl : "/dashboard";
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
+  const options: any = { redirectTo };
+  if (provider === "github") {
+    options.scopes = "read:user user:email";
+  } else if (provider === "google") {
+    options.queryParams = {
+      access_type: "offline",
+      prompt: "consent",
+    };
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: {
-      redirectTo,
-      queryParams: {
-        access_type: "offline",
-        prompt: "consent",
-      },
-    },
+    options,
   });
 
   if (error) {
