@@ -12,9 +12,16 @@ export async function proxy(request: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
-  // If Supabase falls back to Site URL ("/") with OAuth code or error instead of /auth/callback,
-  // automatically forward to /auth/callback so the session is exchanged and user is logged in.
-  if ((code || error) && pathname === "/") {
+  // If Supabase falls back to Site URL ("/") with OAuth code, forward to callback for exchange.
+  // If an OAuth error lands on "/", forward directly to /sign-in so user sees the message cleanly.
+  if (error && pathname === "/") {
+    const signInUrl = new URL("/sign-in", request.url);
+    const desc = searchParams.get("error_description") || error;
+    signInUrl.searchParams.set("error", desc);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  if (code && pathname === "/") {
     const callbackUrl = new URL("/auth/callback", request.url);
     searchParams.forEach((value, key) => {
       callbackUrl.searchParams.set(key, value);

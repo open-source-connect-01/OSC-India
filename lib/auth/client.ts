@@ -22,15 +22,23 @@ export async function signInWithOAuth(
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
 
+    const options: any = {
+      redirectTo,
+      skipBrowserRedirect: true,
+    };
+
+    if (provider === "github") {
+      options.scopes = "read:user user:email";
+    } else if (provider === "google") {
+      options.queryParams = {
+        access_type: "offline",
+        prompt: "consent",
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-        },
-      },
+      options,
     });
 
     if (error) {

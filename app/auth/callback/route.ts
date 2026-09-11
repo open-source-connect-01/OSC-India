@@ -5,12 +5,23 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const { searchParams } = requestUrl;
   const code = searchParams.get("code");
   const rawNext = searchParams.get("next") ?? "/dashboard";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const errorParam = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
+
+  // Dynamically resolve public origin respecting reverse proxy headers (e.g. Vercel, Cloudflare)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const isLocalEnv = process.env.NODE_ENV === "development" && !forwardedHost;
+  const origin = isLocalEnv
+    ? requestUrl.origin
+    : forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : requestUrl.origin;
 
   if (errorParam) {
     console.error("Auth provider callback error:", errorParam, errorDescription);
@@ -37,17 +48,7 @@ export async function GET(request: Request) {
         // Non-blocking so user can still access session
       }
 
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+      return NextResponse.redirect(`${origin}${next}`);
     }
 
     console.error("Supabase OAuth code exchange error:", error.message);
