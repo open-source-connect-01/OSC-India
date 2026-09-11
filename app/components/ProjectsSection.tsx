@@ -2,15 +2,62 @@
 import Link from "next/link";
 
 export default function ProjectsSection() {
-  const projects: {
-    name: string;
-    language: string;
-    dotColor: string;
-    accentColor: string;
-    desc: string;
-    stars: string;
-    forks: string;
-  }[] = [];
+  const projects = [
+    {
+      name: "Truxify",
+      language: "Flutter",
+      dotColor: "#0284c7",
+      accentColor: "#FF7518",
+      desc: "An open-source broker-free freight marketplace connecting manufacturers directly with truck drivers via ML matching and blockchain escrow.",
+      stars: "23",
+      forks: "113",
+    },
+    {
+      name: "Bolcap",
+      language: "Python",
+      dotColor: "#3b82f6",
+      accentColor: "#ef4444",
+      desc: "AI-powered video captioning system featuring viral-moment clipping, Hinglish romanization, and customizable animated captions.",
+      stars: "0",
+      forks: "0",
+    },
+    {
+      name: "Air Quality Intelligence",
+      language: "Python",
+      dotColor: "#3b82f6",
+      accentColor: "#10b981",
+      desc: "A local-first, open-source data engineering platform for real-time air-quality monitoring, anomaly detection, and PM2.5 forecasting.",
+      stars: "0",
+      forks: "0",
+    },
+    {
+      name: "SecureFlow",
+      language: "TypeScript",
+      dotColor: "#3b82f6",
+      accentColor: "#6366f1",
+      desc: "Integrates with GitHub to analyze pull requests for security vulnerabilities using Groq's Llama 3.1 AI model.",
+      stars: "4",
+      forks: "45",
+    },
+    {
+      name: "AI Product Factory",
+      language: "TypeScript",
+      dotColor: "#3b82f6",
+      accentColor: "#ec4899",
+      desc: "Agentic platform transforming product ideas into implementation-ready software architectures with coordinated AI agents.",
+      stars: "0",
+      forks: "0",
+    },
+    {
+      name: "CreatorOS",
+      language: "JavaScript",
+      dotColor: "#eab308",
+      accentColor: "#f43f5e",
+      desc: "Open-source all-in-one dashboard for creators combining bio links, DM automation, CRM, analytics, and content planning.",
+      stars: "28",
+      forks: "54",
+    },
+  ];
 
   return (
     <section
