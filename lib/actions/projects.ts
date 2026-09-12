@@ -254,11 +254,27 @@ async function checkAdminAuth(): Promise<boolean> {
   }
 }
 
+interface DbProjectRow {
+  id: string | number;
+  name?: string;
+  title?: string;
+  description?: string | null;
+  github_repo_url?: string | null;
+  github_url?: string | null;
+  githubUrl?: string | null;
+  language?: string | null;
+  accent_color?: string | null;
+  accentColor?: string | null;
+  stars?: string | number | null;
+  forks?: string | number | null;
+  created_at?: string;
+}
+
 /**
  * Parses a database row from public.projects into a clean ProjectItem.
  * Extracts title from `name`, repo from `github_repo_url`, and extra metadata from embedded comment or columns.
  */
-function parseProjectFromDb(row: any): ProjectItem {
+function parseProjectFromDb(row: DbProjectRow): ProjectItem {
   let cleanDesc = row.description || "";
   let language = "TypeScript";
   let accentColor = "#FF7518";
@@ -266,9 +282,9 @@ function parseProjectFromDb(row: any): ProjectItem {
   let forks = "0";
 
   if (row.language) language = row.language;
-  if (row.accent_color || row.accentColor) accentColor = row.accent_color || row.accentColor;
-  if (row.stars) stars = row.stars;
-  if (row.forks) forks = row.forks;
+  if (row.accent_color || row.accentColor) accentColor = row.accent_color || row.accentColor || "#FF7518";
+  if (row.stars) stars = String(row.stars);
+  if (row.forks) forks = String(row.forks);
 
   const metaMatch = cleanDesc.match(/<!--meta:(.*?)-->/);
   if (metaMatch) {
@@ -276,8 +292,8 @@ function parseProjectFromDb(row: any): ProjectItem {
       const parsed = JSON.parse(metaMatch[1]);
       if (parsed.language) language = parsed.language;
       if (parsed.accentColor) accentColor = parsed.accentColor;
-      if (parsed.stars) stars = parsed.stars;
-      if (parsed.forks) forks = parsed.forks;
+      if (parsed.stars) stars = String(parsed.stars);
+      if (parsed.forks) forks = String(parsed.forks);
       cleanDesc = cleanDesc.replace(/<!--meta:(.*?)-->/, "").trim();
     } catch {
       // ignore parse error
@@ -333,12 +349,26 @@ export async function getProjects(): Promise<ProjectItem[]> {
   return DEFAULT_PROJECTS;
 }
 
+// Module-level cache for repo slugs (10-minute TTL to prevent repeated DB reads during high sync volume)
+let _slugCache: Set<string> | null = null;
+let _slugCacheAt = 0;
+const SLUG_CACHE_TTL_MS = 10 * 60 * 1000;
+
+export async function invalidateSlugCache(): Promise<void> {
+  _slugCache = null;
+  _slugCacheAt = 0;
+}
+
 /**
  * Fetches the set of allowed GitHub repository slugs directly from the active projects.
  * Guarantees 100% parity with the projects displayed in the /projects section.
  * PRs will ONLY be accepted if their repository slug is present in this set.
  */
-export async function getDbAllowedRepoSlugs(_adminClient?: any): Promise<Set<string>> {
+export async function getDbAllowedRepoSlugs(): Promise<Set<string>> {
+  if (_slugCache && Date.now() - _slugCacheAt < SLUG_CACHE_TTL_MS) {
+    return _slugCache;
+  }
+
   // Always include the exact official 17 competition repositories
   const allowed = new Set<string>(OFFICIAL_COMPETITION_REPO_SLUGS);
   try {
@@ -353,12 +383,14 @@ export async function getDbAllowedRepoSlugs(_adminClient?: any): Promise<Set<str
     console.warn("Exception deriving allowed slugs from getProjects:", err);
   }
 
+  _slugCache = allowed;
+  _slugCacheAt = Date.now();
   return allowed;
 }
 
 /**
  * Creates and registers a new project directly in the Supabase database.
- * Only accessible by authenticated administrators.
+ * Syncs with local JSON cache and automatically triggers page revalidation.
  */
 export async function createProjectAction(
   input: NewProjectInput
@@ -407,15 +439,16 @@ export async function createProjectAction(
     }
 
     createdProject = parseProjectFromDb(data);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Database project creation exception:", err);
-    return { success: false, error: err?.message || "Failed to save project to database." };
+    return { success: false, error: err instanceof Error ? err.message : "Failed to save project to database." };
   }
 
   // Also sync to local backup
   const currentLocal = readLocalCustomProjects();
   writeLocalCustomProjects([createdProject, ...currentLocal.filter((p) => p.id !== createdProject.id)]);
 
+  await invalidateSlugCache();
   revalidatePath("/projects");
   revalidatePath("/admin");
 
@@ -474,9 +507,9 @@ export async function deleteProjectAction(
         console.error("Failed to delete project by repo/name from DB:", error);
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Database project deletion exception:", err);
-    return { success: false, error: err?.message || "Failed to delete project from database." };
+    return { success: false, error: err instanceof Error ? err.message : "Failed to delete project from database." };
   }
 
   // 3. Keep local backup cache synchronized
@@ -486,6 +519,7 @@ export async function deleteProjectAction(
   );
   writeLocalCustomProjects(filtered);
 
+  await invalidateSlugCache();
   revalidatePath("/projects");
   revalidatePath("/admin");
 
@@ -527,12 +561,13 @@ export async function deleteAllProjectsAction(): Promise<{ success: boolean; cou
     // 3. Clear local backup cache completely
     writeLocalCustomProjects([]);
 
+    await invalidateSlugCache();
     revalidatePath("/projects");
     revalidatePath("/admin");
 
     return { success: true, count: data ? data.length : 0 };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Database deleteAllProjectsAction exception:", err);
-    return { success: false, error: err?.message || "Failed to delete all projects from database." };
+    return { success: false, error: err instanceof Error ? err.message : "Failed to delete all projects from database." };
   }
 }

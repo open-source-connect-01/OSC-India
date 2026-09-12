@@ -6,6 +6,23 @@ import BadgeClient from "./BadgeClient";
 
 export const dynamic = "force-dynamic";
 
+interface BadgeProfile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  badges_created: number | null;
+  github: string | null;
+}
+
+interface IdentityWithData {
+  identity_data?: {
+    avatar_url?: string;
+    picture?: string;
+  };
+}
+
 export default async function BadgePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,7 +32,7 @@ export default async function BadgePage() {
   }
 
   const admin = createAdminClient();
-  let profile: any = null;
+  let profile: BadgeProfile | null = null;
   const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
   const metaGithub =
     user.user_metadata?.user_name ||
@@ -31,7 +48,7 @@ export default async function BadgePage() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    profile = byUserId;
+    profile = byUserId as BadgeProfile | null;
 
     // 2. Search by GitHub handle if not found
     if (!profile && metaGithub) {
@@ -40,15 +57,17 @@ export default async function BadgePage() {
         .select("id, user_id, full_name, avatar_url, role, badges_created, github")
         .ilike("github", metaGithub)
         .maybeSingle();
-      if (byGithub) profile = byGithub;
+      if (byGithub) profile = byGithub as BadgeProfile;
     }
-  } catch (err: any) {
-    console.warn("Notice: BadgePage profile fetch error:", err?.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Fetch error";
+    console.warn("Notice: BadgePage profile fetch error:", msg);
   }
 
+  const identities = (user.identities || []) as IdentityWithData[];
   const identityAvatar =
-    user.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
-    user.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
+    identities.find((i) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
+    identities.find((i) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
 
   const githubUsername =
     profile?.github ||

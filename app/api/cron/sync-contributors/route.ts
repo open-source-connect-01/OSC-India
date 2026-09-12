@@ -50,8 +50,9 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
       ...result,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
     console.error("Contributor 6-Hour Cron Recalculation Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

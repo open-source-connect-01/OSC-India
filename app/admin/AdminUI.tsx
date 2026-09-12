@@ -219,7 +219,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     forks: "0",
   });
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
@@ -305,8 +305,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       } else {
         showToast(res.error || "Failed to add project.", "error");
       }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to add project.", "error");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to add project.", "error");
     } finally {
       setIsSubmittingProject(false);
     }
@@ -332,8 +332,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       } else {
         showToast(res.error || "Failed to delete project.", "error");
       }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to delete project.", "error");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to delete project.", "error");
     } finally {
       setDeletingProjectId(null);
     }
@@ -351,8 +351,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       } else {
         showToast(res.error || "Failed to remove all projects.", "error");
       }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to remove all projects.", "error");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to remove all projects.", "error");
     } finally {
       setIsDeletingAllProjects(false);
     }
@@ -382,8 +382,8 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       } else {
         showToast(res.error || "Failed to delete user.", "error");
       }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to delete user.", "error");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to delete user.", "error");
     } finally {
       setDeletingUserId(null);
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,9 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
-    const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
 
     // 1. Check for existing profile by user_id
-    let { data: existingProfile } = await admin
+    const { data: existingProfile } = await admin
       .from("profiles")
       .select("id, user_id, github, avatar_url")
       .eq("user_id", user.id)
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     const githubAvatar = `https://avatars.githubusercontent.com/${github}`;
     if (existingProfile) {
-      const updates: any = { github, updated_at: new Date().toISOString() };
+      const updates: Record<string, unknown> = { github, updated_at: new Date().toISOString() };
       if (!existingProfile.avatar_url) {
         updates.avatar_url =
           user.user_metadata?.avatar_url ||
@@ -76,9 +76,18 @@ export async function POST(request: Request) {
       // non-blocking
     }
 
+    // 4. Trigger instant contribution sync for this user's PRs on the official 17 repos
+    try {
+      await syncGitHubContribution(user.id, github);
+    } catch (sErr: unknown) {
+      const msg = sErr instanceof Error ? sErr.message : "Unknown sync error";
+      console.warn("Notice: instant github sync on link:", msg);
+    }
+
     return NextResponse.json({ success: true, github });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to link GitHub";
     console.error("Link GitHub API error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

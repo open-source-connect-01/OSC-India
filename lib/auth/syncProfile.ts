@@ -1,5 +1,17 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
+import { syncGitHubContribution } from "@/lib/actions/github";
+import type { Profile } from "@/lib/supabase/database";
+
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
 
 /**
  * Synchronizes and provisions user profile in public.users and public.profiles.
@@ -39,12 +51,12 @@ export async function syncUserProfile(user: User) {
       },
       { onConflict: "id" }
     );
-  } catch (uErr: any) {
-    console.warn("Notice: public.users provisioning warning:", uErr?.message);
+  } catch (uErr: unknown) {
+    console.warn("Notice: public.users provisioning warning:", uErr instanceof Error ? uErr.message : "Unknown error");
   }
 
   // 2. Search existing profile by user_id first
-  let existingProfile: any = null;
+  let existingProfile: Profile | null = null;
   const { data: byUserId } = await admin
     .from("profiles")
     .select("*")
@@ -52,7 +64,7 @@ export async function syncUserProfile(user: User) {
     .maybeSingle();
 
   if (byUserId) {
-    existingProfile = byUserId;
+    existingProfile = byUserId as Profile;
   }
 
   // 3. Fallback: search by GitHub handle if user_id not found
@@ -63,14 +75,15 @@ export async function syncUserProfile(user: User) {
       .select("*")
       .ilike("github", cleanGh)
       .maybeSingle();
-    if (byGithub) existingProfile = byGithub;
+    if (byGithub) existingProfile = byGithub as Profile;
   }
 
   const mergedGithub = incomingGithub ? incomingGithub.replace(/^@+/, "").trim().toLowerCase() : existingProfile?.github || null;
   const mergedAvatar = avatarUrl || existingProfile?.avatar_url || null;
   const mergedFullName = existingProfile?.full_name || fullName;
 
-  const profileRow: Record<string, any> = {
+  const profileRow: Partial<Profile> = {
+    id: user.id,
     user_id: user.id,
     full_name: mergedFullName,
     avatar_url: mergedAvatar,
@@ -84,8 +97,8 @@ export async function syncUserProfile(user: User) {
 
   try {
     await admin.from("profiles").upsert(profileRow, { onConflict: "user_id" });
-  } catch (pErr: any) {
-    console.warn("Notice: public.profiles upsert warning:", pErr?.message);
+  } catch (pErr: unknown) {
+    console.warn("Notice: public.profiles upsert warning:", pErr instanceof Error ? pErr.message : "Unknown error");
   }
 
   // Also synchronize auth metadata so auth.users reflects the unified profile
@@ -100,6 +113,28 @@ export async function syncUserProfile(user: User) {
     });
   } catch {
     // Non-blocking
+  }
+
+  // Decoupled, non-blocking GitHub contribution sync on login (with 30m cooldown)
+  // Ensures login returns instantly and prevents thundering herd API rate limits under 10k users
+  if (mergedGithub) {
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const isFresh = existingProfile?.updated_at && existingProfile.updated_at > thirtyMinAgo;
+
+    if (!isFresh) {
+      const baseUrl = getAppBaseUrl();
+      fetch(`${baseUrl}/api/sync/background`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-sync-secret": process.env.CRON_SECRET || "",
+        },
+        body: JSON.stringify({ userId: user.id, github: mergedGithub }),
+      }).catch(() => {
+        // Fallback: in-process non-blocking attempt if network call is unavailable
+        void syncGitHubContribution(user.id, mergedGithub).catch(() => {});
+      });
+    }
   }
 
   return { ...existingProfile, ...profileRow, email: userEmail };

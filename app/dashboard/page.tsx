@@ -27,7 +27,6 @@ export default async function DashboardPage() {
 
   const admin = createAdminClient();
 
-  const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
   const metaGithub =
     user.user_metadata?.user_name ||
     user.user_metadata?.preferred_username ||
@@ -87,8 +86,9 @@ export default async function DashboardPage() {
       } else if (created) {
         profile = created;
       }
-    } catch (err: any) {
-      console.warn("Profile auto-provision error:", err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Profile error";
+      console.warn("Profile auto-provision error:", msg);
     }
   } else if (!profile.github && metaGithub) {
     try {
@@ -97,8 +97,9 @@ export default async function DashboardPage() {
         .update({ github: metaGithub, updated_at: new Date().toISOString() })
         .eq("user_id", user.id);
       profile.github = metaGithub;
-    } catch (err: any) {
-      console.warn("Profile github sync warning:", err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "GitHub sync error";
+      console.warn("Profile github sync warning:", msg);
     }
   }
 
@@ -118,7 +119,6 @@ export default async function DashboardPage() {
   const mergedPRs = profile?.merged_prs ?? userMeta.merged_prs ?? 0;
   const projectsCount = profile?.projects_count ?? userMeta.projects_count ?? 0;
   const badgesCreated = profile?.badges_created ?? userMeta.badges_created ?? 0;
-  const isProjectAdmin = rawRole === "project-admin";
   const isSuperAdmin = Boolean(profile?.is_admin || userMeta.is_admin || isOwner || rawRole === "admin");
 
   const profilePayload = {
@@ -332,7 +332,13 @@ export default async function DashboardPage() {
 
         {userContributions && userContributions.length > 0 ? (
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px", marginBottom: "48px" }}>
-            {userContributions.map((c: any) => {
+            {(userContributions as Array<{
+              id?: string;
+              github_url: string;
+              points_awarded?: number;
+              contributed_at?: string;
+              projects?: { name?: string } | Array<{ name?: string }> | null;
+            }>).map((c) => {
               const project = Array.isArray(c.projects) ? c.projects[0] : c.projects;
               const projectName = project?.name || "Official Project";
               const prMatch = c.github_url?.match(/\/pull\/(\d+)/);
