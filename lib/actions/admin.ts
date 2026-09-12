@@ -423,8 +423,7 @@ export async function updateUserGithub(
  */
 export async function syncSingleUser(targetUserId: string, githubHandle: string) {
   await requireAdminOrProjectAdmin();
-  const admin = createAdminClient();
-  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
+  const allowedSlugs = await getDbAllowedRepoSlugs();
   const res = await syncGitHubContribution(targetUserId, githubHandle, allowedSlugs);
   revalidatePath("/admin");
   revalidatePath("/leaderboard");

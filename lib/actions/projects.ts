@@ -282,7 +282,7 @@ function parseProjectFromDb(row: DbProjectRow): ProjectItem {
   let forks = "0";
 
   if (row.language) language = row.language;
-  if (row.accent_color || row.accentColor) accentColor = row.accent_color || row.accentColor;
+  if (row.accent_color || row.accentColor) accentColor = row.accent_color || row.accentColor || "#FF7518";
   if (row.stars) stars = String(row.stars);
   if (row.forks) forks = String(row.forks);
 

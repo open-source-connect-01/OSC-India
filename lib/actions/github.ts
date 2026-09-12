@@ -200,9 +200,10 @@ export async function syncGitHubContribution(
       const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
       for (const num of linkedNumbers) {
         const cacheKey = `${repoSlug}#${num}`;
-        let linkedIssue = linkedIssuesCache.get(cacheKey);
+        const cached = linkedIssuesCache.get(cacheKey);
+        let linkedIssue: GitHubIssueItem | null = cached ?? null;
 
-        if (linkedIssue === undefined) {
+        if (cached === undefined) {
           try {
             const issueRes = await fetch(
               `https://api.github.com/repos/${repoSlug}/issues/${num}`,
@@ -504,9 +505,10 @@ export async function syncAllProjectsAndContributors() {
           const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
           for (const num of linkedNumbers) {
             const cacheKey = `${repoSlug}#${num}`;
-            let linkedIssue = linkedIssuesCache.get(cacheKey);
+            const cached = linkedIssuesCache.get(cacheKey);
+            let linkedIssue: GitHubIssueItem | null = cached ?? null;
 
-            if (linkedIssue === undefined) {
+            if (cached === undefined) {
               try {
                 const issueRes = await fetch(
                   `https://api.github.com/repos/${repoSlug}/issues/${num}`,
