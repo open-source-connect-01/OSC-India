@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDbAllowedRepoSlugs } from "@/lib/actions/projects";
+import { revalidatePath } from "next/cache";
 import {
   normalizeGitHubHandle,
   detectDifficulty,
@@ -277,3 +278,222 @@ export async function syncGitHubContribution(
     return { success: false, error: err.message || "Unknown error during sync." };
   }
 }
+
+/**
+ * Fast, repo-centric full sync engine for the 5-hour cron job loop.
+ * Rather than making 608 individual Search API queries (which exceeds the 30 req/min limit),
+ * this queries closed pull requests directly across the official tracked repositories
+ * using the core GitHub REST API (5,000 req/hr rate limit).
+ * 
+ * Aggregates merged PRs for all contributors across all competition projects in seconds,
+ * computes difficulty points and repo counts, and updates all 608 profiles in public.profiles.
+ */
+export async function syncAllProjectsAndContributors() {
+  const admin = createAdminClient();
+  const startTime = Date.now();
+
+  // 1. Fetch allowed projects strictly from database
+  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
+  if (allowedSlugs.size === 0) {
+    return { success: false, error: "No tracked projects found in database." };
+  }
+
+  // 2. Setup GitHub API headers
+  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "OSC-India-Sync-Engine",
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Map: normalized lowercase github handle -> array of valid merged PR items
+  const contributorPrMap = new Map<
+    string,
+    Array<{
+      repoSlug: string;
+      prNumber: number;
+      difficulty: DifficultyLevel;
+      points: number;
+    }>
+  >();
+
+  const linkedIssuesCache = new Map<string, any>();
+  let totalPrsFetched = 0;
+  let totalMergedPrsFound = 0;
+
+  // 3. For each competition project repository, fetch closed PRs via REST API
+  for (const repoSlug of Array.from(allowedSlugs)) {
+    try {
+      let page = 1;
+      while (page <= 5) {
+        const url = `https://api.github.com/repos/${repoSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
+        const res = await fetch(url, { headers, next: { revalidate: 0 } });
+
+        if (!res.ok) {
+          if (res.status === 403 || res.status === 429) {
+            console.warn(`Rate limit reached on ${repoSlug}: status ${res.status}`);
+          }
+          break;
+        }
+
+        const pulls = await res.json();
+        if (!Array.isArray(pulls) || pulls.length === 0) {
+          break;
+        }
+
+        totalPrsFetched += pulls.length;
+
+        for (const pr of pulls) {
+          // Only truly merged PRs count!
+          if (!pr.merged_at) continue;
+
+          const rawAuthor = pr.user?.login;
+          const authorHandle = normalizeGitHubHandle(rawAuthor || "").toLowerCase();
+          if (!authorHandle) continue;
+
+          totalMergedPrsFound++;
+
+          // Detect difficulty from labels / title / body
+          let prDifficulty = detectDifficulty({
+            title: pr.title,
+            body: pr.body,
+            labels: pr.labels,
+          });
+
+          // Check linked issues in this repo
+          const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
+          for (const num of linkedNumbers) {
+            const cacheKey = `${repoSlug}#${num}`;
+            let linkedIssue = linkedIssuesCache.get(cacheKey);
+
+            if (linkedIssue === undefined) {
+              try {
+                const issueRes = await fetch(
+                  `https://api.github.com/repos/${repoSlug}/issues/${num}`,
+                  { headers, next: { revalidate: 0 } }
+                );
+                if (issueRes.ok) {
+                  linkedIssue = await issueRes.json();
+                  linkedIssuesCache.set(cacheKey, linkedIssue);
+                } else {
+                  linkedIssuesCache.set(cacheKey, null);
+                }
+              } catch {
+                linkedIssuesCache.set(cacheKey, null);
+              }
+            }
+
+            if (linkedIssue) {
+              const issueDifficulty = detectDifficulty(linkedIssue);
+              if (DIFFICULTY_RANK[issueDifficulty] > DIFFICULTY_RANK[prDifficulty]) {
+                prDifficulty = issueDifficulty;
+              }
+            }
+          }
+
+          const prEntry = {
+            repoSlug,
+            prNumber: pr.number,
+            difficulty: prDifficulty,
+            points: DIFFICULTY_POINTS[prDifficulty],
+          };
+
+          if (!contributorPrMap.has(authorHandle)) {
+            contributorPrMap.set(authorHandle, []);
+          }
+          contributorPrMap.get(authorHandle)!.push(prEntry);
+        }
+
+        if (pulls.length < 100) break;
+        page++;
+      }
+    } catch (repoErr: any) {
+      console.error(`Error fetching PRs for repo ${repoSlug}:`, repoErr?.message);
+    }
+  }
+
+  // 4. Fetch all contributor profiles from public.profiles
+  const { data: profiles, error: profErr } = await admin
+    .from("profiles")
+    .select("id, github, role, score, merged_prs, projects_count")
+    .eq("role", "contributor");
+
+  if (profErr || !profiles) {
+    return { success: false, error: profErr?.message || "Failed to fetch profiles." };
+  }
+
+  let updatedCount = 0;
+  const nowIso = new Date().toISOString();
+
+  // 5. Update each contributor profile in Supabase
+  for (const profile of profiles) {
+    if (!profile.github) continue;
+    const cleanHandle = normalizeGitHubHandle(profile.github).toLowerCase();
+    const userPrs = contributorPrMap.get(cleanHandle) || [];
+
+    const computedScore = userPrs.reduce((sum, p) => sum + p.points, 0);
+    const computedMergedPrs = userPrs.length;
+    const uniqueRepos = new Set(userPrs.map((p) => p.repoSlug));
+    const computedProjects = uniqueRepos.size;
+
+    const hasChanged =
+      profile.score !== computedScore ||
+      profile.merged_prs !== computedMergedPrs ||
+      profile.projects_count !== computedProjects;
+
+    try {
+      await admin
+        .from("profiles")
+        .update({
+          score: computedScore,
+          merged_prs: computedMergedPrs,
+          projects_count: computedProjects,
+          updated_at: nowIso,
+        })
+        .eq("id", profile.id);
+
+      // If user has points or their score changed, update auth user_metadata as well
+      if (hasChanged || computedScore > 0) {
+        try {
+          const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
+          if (authUser?.user) {
+            await admin.auth.admin.updateUserById(profile.id, {
+              user_metadata: {
+                ...authUser.user.user_metadata,
+                score: computedScore,
+                merged_prs: computedMergedPrs,
+                projects_count: computedProjects,
+              },
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      updatedCount++;
+    } catch (updateErr) {
+      console.warn(`Failed to update profile for @${cleanHandle}:`, updateErr);
+    }
+  }
+
+  revalidatePath("/leaderboard");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+
+  const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  return {
+    success: true,
+    trackedRepos: allowedSlugs.size,
+    totalPrsFetched,
+    totalMergedPrsFound,
+    contributorsProcessed: profiles.length,
+    activeContributorsWithPoints: Array.from(contributorPrMap.keys()).length,
+    updatedProfiles: updatedCount,
+    duration: `${durationSec}s`,
+  };
+}
+

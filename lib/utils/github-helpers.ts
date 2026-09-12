@@ -99,22 +99,37 @@ export function extractLinkedIssueNumbers(text?: string | null): number[] {
 }
 
 /**
- * Extracts a normalized "owner/repo" slug from a GitHub URL or string
+ * Extracts a normalized "owner/repo" slug from a GitHub URL or string.
+ * Supports:
+ * - https://api.github.com/repos/owner/repo
+ * - https://github.com/owner/repo
+ * - https://github.com/owner/repo/pull/123
+ * - owner/repo
  */
 export function extractRepoSlug(urlOrSlug?: string | null): string | null {
   if (!urlOrSlug) return null;
   const trimmed = urlOrSlug.trim();
   if (!trimmed || trimmed === "#") return null;
 
-  // Match github.com/owner/repo in URLs
-  const match = trimmed.match(/github\.com\/([^\/\s#?]+)\/([^\/\s#?]+)/i);
-  if (match) {
-    const owner = match[1];
-    const repo = match[2].replace(/\.git$/i, "").replace(/\/+$/, "");
+  // 1. Match api.github.com/repos/owner/repo
+  const apiMatch = trimmed.match(/api\.github\.com\/repos\/([^\/\s#?]+)\/([^\/\s#?]+)/i);
+  if (apiMatch) {
+    const owner = apiMatch[1];
+    const repo = apiMatch[2].replace(/\.git$/i, "").replace(/\/+$/, "");
     return `${owner}/${repo}`.toLowerCase();
   }
 
-  // Match raw "owner/repo"
+  // 2. Match github.com/owner/repo (ignoring sub-paths like /pull/..., /issues/...)
+  const webMatch = trimmed.match(/github\.com\/([^\/\s#?]+)\/([^\/\s#?]+)/i);
+  if (webMatch) {
+    const owner = webMatch[1];
+    if (!["orgs", "users", "search", "settings", "repos"].includes(owner.toLowerCase())) {
+      const repo = webMatch[2].replace(/\.git$/i, "").replace(/\/+$/, "");
+      return `${owner}/${repo}`.toLowerCase();
+    }
+  }
+
+  // 3. Match raw "owner/repo"
   const clean = trimmed.replace(/^@+/, "").replace(/\.git$/i, "").replace(/\/+$/, "");
   const parts = clean.split("/").filter(Boolean);
   if (parts.length === 2 && !parts[0].includes(":") && !parts[1].includes(":")) {

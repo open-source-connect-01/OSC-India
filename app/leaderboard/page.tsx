@@ -74,57 +74,7 @@ export default async function LeaderboardPage(props: {
     return null;
   }
 
-  // First: process auth.users
-  for (const u of authUsers) {
-    const meta = u.user_metadata || {};
-    const email = (u.email || meta.email || "").trim().toLowerCase();
-    const fullName = (meta.full_name || meta.name || (email ? email.split("@")[0] : "Contributor")).trim();
-    const avatar = meta.avatar_url || meta.picture || "";
-    const rawGithub = meta.github || meta.user_name || meta.preferred_username || "";
-    const github = rawGithub ? rawGithub.replace(/^@+/, "").trim().toLowerCase() : "";
-    const role = meta.role || "contributor";
-    const isAdmin = Boolean(meta.is_admin || role === "admin" || role === "project-admin");
-    const score = Number(meta.score ?? 0);
-    const prs = Number(meta.merged_prs ?? 0);
-    const projects = Number(meta.projects_count ?? 0);
-
-    // Skip accounts that are strictly admin/project-admin
-    if (role === "admin" || role === "project-admin" || (meta.is_admin && role !== "contributor")) {
-      continue;
-    }
-
-    const matchedKey = findExistingKey(email, github, u.id, fullName);
-    if (matchedKey) {
-      const existing = userMap.get(matchedKey);
-      existing.points = Math.max(existing.points, score);
-      existing.prs = Math.max(existing.prs, prs);
-      existing.projects = Math.max(existing.projects, projects);
-      if (!existing.github && github) {
-        existing.github = github;
-        existing.username = `@${github}`;
-      }
-      if (!existing.avatar && avatar) existing.avatar = avatar;
-      if (!existing.email && email) existing.email = email;
-    } else {
-      const key = github ? `gh:${github}` : email ? `em:${email}` : `id:${u.id}`;
-      userMap.set(key, {
-        id: u.id,
-        email,
-        name: fullName,
-        username: github ? `@${github}` : email ? `@${email.split("@")[0]}` : "@contributor",
-        github,
-        role,
-        isAdmin,
-        points: score,
-        prs,
-        projects,
-        avatar,
-        country: meta.country || "IN",
-      });
-    }
-  }
-
-  // Second: merge profiles table records
+  // First: process public.profiles table (AUTHORITATIVE SOURCE OF TRUTH for competition scores & PRs)
   for (const p of rawProfiles) {
     const rawP = p as any;
     const email = (p.email || "").trim().toLowerCase();
@@ -148,10 +98,10 @@ export default async function LeaderboardPage(props: {
     if (matchedKey) {
       const existing = userMap.get(matchedKey);
       if (p.full_name) existing.name = p.full_name;
-      if (p.avatar_url && !existing.avatar) existing.avatar = p.avatar_url;
-      if (p.score !== undefined && p.score !== null) existing.points = Math.max(existing.points, score);
-      if (p.merged_prs !== undefined && p.merged_prs !== null) existing.prs = Math.max(existing.prs, prs);
-      if (p.projects_count !== undefined && p.projects_count !== null) existing.projects = Math.max(existing.projects, projects);
+      if (p.avatar_url) existing.avatar = p.avatar_url;
+      existing.points = score;
+      existing.prs = prs;
+      existing.projects = projects;
       if (p.country) existing.country = p.country;
     } else {
       const key = github ? `gh:${github}` : email ? `em:${email}` : `id:${p.id}`;
@@ -168,6 +118,54 @@ export default async function LeaderboardPage(props: {
         projects,
         avatar: p.avatar_url || "",
         country: p.country || "IN",
+      });
+    }
+  }
+
+  // Second: ingest auth.users ONLY as fallback for newly registered accounts lacking a profile row
+  for (const u of authUsers) {
+    const meta = u.user_metadata || {};
+    const email = (u.email || meta.email || "").trim().toLowerCase();
+    const fullName = (meta.full_name || meta.name || (email ? email.split("@")[0] : "Contributor")).trim();
+    const avatar = meta.avatar_url || meta.picture || "";
+    const rawGithub = meta.github || meta.user_name || meta.preferred_username || "";
+    const github = rawGithub ? rawGithub.replace(/^@+/, "").trim().toLowerCase() : "";
+    const role = meta.role || "contributor";
+    const isAdmin = Boolean(meta.is_admin || role === "admin" || role === "project-admin");
+    const score = Number(meta.score ?? 0);
+    const prs = Number(meta.merged_prs ?? 0);
+    const projects = Number(meta.projects_count ?? 0);
+
+    // Skip accounts that are strictly admin/project-admin
+    if (role === "admin" || role === "project-admin" || (meta.is_admin && role !== "contributor")) {
+      continue;
+    }
+
+    const matchedKey = findExistingKey(email, github, u.id, fullName);
+    if (matchedKey) {
+      const existing = userMap.get(matchedKey);
+      // Only supplement missing metadata, NEVER overwrite verified DB metrics with stale auth metadata
+      if (!existing.github && github) {
+        existing.github = github;
+        existing.username = `@${github}`;
+      }
+      if (!existing.avatar && avatar) existing.avatar = avatar;
+      if (!existing.email && email) existing.email = email;
+    } else {
+      const key = github ? `gh:${github}` : email ? `em:${email}` : `id:${u.id}`;
+      userMap.set(key, {
+        id: u.id,
+        email,
+        name: fullName,
+        username: github ? `@${github}` : email ? `@${email.split("@")[0]}` : "@contributor",
+        github,
+        role,
+        isAdmin,
+        points: score,
+        prs,
+        projects,
+        avatar,
+        country: meta.country || "IN",
       });
     }
   }

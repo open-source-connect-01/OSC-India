@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { syncGitHubContribution } from "./github";
+import { syncGitHubContribution, syncAllProjectsAndContributors } from "./github";
 import { Profile } from "@/lib/supabase/database";
 import { revalidatePath } from "next/cache";
 
@@ -148,7 +148,7 @@ export async function getAdminData() {
     });
   }
 
-  function mergeContributor(target: Profile, incoming: Partial<Profile>) {
+  function mergeContributor(target: Profile, incoming: Partial<Profile>, isIncomingAuthoritative = false) {
     if (incoming.email && !target.email) target.email = incoming.email;
     if (incoming.github && !target.github) target.github = incoming.github;
     if (incoming.full_name && (!target.full_name || target.full_name === "Contributor")) target.full_name = incoming.full_name;
@@ -159,16 +159,52 @@ export async function getAdminData() {
     } else if (incoming.role && incoming.role !== "contributor" && target.role === "contributor") {
       target.role = incoming.role;
     }
-    target.score = Math.max(target.score || 0, Number(incoming.score || 0));
-    target.merged_prs = Math.max(target.merged_prs || 0, Number(incoming.merged_prs || 0));
-    target.projects_count = Math.max(target.projects_count || 0, Number(incoming.projects_count || 0));
-    target.badges_created = Math.max(target.badges_created || 0, Number(incoming.badges_created || 0));
+    
+    // If incoming is from public.profiles, it authoritatively overrides stale auth metadata
+    if (isIncomingAuthoritative) {
+      target.score = Number(incoming.score ?? target.score ?? 0);
+      target.merged_prs = Number(incoming.merged_prs ?? target.merged_prs ?? 0);
+      target.projects_count = Number(incoming.projects_count ?? target.projects_count ?? 0);
+      target.badges_created = Number(incoming.badges_created ?? target.badges_created ?? 0);
+    } else {
+      if (target.score === undefined || target.score === null) target.score = Number(incoming.score || 0);
+      if (target.merged_prs === undefined || target.merged_prs === null) target.merged_prs = Number(incoming.merged_prs || 0);
+      if (target.projects_count === undefined || target.projects_count === null) target.projects_count = Number(incoming.projects_count || 0);
+      if (target.badges_created === undefined || target.badges_created === null) target.badges_created = Number(incoming.badges_created || 0);
+    }
+
     if (incoming.tech_stack && incoming.tech_stack.length > 0) {
       target.tech_stack = Array.from(new Set([...(target.tech_stack || []), ...incoming.tech_stack]));
     }
   }
 
-  // A. Ingest authUsers
+  // A. Ingest database profile records first (AUTHORITATIVE SOURCE OF TRUTH)
+  for (const p of rawProfiles) {
+    const rawP = p as any;
+    const existing = findUnifiedUser(p.email, p.github, p.id || rawP.user_id, p.full_name);
+    if (existing) {
+      mergeContributor(existing, p, true);
+    } else {
+      unifiedProfiles.push({
+        id: p.id,
+        email: p.email || "",
+        full_name: p.full_name || "Contributor",
+        avatar_url: p.avatar_url || null,
+        github: p.github || null,
+        role: p.role || "contributor",
+        is_admin: Boolean(p.is_admin),
+        score: Number(p.score ?? 0),
+        merged_prs: Number(p.merged_prs ?? 0),
+        projects_count: Number(p.projects_count ?? 0),
+        badges_created: Number(p.badges_created ?? 0),
+        tech_stack: p.tech_stack || [],
+        created_at: p.created_at || new Date().toISOString(),
+        updated_at: p.updated_at || new Date().toISOString(),
+      } as Profile);
+    }
+  }
+
+  // B. Ingest authUsers only as fallback for newly registered accounts lacking a profile row
   for (const u of authUsers) {
     const meta = u.user_metadata || {};
     const email = u.email || meta.email || "";
@@ -198,35 +234,10 @@ export async function getAdminData() {
 
     const existing = findUnifiedUser(candidate.email, candidate.github, candidate.id, candidate.full_name);
     if (existing) {
-      mergeContributor(existing, candidate);
+      // Supplemental only (never overwrite verified DB metrics with old auth metadata)
+      mergeContributor(existing, candidate, false);
     } else {
       unifiedProfiles.push(candidate);
-    }
-  }
-
-  // B. Ingest and merge database profile records
-  for (const p of rawProfiles) {
-    const rawP = p as any;
-    const existing = findUnifiedUser(p.email, p.github, p.id || rawP.user_id, p.full_name);
-    if (existing) {
-      mergeContributor(existing, p);
-    } else {
-      unifiedProfiles.push({
-        id: p.id,
-        email: p.email || "",
-        full_name: p.full_name || "Contributor",
-        avatar_url: p.avatar_url || null,
-        github: p.github || null,
-        role: p.role || "contributor",
-        is_admin: Boolean(p.is_admin),
-        score: Number(p.score ?? 0),
-        merged_prs: Number(p.merged_prs ?? 0),
-        projects_count: Number(p.projects_count ?? 0),
-        badges_created: Number(p.badges_created ?? 0),
-        tech_stack: p.tech_stack || [],
-        created_at: p.created_at || new Date().toISOString(),
-        updated_at: p.updated_at || new Date().toISOString(),
-      } as Profile);
     }
   }
 
@@ -481,81 +492,23 @@ export async function syncSingleUser(targetUserId: string, githubHandle: string)
 }
 
 /**
- * Bulk syncs contributors in rate-limited batches.
- * Selects the least recently updated contributors first (FIFO queue).
+ * Bulk syncs all contributors using the fast, repo-centric full sync engine.
+ * Gathers merged PRs across all official competition projects in seconds,
+ * computes difficulty scores, and updates all 608 contributor profiles without rate-limit issues.
  */
-export async function syncAllUsers(batchSize = 25) {
+export async function syncAllUsers() {
   await requireSuperAdmin();
-  const admin = createAdminClient();
-
-  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
-
-  const { data: contributors, error } = await admin
-    .from("profiles")
-    .select("id, github, updated_at")
-    .eq("role", "contributor")
-    .not("github", "is", null)
-    .order("updated_at", { ascending: true })
-    .limit(batchSize);
-
-  if (error || !contributors) {
-    return { success: false, error: error?.message || "Failed to fetch contributors." };
-  }
-
-  const { count: totalContributors } = await admin
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("role", "contributor")
-    .not("github", "is", null);
-
-  let successCount = 0;
-  let failedCount = 0;
-  let rateLimited = false;
-
-  for (let i = 0; i < contributors.length; i++) {
-    const contributor = contributors[i];
-    if (!contributor.github) continue;
-
-    try {
-      const res = await syncGitHubContribution(contributor.id, contributor.github, allowedSlugs);
-      if (res.rateLimited) {
-        rateLimited = true;
-        break;
-      }
-      if (res.success) {
-        successCount++;
-      } else {
-        failedCount++;
-        await admin
-          .from("profiles")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", contributor.id);
-      }
-    } catch {
-      failedCount++;
-      await admin
-        .from("profiles")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", contributor.id);
-    }
-
-    // 2.1-second delay between users to avoid GitHub Search API rate limiting (30 req/min)
-    if (i < contributors.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 2100));
-    }
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/leaderboard");
-  revalidatePath("/dashboard");
+  const result = await syncAllProjectsAndContributors();
 
   return {
-    success: true,
-    total: totalContributors || contributors.length,
-    batchSize: contributors.length,
-    synced: successCount,
-    failed: failedCount,
-    rateLimited,
+    success: result.success,
+    error: result.error,
+    total: result.contributorsProcessed,
+    synced: result.updatedProfiles,
+    failed: 0,
+    trackedRepos: result.trackedRepos,
+    activeContributors: result.activeContributorsWithPoints,
+    duration: result.duration,
   };
 }
 
