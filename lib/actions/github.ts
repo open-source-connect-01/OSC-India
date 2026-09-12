@@ -272,7 +272,7 @@ export async function syncGitHubContribution(
           projects_count: projectsCount,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", userId);
+        .eq("user_id", userId);
     } catch (dbErr) {
       console.warn("Notice: profile update after GitHub sync:", dbErr);
     }
@@ -582,7 +582,7 @@ export async function syncAllProjectsAndContributors() {
             projects_count: computedProjects,
             updated_at: nowIso,
           })
-          .eq("id", user.id);
+          .eq("user_id", user.id);
       } catch {
         // Non-blocking
       }
