@@ -25,6 +25,30 @@ interface GitHubIssueItem {
 }
 
 /**
+ * Returns GitHub API headers with optimal rate-limiting:
+ * Prioritizes personal access token (GITHUB_ACCESS_TOKEN/PAT).
+ * Falls back automatically to GitHub OAuth App Basic Auth (AUTH_GITHUB_ID/SECRET),
+ * providing 5,000 req/hr core API and 30 req/min search API.
+ */
+function getGitHubAuthHeaders(): Record<string, string> {
+  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "OSC-India-Sync-Engine",
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else {
+    const clientId = process.env.GITHUB_ID || process.env.AUTH_GITHUB_ID;
+    const clientSecret = process.env.GITHUB_SECRET || process.env.AUTH_GITHUB_SECRET;
+    if (clientId && clientSecret) {
+      headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
+    }
+  }
+  return headers;
+}
+
+/**
  * Core GitHub Sync Engine Implementation.
  * Queries GitHub Search API for merged PRs authored by the user,
  * filters against the projects in the Supabase database, computes points based on difficulty,
@@ -84,15 +108,8 @@ export async function syncGitHubContribution(
   // 3. Extract Allowed Repositories strictly from the database (public.projects table)
   const allowedSlugs = preFetchedAllowedSlugs || (await getDbAllowedRepoSlugs(admin));
 
-  // 4. Setup GitHub API headers
-  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "OSC-India-Sync-Engine",
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  // 4. Setup GitHub API headers with OAuth fallback for 5,000 req/hr
+  const headers = getGitHubAuthHeaders();
 
   try {
     // 5. Fetch ALL Merged PRs via Search API with Pagination
@@ -298,15 +315,8 @@ export async function syncAllProjectsAndContributors() {
     return { success: false, error: "No tracked projects found in database." };
   }
 
-  // 2. Setup GitHub API headers
-  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "OSC-India-Sync-Engine",
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  // 2. Setup GitHub API headers with OAuth fallback for 5,000 req/hr
+  const headers = getGitHubAuthHeaders();
 
   // Map: normalized lowercase github handle -> array of valid merged PR items
   const contributorPrMap = new Map<
@@ -414,68 +424,98 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 4. Fetch all contributor profiles from public.profiles
-  const { data: profiles, error: profErr } = await admin
-    .from("profiles")
-    .select("id, github, role, score, merged_prs, projects_count")
-    .eq("role", "contributor");
-
-  if (profErr || !profiles) {
-    return { success: false, error: profErr?.message || "Failed to fetch profiles." };
+  // 4. Fetch all contributors from auth.users (primary source of truth in production)
+  let authUsers: any[] = [];
+  try {
+    let page = 1;
+    while (true) {
+      const { data: pageData, error: authErr } = await admin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (authErr || !pageData?.users || pageData.users.length === 0) break;
+      authUsers.push(...pageData.users);
+      if (pageData.users.length < 1000) break;
+      page++;
+    }
+  } catch (err: any) {
+    console.warn("Notice: reading auth.users during sync:", err.message);
   }
 
   let updatedCount = 0;
   const nowIso = new Date().toISOString();
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
 
-  // 5. Update each contributor profile in Supabase
-  for (const profile of profiles) {
-    if (!profile.github) continue;
-    const cleanHandle = normalizeGitHubHandle(profile.github).toLowerCase();
-    const userPrs = contributorPrMap.get(cleanHandle) || [];
+  // 5. Update each contributor in auth.users and public.profiles
+  for (const user of authUsers) {
+    const meta = user.user_metadata || {};
+    const identities = user.identities || [];
+    const role = meta.role || (user.email?.toLowerCase() === adminEmail ? "admin" : "contributor");
+    const isAdmin = Boolean(meta.is_admin || role === "admin" || role === "project-admin");
+
+    // Only contributors participate in leaderboard scoring
+    if (role !== "contributor" || isAdmin) {
+      continue;
+    }
+
+    let rawHandle = meta.github || meta.user_name || meta.preferred_username;
+    if (!rawHandle) {
+      const ghId = identities.find((i: any) => i.provider === "github");
+      if (ghId?.identity_data) {
+        rawHandle = ghId.identity_data.user_name || ghId.identity_data.preferred_username;
+      }
+    }
+
+    const cleanHandle = rawHandle ? normalizeGitHubHandle(rawHandle).toLowerCase() : "";
+    const userPrs = cleanHandle ? (contributorPrMap.get(cleanHandle) || []) : [];
 
     const computedScore = userPrs.reduce((sum, p) => sum + p.points, 0);
     const computedMergedPrs = userPrs.length;
     const uniqueRepos = new Set(userPrs.map((p) => p.repoSlug));
     const computedProjects = uniqueRepos.size;
 
+    const currentScore = Number(meta.score || 0);
+    const currentPrs = Number(meta.merged_prs || 0);
+    const currentRepos = Number(meta.projects_count || 0);
+
     const hasChanged =
-      profile.score !== computedScore ||
-      profile.merged_prs !== computedMergedPrs ||
-      profile.projects_count !== computedProjects;
+      currentScore !== computedScore ||
+      currentPrs !== computedMergedPrs ||
+      currentRepos !== computedProjects;
 
-    try {
-      await admin
-        .from("profiles")
-        .update({
-          score: computedScore,
-          merged_prs: computedMergedPrs,
-          projects_count: computedProjects,
-          updated_at: nowIso,
-        })
-        .eq("id", profile.id);
+    // Update if values changed or if contributor has points
+    if (hasChanged || computedScore > 0) {
+      try {
+        await admin.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...meta,
+            github: rawHandle || meta.github || null,
+            score: computedScore,
+            merged_prs: computedMergedPrs,
+            projects_count: computedProjects,
+          },
+        });
+      } catch (authErr: any) {
+        console.warn(`Notice: updating auth metadata for ${user.id}:`, authErr?.message);
+      }
 
-      // If user has points or their score changed, update auth user_metadata as well
-      if (hasChanged || computedScore > 0) {
-        try {
-          const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
-          if (authUser?.user) {
-            await admin.auth.admin.updateUserById(profile.id, {
-              user_metadata: {
-                ...authUser.user.user_metadata,
-                score: computedScore,
-                merged_prs: computedMergedPrs,
-                projects_count: computedProjects,
-              },
-            });
-          }
-        } catch {
-          // ignore
-        }
+      // Also update profiles table if profile exists
+      try {
+        await admin
+          .from("profiles")
+          .update({
+            github: rawHandle || null,
+            score: computedScore,
+            merged_prs: computedMergedPrs,
+            projects_count: computedProjects,
+            updated_at: nowIso,
+          })
+          .eq("id", user.id);
+      } catch {
+        // Non-blocking
       }
 
       updatedCount++;
-    } catch (updateErr) {
-      console.warn(`Failed to update profile for @${cleanHandle}:`, updateErr);
     }
   }
 
@@ -490,7 +530,7 @@ export async function syncAllProjectsAndContributors() {
     trackedRepos: allowedSlugs.size,
     totalPrsFetched,
     totalMergedPrsFound,
-    contributorsProcessed: profiles.length,
+    contributorsProcessed: authUsers.length,
     activeContributorsWithPoints: Array.from(contributorPrMap.keys()).length,
     updatedProfiles: updatedCount,
     duration: `${durationSec}s`,
