@@ -37,11 +37,12 @@ async function requireSuperAdmin() {
   const admin = createAdminClient();
   const { data: profile, error: profErr } = await admin
     .from("profiles")
-    .select("id, role, is_admin")
-    .eq("id", user.id)
-    .single();
+    .select("id, user_id, role")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (profErr || !profile || (!profile.is_admin && profile.role !== "admin")) {
+  const isSuper = profile?.role === "admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
+  if (profErr || !profile || !isSuper) {
     throw new Error("Forbidden. Super Admin privileges required.");
   }
 
@@ -70,15 +71,12 @@ async function requireAdminOrProjectAdmin() {
   const admin = createAdminClient();
   const { data: profile, error: profErr } = await admin
     .from("profiles")
-    .select("id, role, is_admin")
-    .eq("id", user.id)
-    .single();
+    .select("id, user_id, role")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (
-    profErr ||
-    !profile ||
-    (!profile.is_admin && profile.role !== "admin" && profile.role !== "project-admin")
-  ) {
+  const hasAccess = profile?.role === "admin" || profile?.role === "project-admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
+  if (profErr || !profile || !hasAccess) {
     throw new Error("Forbidden. Elevated privileges required.");
   }
 
@@ -208,17 +206,16 @@ export async function updateUserRole(
   const admin = createAdminClient();
 
   const isElevated = newRole === "admin" || newRole === "project-admin";
-  const updates: Partial<Profile> = {
+  const profileUpdates: any = {
     role: newRole,
-    is_admin: newRole === "admin",
     updated_at: new Date().toISOString(),
   };
 
   // Reset scores if promoted out of contributor
   if (isElevated || newRole === "mentor") {
-    updates.score = 0;
-    updates.merged_prs = 0;
-    updates.projects_count = 0;
+    profileUpdates.score = 0;
+    profileUpdates.merged_prs = 0;
+    profileUpdates.projects_count = 0;
   }
 
   // 1. Update auth.users metadata (works unconditionally)
@@ -242,7 +239,7 @@ export async function updateUserRole(
 
   // 2. Update profiles table (by user_id)
   try {
-    await admin.from("profiles").update(updates).eq("user_id", targetUserId);
+    await admin.from("profiles").update(profileUpdates).eq("user_id", targetUserId);
   } catch (dbErr) {
     console.warn("Notice: profiles table role update:", dbErr);
   }
@@ -480,12 +477,13 @@ export async function deleteUserAction(
     try {
       const { data: profile } = await admin
         .from("profiles")
-        .select("id, email, role, is_admin")
-        .eq("id", targetUserId)
+        .select("id, user_id, role, is_admin, users(email)")
+        .eq("user_id", targetUserId)
         .maybeSingle();
 
-      if (profile?.email) {
-        targetEmail = profile.email;
+      const userRecord: any = profile?.users;
+      if (userRecord?.email) {
+        targetEmail = userRecord.email;
       }
     } catch (e) {
       console.warn("Notice: reading target profile before deletion:", e);

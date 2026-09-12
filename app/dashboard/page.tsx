@@ -33,51 +33,22 @@ export default async function DashboardPage() {
     user.user_metadata?.preferred_username ||
     null;
 
-  // 1. Fetch profile by user.id
+  // 1. Fetch profile by user_id (foreign key to auth.users / public.users)
   let { data: profile } = await admin
     .from("profiles")
-    .select("*")
-    .eq("id", user.id)
+    .select("*, users!inner(email)")
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  // 2. If not found by id, search by email!
-  if (!profile && userEmail) {
-    const { data: byEmail } = await admin
-      .from("profiles")
-      .select("*")
-      .ilike("email", userEmail)
-      .maybeSingle();
-    if (byEmail) {
-      profile = byEmail;
-      // Re-bind profile ID to current user.id
-      try {
-        await admin
-          .from("profiles")
-          .update({ id: user.id, updated_at: new Date().toISOString() })
-          .eq("id", byEmail.id);
-      } catch (e) {
-        console.warn("Notice re-binding profile id in dashboard:", e);
-      }
-    }
-  }
-
-  // 3. If still not found, search by GitHub username
+  // 2. If not found by user_id, fallback search by GitHub username
   if (!profile && metaGithub) {
     const { data: byGithub } = await admin
       .from("profiles")
-      .select("*")
+      .select("*, users!inner(email)")
       .ilike("github", metaGithub)
       .maybeSingle();
     if (byGithub) {
       profile = byGithub;
-      try {
-        await admin
-          .from("profiles")
-          .update({ id: user.id, email: userEmail || byGithub.email, updated_at: new Date().toISOString() })
-          .eq("id", byGithub.id);
-      } catch (e) {
-        console.warn("Notice re-binding profile id in dashboard:", e);
-      }
     }
   }
 
@@ -93,25 +64,26 @@ export default async function DashboardPage() {
     try {
       const { data: created, error: upsertErr } = await admin
         .from("profiles")
-        .upsert({
-          id: user.id,
-          full_name: fullName,
-          email: userEmail || user.email,
-          avatar_url: avatar,
-          github: githubUsername,
-          role: "contributor",
-          is_admin: false,
-          score: 0,
-          merged_prs: 0,
-          projects_count: 0,
-          badges_created: 0,
-          tech_stack: [],
-          updated_at: new Date().toISOString(),
-        })
-        .select("*")
+        .upsert(
+          {
+            user_id: user.id,
+            full_name: fullName,
+            avatar_url: avatar,
+            github: githubUsername,
+            role: "contributor",
+            score: 0,
+            merged_prs: 0,
+            projects_count: 0,
+            badges_created: 0,
+            tech_stack: [],
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        )
+        .select("*, users!inner(email)")
         .maybeSingle();
       if (upsertErr) {
-        console.warn("Profile auto-provision warning (schema migration pending):", upsertErr.message);
+        console.warn("Profile auto-provision warning:", upsertErr.message);
       } else if (created) {
         profile = created;
       }
@@ -123,12 +95,19 @@ export default async function DashboardPage() {
       await admin
         .from("profiles")
         .update({ github: metaGithub, updated_at: new Date().toISOString() })
-        .eq("id", user.id);
+        .eq("user_id", user.id);
       profile.github = metaGithub;
     } catch (err: any) {
       console.warn("Profile github sync warning:", err.message);
     }
   }
+
+  // Fetch individual verified contributions from public.contributions joined with projects
+  const { data: userContributions } = await admin
+    .from("contributions")
+    .select("id, type, github_url, status, points_awarded, contributed_at, projects(id, name, github_repo_url)")
+    .eq("user_id", user.id)
+    .order("contributed_at", { ascending: false });
 
   const userMeta = user.user_metadata || {};
   const isOwner = (user.email || "").toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
@@ -332,6 +311,133 @@ export default async function DashboardPage() {
         <div style={{ width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "clamp(16px, 4vw, 32px)", marginBottom: "48px", overflowX: "auto" }}>
           <ActivityMatrix providerAccountId={githubUsername} />
         </div>
+
+        {/* Section Divider */}
+        <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "16px", margin: "24px 0 48px" }}>
+          <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em" }}>CONTRIBUTIONS</div>
+          <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
+        </div>
+
+        {/* Verified PRs Section */}
+        <div style={{ width: "100%", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px" }}>Verified PR Contributions</h2>
+            <p style={{ color: "#9ca3af", fontSize: "14px" }}>Merged pull requests tracked across official competition repositories</p>
+          </div>
+          <span style={{ fontSize: "12px", background: "rgba(255,117,24,0.1)", color: "var(--orange)", padding: "4px 12px", borderRadius: "12px", fontWeight: 600, border: "1px solid rgba(255,117,24,0.2)" }}>
+            {userContributions?.length || 0} Merged PRs
+          </span>
+        </div>
+
+        {userContributions && userContributions.length > 0 ? (
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px", marginBottom: "48px" }}>
+            {userContributions.map((c: any) => {
+              const project = Array.isArray(c.projects) ? c.projects[0] : c.projects;
+              const projectName = project?.name || "Official Project";
+              const prMatch = c.github_url?.match(/\/pull\/(\d+)/);
+              const prNumber = prMatch ? `#${prMatch[1]}` : "PR";
+              const points = c.points_awarded || 10;
+              let diffLabel = "Easy";
+              let diffColor = "#34d399";
+              let diffBg = "rgba(52,211,153,0.1)";
+              let diffBorder = "rgba(52,211,153,0.25)";
+
+              if (points >= 50) {
+                diffLabel = "Expert";
+                diffColor = "#f59e0b";
+                diffBg = "rgba(245,158,11,0.1)";
+                diffBorder = "rgba(245,158,11,0.25)";
+              } else if (points >= 30) {
+                diffLabel = "Hard";
+                diffColor = "#c084fc";
+                diffBg = "rgba(192,132,252,0.1)";
+                diffBorder = "rgba(192,132,252,0.25)";
+              } else if (points >= 20) {
+                diffLabel = "Medium";
+                diffColor = "#38bdf8";
+                diffBg = "rgba(56,189,248,0.1)";
+                diffBorder = "rgba(56,189,248,0.25)";
+              }
+
+              const formattedDate = c.contributed_at
+                ? new Date(c.contributed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : "Recent";
+
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "16px",
+                    padding: "16px 20px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    transition: "border-color 0.2s",
+                  }}
+                  className="hover:border-[rgba(255,117,24,0.3)]"
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: "240px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(255,117,24,0.08)", border: "1px solid rgba(255,117,24,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--orange)", flexShrink: 0 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="18" r="3"></circle>
+                        <circle cx="6" cy="6" r="3"></circle>
+                        <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                        <line x1="6" y1="9" x2="6" y2="21"></line>
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "14px", fontWeight: 700, color: "white" }}>{projectName}</span>
+                        <a
+                          href={c.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "var(--orange)", fontSize: "13px", fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                          className="hover:underline"
+                        >
+                          <span>{prNumber}</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </a>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>
+                        Merged on {formattedDate}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ background: diffBg, color: diffColor, border: `1px solid ${diffBorder}`, padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>
+                      +{points} pts • {diffLabel}
+                    </span>
+                    <span style={{ background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>
+                      ✓ Merged
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "36px 24px", textAlign: "center", marginBottom: "48px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "#9ca3af" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "6px" }}>No Verified Contributions Yet</h3>
+            <p style={{ color: "#9ca3af", fontSize: "14px", maxWidth: "480px", margin: "0 auto 20px" }}>
+              Contribute pull requests to any of the 17 official competition repositories. Once merged, your contributions will be verified and awarded merit points!
+            </p>
+            <Link href="/projects" style={{ textDecoration: "none" }}>
+              <button style={{ background: "var(--orange)", color: "white", padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}>
+                Browse Open Projects →
+              </button>
+            </Link>
+          </div>
+        )}
       </main>
 
       <Footer />

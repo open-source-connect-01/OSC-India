@@ -168,18 +168,9 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
 
     let { data: profile } = await supabase
       .from("profiles")
-      .select("id, full_name, email, avatar_url, role, is_admin, github")
-      .eq("id", user.id)
+      .select("id, user_id, full_name, avatar_url, role, github")
+      .eq("user_id", user.id)
       .maybeSingle();
-
-    if (!profile && userEmail) {
-      const { data: byEmail } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, avatar_url, role, is_admin, github")
-        .ilike("email", userEmail)
-        .maybeSingle();
-      if (byEmail) profile = byEmail;
-    }
 
     const fullName =
       profile?.full_name ||
@@ -206,7 +197,7 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       (github ? `https://avatars.githubusercontent.com/${github}` : null);
 
     const role = profile?.role || "contributor";
-    const isAdmin = Boolean(profile?.is_admin || profile?.role === "admin");
+    const isAdmin = Boolean(profile?.role === "admin");
 
     return {
       id: user.id,

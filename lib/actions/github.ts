@@ -22,6 +22,8 @@ interface GitHubIssueItem {
   repository_url?: string;
   labels?: Array<{ name: string }>;
   pull_request?: any;
+  closed_at?: string;
+  created_at?: string;
 }
 
 /**
@@ -73,13 +75,13 @@ export async function syncGitHubContribution(
 
   const { data: userProfile } = await admin
     .from("profiles")
-    .select("role, is_admin, github, email")
-    .eq("id", userId)
+    .select("role, github")
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (userProfile) {
     userRole = userProfile.role || "contributor";
-    isAdmin = Boolean(userProfile.is_admin || userProfile.role === "admin");
+    isAdmin = Boolean(userRole === "admin" || userRole === "project-admin");
   } else {
     try {
       const { data: authUser } = await admin.auth.admin.getUserById(userId);
@@ -112,14 +114,14 @@ export async function syncGitHubContribution(
   const headers = getGitHubAuthHeaders();
 
   try {
-    // 5. Fetch ALL Merged PRs via Search API with Pagination
-    // Note: is:merged only returns actually merged PRs (not closed/rejected ones)
+    // 5. Fetch ALL Merged PRs targeted strictly to the 17 competition projects
+    const repoFilter = Array.from(allowedSlugs).map((s) => `repo:${s}`).join(" ");
     const prItems: GitHubIssueItem[] = [];
     const seenPrIds = new Set<number | string>();
     let page = 1;
 
     while (page <= 10) {
-      const prQuery = encodeURIComponent(`author:${handle} type:pr is:merged`);
+      const prQuery = encodeURIComponent(`author:${handle} type:pr is:merged ${repoFilter}`);
       const prResponse = await fetch(
         `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
         {
@@ -243,6 +245,48 @@ export async function syncGitHubContribution(
     const mergedPrsCount = validPRs.length;
     const projectsCount = contributedRepos.size;
 
+    // 8.5. Upsert individual PRs into public.contributions & update public.leaderboard_stats
+    try {
+      const { data: dbProjects } = await admin.from("projects").select("id, github_repo_url");
+      const projectMap = new Map<string, string>();
+      for (const p of dbProjects || []) {
+        const slug = p.github_repo_url.replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/, "").toLowerCase();
+        projectMap.set(slug, p.id);
+      }
+
+      const contributionsToUpsert: any[] = [];
+      for (const pr of validPRs) {
+        const projectId = projectMap.get(pr.repoSlug);
+        if (projectId) {
+          contributionsToUpsert.push({
+            user_id: userId,
+            project_id: projectId,
+            type: "pr",
+            github_url: pr.item.html_url,
+            status: "merged",
+            points_awarded: pr.points,
+            contributed_at: pr.item.closed_at || pr.item.created_at || new Date().toISOString(),
+          });
+        }
+      }
+
+      if (contributionsToUpsert.length > 0) {
+        await admin.from("contributions").upsert(contributionsToUpsert, { onConflict: "github_url" });
+      }
+
+      await admin.from("leaderboard_stats").upsert(
+        {
+          user_id: userId,
+          total_points: totalScore,
+          current_streak: 1,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+    } catch (contribErr: any) {
+      console.warn("Notice: saving contributions in syncGitHubContribution:", contribErr?.message);
+    }
+
     // 9. Update Supabase Auth user_metadata (unconditional resilience)
     try {
       const { data: userData } = await admin.auth.admin.getUserById(userId);
@@ -336,6 +380,14 @@ export async function syncAllProjectsAndContributors() {
     console.warn("Notice: reading auth.users during sync:", err.message);
   }
 
+  // Pre-load projects to map repo slug -> project_id
+  const { data: dbProjects } = await admin.from("projects").select("id, github_repo_url");
+  const projectMap = new Map<string, string>();
+  for (const p of dbProjects || []) {
+    const slug = p.github_repo_url.replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/, "").toLowerCase();
+    projectMap.set(slug, p.id);
+  }
+
   // Map: normalized lowercase github handle -> array of valid merged PR items
   const contributorPrMap = new Map<
     string,
@@ -344,6 +396,8 @@ export async function syncAllProjectsAndContributors() {
       prNumber: number;
       difficulty: DifficultyLevel;
       points: number;
+      htmlUrl: string;
+      mergedAt: string;
     }>
   >();
 
@@ -355,7 +409,9 @@ export async function syncAllProjectsAndContributors() {
     rawAuthor: string,
     repoSlug: string,
     prNumber: number,
-    diff: DifficultyLevel
+    diff: DifficultyLevel,
+    htmlUrl: string,
+    mergedAt: string
   ) {
     const authorHandle = normalizeGitHubHandle(rawAuthor || "").toLowerCase();
     if (!authorHandle || authorHandle.includes("[bot]")) return;
@@ -371,6 +427,8 @@ export async function syncAllProjectsAndContributors() {
         prNumber,
         difficulty: diff,
         points: DIFFICULTY_POINTS[diff],
+        htmlUrl,
+        mergedAt,
       });
     }
   }
@@ -441,7 +499,8 @@ export async function syncAllProjectsAndContributors() {
             }
           }
 
-          registerPr(rawAuthor, repoSlug, pr.number, prDifficulty);
+          const prMergedAt = pr.merged_at || pr.closed_at || new Date().toISOString();
+          registerPr(rawAuthor, repoSlug, pr.number, prDifficulty, pr.html_url, prMergedAt);
         }
 
         if (pulls.length < 100) break;
@@ -486,7 +545,8 @@ export async function syncAllProjectsAndContributors() {
             const author = item.user?.login;
             if (author) {
               const diff = detectDifficulty(item);
-              registerPr(author, repoSlug, item.number, diff);
+              const itemMergedAt = item.closed_at || item.created_at || new Date().toISOString();
+              registerPr(author, repoSlug, item.number, diff, item.html_url, itemMergedAt);
             }
           }
         }
@@ -526,7 +586,7 @@ export async function syncAllProjectsAndContributors() {
     }
 
     // Merge all PRs across the user's handles without duplication
-    const mergedPrMap = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number }>();
+    const mergedPrMap = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
     for (const handle of userHandles) {
       if (handle && contributorPrMap.has(handle)) {
         for (const pr of contributorPrMap.get(handle)!) {
@@ -554,6 +614,46 @@ export async function syncAllProjectsAndContributors() {
       currentRepos !== computedProjects;
 
     const primaryHandle = meta.github || meta.user_name || Array.from(userHandles)[0] || null;
+
+    // Save individual PR contributions into public.contributions
+    if (userPrs.length > 0) {
+      const contribRows: any[] = [];
+      for (const p of userPrs) {
+        const projId = projectMap.get(p.repoSlug);
+        if (projId && p.htmlUrl) {
+          contribRows.push({
+            user_id: user.id,
+            project_id: projId,
+            type: "pr",
+            github_url: p.htmlUrl,
+            status: "merged",
+            points_awarded: p.points,
+            contributed_at: p.mergedAt,
+          });
+        }
+      }
+
+      if (contribRows.length > 0) {
+        try {
+          await admin.from("contributions").upsert(contribRows, { onConflict: "github_url" });
+        } catch (cErr: any) {
+          console.warn(`Notice: contributions batch save for ${user.id}:`, cErr?.message);
+        }
+      }
+
+      // Upsert into leaderboard_stats
+      try {
+        await admin.from("leaderboard_stats").upsert(
+          {
+            user_id: user.id,
+            total_points: computedScore,
+            current_streak: 1,
+            updated_at: nowIso,
+          },
+          { onConflict: "user_id" }
+        );
+      } catch {}
+    }
 
     // Update if values changed or if contributor has points
     if (hasChanged || computedScore > 0) {

@@ -244,11 +244,11 @@ async function checkAdminAuth(): Promise<boolean> {
     const admin = createAdminClient();
     const { data: profile } = await admin
       .from("profiles")
-      .select("role, is_admin")
-      .eq("id", user.id)
-      .single();
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    return Boolean(profile && (profile.is_admin || profile.role === "admin" || profile.role === "project-admin"));
+    return Boolean(profile && (profile.role === "admin" || profile.role === "project-admin"));
   } catch {
     return false;
   }
