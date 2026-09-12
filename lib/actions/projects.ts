@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAdminSession } from "@/lib/auth/admin-auth";
 import { createClient } from "@/lib/supabase/server";
-import { extractRepoSlug } from "@/lib/utils/github-helpers";
+import { extractRepoSlug, OFFICIAL_COMPETITION_REPO_SLUGS } from "@/lib/utils/github-helpers";
 
 export interface ProjectItem {
   id: string;
@@ -339,7 +339,8 @@ export async function getProjects(): Promise<ProjectItem[]> {
  * PRs will ONLY be accepted if their repository slug is present in this set.
  */
 export async function getDbAllowedRepoSlugs(_adminClient?: any): Promise<Set<string>> {
-  const allowed = new Set<string>();
+  // Always include the exact official 17 competition repositories
+  const allowed = new Set<string>(OFFICIAL_COMPETITION_REPO_SLUGS);
   try {
     const projects = await getProjects();
     for (const p of projects) {
@@ -350,14 +351,6 @@ export async function getDbAllowedRepoSlugs(_adminClient?: any): Promise<Set<str
     }
   } catch (err) {
     console.warn("Exception deriving allowed slugs from getProjects:", err);
-  }
-
-  // Safety fallback to DEFAULT_PROJECTS if somehow empty
-  if (allowed.size === 0) {
-    for (const p of DEFAULT_PROJECTS) {
-      const slug = extractRepoSlug(p.githubUrl);
-      if (slug) allowed.add(slug.toLowerCase());
-    }
   }
 
   return allowed;

@@ -15,6 +15,62 @@ export const DIFFICULTY_RANK: Record<DifficultyLevel, number> = {
 };
 
 /**
+ * Official open source competition repository URLs.
+ * Contributions are strictly calculated ONLY from PRs merged into these repositories.
+ */
+export const OFFICIAL_COMPETITION_REPOS = [
+  "https://github.com/Sandesh13fr/TCalc",
+  "https://github.com/SrishtiSonam/AtomicBinding",
+  "https://github.com/JugaadLang/jugaadlang",
+  "https://github.com/SoumyaMishra-7/WalletWise",
+  "https://github.com/SrigadaAkshayKumar/stock",
+  "https://github.com/Sushmitha-2007/Eco-vision",
+  "https://github.com/KanishJebaMathewM/Truxify",
+  "https://github.com/AdityaPainuli/clippings-vids",
+  "https://github.com/l3tchupkt/adaptq",
+  "https://github.com/SidakSethi-Singh/LawSathi-Rag",
+  "https://github.com/logeshv586-code/AIproductfactory",
+  "https://github.com/GauravKarakoti/Secureflow",
+  "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
+  "https://github.com/pratyushjha06/Dockfleet",
+  "https://github.com/aashutoshkumarbhardwaj/CreatorOs",
+  "https://github.com/ItsVikasA/Innovision-Open-Source",
+  "https://github.com/AseemPrasad/Air-Quality-Intelligence",
+] as const;
+
+/**
+ * Normalized lowercase "owner/repo" slugs for all 17 official competition repositories.
+ */
+export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
+  "sandesh13fr/tcalc",
+  "srishtisonam/atomicbinding",
+  "jugaadlang/jugaadlang",
+  "soumyamishra-7/walletwise",
+  "srigadaakshaykumar/stock",
+  "sushmitha-2007/eco-vision",
+  "kanishjebamathewm/truxify",
+  "adityapainuli/clippings-vids",
+  "l3tchupkt/adaptq",
+  "sidaksethi-singh/lawsathi-rag",
+  "logeshv586-code/aiproductfactory",
+  "gauravkarakoti/secureflow",
+  "abhaycs24/cbsot_sip_project-1-",
+  "pratyushjha06/dockfleet",
+  "aashutoshkumarbhardwaj/creatoros",
+  "itsvikasa/innovision-open-source",
+  "aseemprasad/air-quality-intelligence",
+]);
+
+/**
+ * Validates whether a given repo slug or URL is an official competition repository.
+ */
+export function isAllowedCompetitionRepo(repoSlugOrUrl?: string | null): boolean {
+  if (!repoSlugOrUrl) return false;
+  const slug = extractRepoSlug(repoSlugOrUrl);
+  return Boolean(slug && OFFICIAL_COMPETITION_REPO_SLUGS.has(slug));
+}
+
+/**
  * Normalizes a GitHub handle or URL into a clean username
  */
 export function normalizeGitHubHandle(handle: string): string {
