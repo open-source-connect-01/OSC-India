@@ -12,7 +12,7 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "@/lib/auth/admin-auth";
-import { getProjects, ProjectItem } from "./projects";
+import { getProjects, ProjectItem, getDbAllowedRepoSlugs } from "./projects";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -471,58 +471,91 @@ export async function updateUserGithub(
  */
 export async function syncSingleUser(targetUserId: string, githubHandle: string) {
   await requireAdminOrProjectAdmin();
-  const res = await syncGitHubContribution(targetUserId, githubHandle);
+  const admin = createAdminClient();
+  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
+  const res = await syncGitHubContribution(targetUserId, githubHandle, allowedSlugs);
   revalidatePath("/admin");
   revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
   return res;
 }
 
 /**
- * Bulk syncs all contributors with a 2-second rate-limiting delay between requests.
+ * Bulk syncs contributors in rate-limited batches.
+ * Selects the least recently updated contributors first (FIFO queue).
  */
-export async function syncAllUsers() {
+export async function syncAllUsers(batchSize = 25) {
   await requireSuperAdmin();
   const admin = createAdminClient();
 
+  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
+
   const { data: contributors, error } = await admin
     .from("profiles")
-    .select("id, github")
+    .select("id, github, updated_at")
     .eq("role", "contributor")
-    .not("github", "is", null);
+    .not("github", "is", null)
+    .order("updated_at", { ascending: true })
+    .limit(batchSize);
 
   if (error || !contributors) {
     return { success: false, error: error?.message || "Failed to fetch contributors." };
   }
 
+  const { count: totalContributors } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "contributor")
+    .not("github", "is", null);
+
   let successCount = 0;
   let failedCount = 0;
+  let rateLimited = false;
 
-  for (const contributor of contributors) {
+  for (let i = 0; i < contributors.length; i++) {
+    const contributor = contributors[i];
     if (!contributor.github) continue;
 
     try {
-      const res = await syncGitHubContribution(contributor.id, contributor.github);
+      const res = await syncGitHubContribution(contributor.id, contributor.github, allowedSlugs);
+      if (res.rateLimited) {
+        rateLimited = true;
+        break;
+      }
       if (res.success) {
         successCount++;
       } else {
         failedCount++;
+        await admin
+          .from("profiles")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", contributor.id);
       }
     } catch {
       failedCount++;
+      await admin
+        .from("profiles")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", contributor.id);
     }
 
-    // 2-second delay between users to avoid GitHub Search API rate limiting
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // 2.1-second delay between users to avoid GitHub Search API rate limiting (30 req/min)
+    if (i < contributors.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2100));
+    }
   }
 
   revalidatePath("/admin");
   revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
 
   return {
     success: true,
-    total: contributors.length,
+    total: totalContributors || contributors.length,
+    batchSize: contributors.length,
     synced: successCount,
     failed: failedCount,
+    rateLimited,
   };
 }
 

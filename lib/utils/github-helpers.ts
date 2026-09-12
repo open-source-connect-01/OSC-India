@@ -28,22 +28,53 @@ export function normalizeGitHubHandle(handle: string): string {
 }
 
 /**
- * Detects difficulty level from labels, title, and body
+ * Detects difficulty level from labels, title, and body.
+ * Prioritizes maintainer labels first, then explicit tags in titles or bodies.
  */
 export function detectDifficulty(item: { title?: string; body?: string | null; labels?: Array<{ name: string }> }): DifficultyLevel {
   const labelNames = (item.labels || []).map((l) => l.name.toLowerCase()).join(" ");
-  const text = `${labelNames} ${item.title || ""} ${item.body || ""}`.toLowerCase();
 
-  if (/expert|exp\b|advanced/.test(text)) {
+  // 1. Check official maintainer labels first (highest precedence)
+  if (/expert|exp\b|advanced|level[- ]?4/i.test(labelNames)) {
     return "expert";
   }
-  if (/hard\b|high\b/.test(text)) {
+  if (/hard\b|difficulty[- :]+hard|level[- ]?3/i.test(labelNames)) {
     return "hard";
   }
-  if (/medium|med\b|intermediate|mid\b/.test(text)) {
+  if (/medium|med\b|intermediate|mid\b|difficulty[- :]+medium|level[- ]?2/i.test(labelNames)) {
     return "medium";
   }
-  if (/easy|beginner|starter|good[ -]?first[ -]?issue/.test(text)) {
+  if (/easy|beginner|starter|good[ -]?first[ -]?issue|difficulty[- :]+easy|level[- ]?1/i.test(labelNames)) {
+    return "easy";
+  }
+
+  // 2. Check title for explicit bracketed tags or levels
+  const title = (item.title || "").toLowerCase();
+  if (/expert|advanced|level[- ]?4|\[expert\]|\(expert\)/i.test(title)) {
+    return "expert";
+  }
+  if (/\[hard\]|\(hard\)|difficulty[- :]+hard|level[- ]?3/i.test(title)) {
+    return "hard";
+  }
+  if (/\[medium\]|\(medium\)|difficulty[- :]+medium|level[- ]?2/i.test(title)) {
+    return "medium";
+  }
+  if (/\[easy\]|\(easy\)|good[ -]?first[ -]?issue|difficulty[- :]+easy|level[- ]?1/i.test(title)) {
+    return "easy";
+  }
+
+  // 3. Fallback to body for explicit difficulty declarations
+  const body = (item.body || "").toLowerCase();
+  if (/difficulty:\s*expert|level[- ]?4/i.test(body)) {
+    return "expert";
+  }
+  if (/difficulty:\s*hard|level[- ]?3/i.test(body)) {
+    return "hard";
+  }
+  if (/difficulty:\s*medium|level[- ]?2/i.test(body)) {
+    return "medium";
+  }
+  if (/difficulty:\s*easy|level[- ]?1/i.test(body)) {
     return "easy";
   }
 

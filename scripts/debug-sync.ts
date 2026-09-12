@@ -38,8 +38,8 @@ async function run() {
     console.warn(`⚠️ No GITHUB_ACCESS_TOKEN found in environment. Using unauthenticated requests.`);
   }
 
-  // 1. Fetch closed/merged PRs
-  const prQuery = encodeURIComponent(`author:${handle} type:pr is:closed`);
+  // 1. Fetch merged PRs
+  const prQuery = encodeURIComponent(`author:${handle} type:pr is:merged`);
   const prUrl = `https://api.github.com/search/issues?q=${prQuery}&per_page=100`;
   console.log(`\n📡 Fetching PRs from: ${prUrl}`);
   const prRes = await fetch(prUrl, { headers });
