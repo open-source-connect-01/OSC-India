@@ -24,30 +24,20 @@ export default async function BadgePage() {
     null;
 
   try {
-    // 1. Search by user.id
-    const { data: byId } = await admin
+    // 1. Search by user_id
+    const { data: byUserId } = await admin
       .from("profiles")
-      .select("id, full_name, avatar_url, role, badges_created, github, email")
-      .eq("id", user.id)
+      .select("id, user_id, full_name, avatar_url, role, badges_created, github")
+      .eq("user_id", user.id)
       .maybeSingle();
 
-    profile = byId;
+    profile = byUserId;
 
-    // 2. Search by email if not found
-    if (!profile && userEmail) {
-      const { data: byEmail } = await admin
-        .from("profiles")
-        .select("id, full_name, avatar_url, role, badges_created, github, email")
-        .ilike("email", userEmail)
-        .maybeSingle();
-      if (byEmail) profile = byEmail;
-    }
-
-    // 3. Search by GitHub handle if not found
+    // 2. Search by GitHub handle if not found
     if (!profile && metaGithub) {
       const { data: byGithub } = await admin
         .from("profiles")
-        .select("id, full_name, avatar_url, role, badges_created, github, email")
+        .select("id, user_id, full_name, avatar_url, role, badges_created, github")
         .ilike("github", metaGithub)
         .maybeSingle();
       if (byGithub) profile = byGithub;

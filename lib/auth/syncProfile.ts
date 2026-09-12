@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
 
 /**
- * Synchronizes and provisions user profile in public.profiles.
+ * Synchronizes and provisions user profile in public.users and public.profiles.
  * Handles deduplication across GitHub and Google logins by matching emails,
  * ensuring that existing GitHub links are preserved when signing in via Google.
  */
@@ -12,6 +12,7 @@ export async function syncUserProfile(user: User) {
   const incomingGithub =
     user.user_metadata?.user_name ||
     user.user_metadata?.preferred_username ||
+    user.user_metadata?.github ||
     null;
   const fullName =
     user.user_metadata?.full_name ||
@@ -26,97 +27,80 @@ export async function syncUserProfile(user: User) {
     user.user_metadata?.picture ||
     null;
 
-  // 1. Search existing profile by email first (case-insensitive)
-  let existingProfile: any = null;
-  if (userEmail) {
-    const { data: byEmail } = await admin
-      .from("profiles")
-      .select("*")
-      .ilike("email", userEmail)
-      .maybeSingle();
-    if (byEmail) existingProfile = byEmail;
+  // 1. Always ensure public.users record exists
+  try {
+    await admin.from("users").upsert(
+      {
+        id: user.id,
+        name: fullName,
+        email: userEmail || null,
+        image: avatarUrl,
+        created_at: user.created_at || new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  } catch (uErr: any) {
+    console.warn("Notice: public.users provisioning warning:", uErr?.message);
   }
 
-  // 2. If not found by email, search by GitHub handle
+  // 2. Search existing profile by user_id first
+  let existingProfile: any = null;
+  const { data: byUserId } = await admin
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (byUserId) {
+    existingProfile = byUserId;
+  }
+
+  // 3. Fallback: search by GitHub handle if user_id not found
   if (!existingProfile && incomingGithub) {
+    const cleanGh = incomingGithub.replace(/^@+/, "").trim().toLowerCase();
     const { data: byGithub } = await admin
       .from("profiles")
       .select("*")
-      .ilike("github", incomingGithub)
+      .ilike("github", cleanGh)
       .maybeSingle();
     if (byGithub) existingProfile = byGithub;
   }
 
-  // 3. If still not found, search by user.id
-  if (!existingProfile) {
-    const { data: byId } = await admin
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (byId) existingProfile = byId;
+  const mergedGithub = incomingGithub ? incomingGithub.replace(/^@+/, "").trim().toLowerCase() : existingProfile?.github || null;
+  const mergedAvatar = avatarUrl || existingProfile?.avatar_url || null;
+  const mergedFullName = existingProfile?.full_name || fullName;
+
+  const profileRow: Record<string, any> = {
+    user_id: user.id,
+    full_name: mergedFullName,
+    avatar_url: mergedAvatar,
+    github: mergedGithub,
+    role: existingProfile?.role || "contributor",
+    score: existingProfile?.score ?? 0,
+    merged_prs: existingProfile?.merged_prs ?? 0,
+    projects_count: existingProfile?.projects_count ?? 0,
+    badges_created: existingProfile?.badges_created ?? 0,
+  };
+
+  try {
+    await admin.from("profiles").upsert(profileRow, { onConflict: "user_id" });
+  } catch (pErr: any) {
+    console.warn("Notice: public.profiles upsert warning:", pErr?.message);
   }
 
-  if (existingProfile) {
-    // CRITICAL: Preserve existing GitHub handle!
-    // If incoming is Google (incomingGithub is null), DO NOT disconnect the existing handle!
-    const mergedGithub = incomingGithub || existingProfile.github || null;
-    const mergedEmail = userEmail || existingProfile.email || null;
-    const mergedAvatar = avatarUrl || existingProfile.avatar_url || null;
-    const mergedFullName = existingProfile.full_name || fullName;
-
-    const updates: Record<string, any> = {
-      github: mergedGithub,
-      email: mergedEmail,
-      avatar_url: mergedAvatar,
-      full_name: mergedFullName,
-      updated_at: new Date().toISOString(),
-    };
-
-    // If existingProfile was recorded under a different ID (e.g. from GitHub OAuth),
-    // re-bind it to the current user.id so all direct lookups match.
-    if (existingProfile.id !== user.id) {
-      try {
-        await admin.from("profiles").delete().eq("id", user.id);
-      } catch {
-        // Non-blocking
-      }
-      updates.id = user.id;
-    }
-
-    await admin.from("profiles").update(updates).eq("id", existingProfile.id);
-
-    // Also synchronize auth metadata so auth.users reflects the unified profile
-    try {
-      await admin.auth.admin.updateUserById(user.id, {
-        user_metadata: {
-          ...user.user_metadata,
-          github: mergedGithub,
-          full_name: mergedFullName,
-          avatar_url: mergedAvatar,
-        },
-      });
-    } catch {
-      // Non-blocking
-    }
-
-    return { ...existingProfile, ...updates };
-  } else {
-    // Brand new user -> insert new profile
-    const newProfile = {
-      id: user.id,
-      email: userEmail || null,
-      full_name: fullName,
-      avatar_url: avatarUrl,
-      github: incomingGithub,
-      role: "contributor",
-      is_admin: false,
-      score: 0,
-      merged_prs: 0,
-      projects_count: 0,
-      badges_created: 0,
-    };
-    await admin.from("profiles").insert(newProfile);
-    return newProfile;
+  // Also synchronize auth metadata so auth.users reflects the unified profile
+  try {
+    await admin.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...user.user_metadata,
+        github: mergedGithub,
+        full_name: mergedFullName,
+        avatar_url: mergedAvatar,
+      },
+    });
+  } catch {
+    // Non-blocking
   }
+
+  return { ...existingProfile, ...profileRow, email: userEmail };
 }

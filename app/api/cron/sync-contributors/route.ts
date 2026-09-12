@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
-import { syncGitHubContribution, syncAllProjectsAndContributors } from "@/lib/actions/github";
-import { getDbAllowedRepoSlugs } from "@/lib/actions/projects";
+import { syncAllProjectsAndContributors, syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * 5-Hour Leaderboard Sync Cron Handler
- * Configured in vercel.json with schedule: "0 *\/5 * * *"
+ * 6-Hour Contributor Recalculation Cron Handler
+ * Configured in vercel.json with schedule: "0 *\/6 * * *"
  *
- * Runs a fast, repo-centric loop across all competition repositories (~17 repos)
- * using the GitHub REST API (5,000 req/hr limit). Aggregates merged PRs and
- * updates scores, merged PRs, and repo counts for all 608 contributors in seconds.
+ * Runs a comprehensive dual-scan across all 17 official competition repositories
+ * and all 618+ registered contributors. Recalculates merged PRs, difficulty points,
+ * and repository counts, and commits them live to auth.users.user_metadata and public.profiles.
  */
 export async function GET(request: Request) {
   try {
@@ -29,7 +28,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Check for single user on-demand sync (e.g. ?user_id=...&github=...)
+    // 2. Allow single contributor on-demand test via query params (?user_id=...&github=...)
     const targetUserId = searchParams.get("user_id");
     const targetGithub = searchParams.get("github");
 
@@ -42,16 +41,17 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. Run the full 5-hour sync loop across all tracked projects and contributors
+    // 3. Run full 6-hour recalculation across all 17 competition repositories and all contributors
     const result = await syncAllProjectsAndContributors();
 
     return NextResponse.json({
-      mode: "5-hour-full-sync",
+      mode: "6-hour-full-sync",
+      interval: "6 hours",
       timestamp: new Date().toISOString(),
       ...result,
     });
   } catch (err: any) {
-    console.error("Leaderboard 5-Hour Cron Sync Error:", err);
+    console.error("Contributor 6-Hour Cron Recalculation Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

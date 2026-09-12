@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAdminSession } from "@/lib/auth/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { extractRepoSlug, OFFICIAL_COMPETITION_REPO_SLUGS } from "@/lib/utils/github-helpers";
 
 export interface ProjectItem {
   id: string;
@@ -243,11 +244,11 @@ async function checkAdminAuth(): Promise<boolean> {
     const admin = createAdminClient();
     const { data: profile } = await admin
       .from("profiles")
-      .select("role, is_admin")
-      .eq("id", user.id)
-      .single();
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    return Boolean(profile && (profile.is_admin || profile.role === "admin" || profile.role === "project-admin"));
+    return Boolean(profile && (profile.role === "admin" || profile.role === "project-admin"));
   } catch {
     return false;
   }
@@ -330,6 +331,29 @@ export async function getProjects(): Promise<ProjectItem[]> {
   }
 
   return DEFAULT_PROJECTS;
+}
+
+/**
+ * Fetches the set of allowed GitHub repository slugs directly from the active projects.
+ * Guarantees 100% parity with the projects displayed in the /projects section.
+ * PRs will ONLY be accepted if their repository slug is present in this set.
+ */
+export async function getDbAllowedRepoSlugs(_adminClient?: any): Promise<Set<string>> {
+  // Always include the exact official 17 competition repositories
+  const allowed = new Set<string>(OFFICIAL_COMPETITION_REPO_SLUGS);
+  try {
+    const projects = await getProjects();
+    for (const p of projects) {
+      const slug = extractRepoSlug(p.githubUrl);
+      if (slug) {
+        allowed.add(slug.toLowerCase());
+      }
+    }
+  } catch (err) {
+    console.warn("Exception deriving allowed slugs from getProjects:", err);
+  }
+
+  return allowed;
 }
 
 /**

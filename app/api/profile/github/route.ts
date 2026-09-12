@@ -25,21 +25,12 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const userEmail = (user.email || user.user_metadata?.email || "").trim().toLowerCase();
 
-    // 1. Check for existing profile by user.id or email
+    // 1. Check for existing profile by user_id
     let { data: existingProfile } = await admin
       .from("profiles")
-      .select("id, email, github, avatar_url")
-      .eq("id", user.id)
+      .select("id, user_id, github, avatar_url")
+      .eq("user_id", user.id)
       .maybeSingle();
-
-    if (!existingProfile && userEmail) {
-      const { data: byEmail } = await admin
-        .from("profiles")
-        .select("id, email, github, avatar_url")
-        .ilike("email", userEmail)
-        .maybeSingle();
-      if (byEmail) existingProfile = byEmail;
-    }
 
     const githubAvatar = `https://avatars.githubusercontent.com/${github}`;
     if (existingProfile) {
@@ -53,27 +44,24 @@ export async function POST(request: Request) {
       await admin
         .from("profiles")
         .update(updates)
-        .eq("id", existingProfile.id);
-
-      if (userEmail) {
-        await admin
-          .from("profiles")
-          .update(updates)
-          .ilike("email", userEmail);
-      }
+        .eq("user_id", user.id);
     } else {
-      await admin.from("profiles").insert({
-        id: user.id,
-        email: userEmail || user.email || "",
-        github,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Contributor",
-        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || githubAvatar,
-        role: "contributor",
-        score: 0,
-        merged_prs: 0,
-        projects_count: 0,
-        badges_created: 0,
-      });
+      await admin.from("profiles").upsert(
+        {
+          user_id: user.id,
+          github,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Contributor",
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || githubAvatar,
+          role: "contributor",
+          score: 0,
+          merged_prs: 0,
+          projects_count: 0,
+          badges_created: 0,
+          tech_stack: [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
     }
 
     // 3. Sync auth metadata
