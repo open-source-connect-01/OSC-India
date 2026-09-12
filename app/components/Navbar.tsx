@@ -1,27 +1,35 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getClientProfile, signOutClient } from "@/lib/auth/client";
+import { getClientProfile, signOutClient, type ClientProfilePayload } from "@/lib/auth/client";
 
 interface NavbarProps {
-  initialProfile?: any;
+  initialProfile?: ClientProfilePayload | null;
 }
+
+const emptySubscribe = () => () => {};
 
 export default function Navbar({ initialProfile }: NavbarProps = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
-  const [profile, setProfile] = useState<any>(initialProfile);
-  const [mounted, setMounted] = useState(false);
+  const [profile, setProfile] = useState<ClientProfilePayload | null>(initialProfile || null);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setDropdownOpen(false);
+    setMobileOpen(false);
+  }
+
   useEffect(() => {
-    setMounted(true);
     if (!initialProfile) {
       getClientProfile().then((res) => setProfile(res || null));
     }
@@ -39,11 +47,6 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
       subscription.unsubscribe();
     };
   }, [initialProfile]);
-
-  useEffect(() => {
-    setDropdownOpen(false);
-    setMobileOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

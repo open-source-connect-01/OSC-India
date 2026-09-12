@@ -1,15 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-function ShieldIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-    </svg>
-  );
-}
 
 function UploadIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -201,9 +194,10 @@ function BadgeContent({
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user && !photoUrl) {
         const u = session.user;
+        const identities = (u.identities || []) as Array<{ identity_data?: { avatar_url?: string; picture?: string } }>;
         const identAvatar =
-          u.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
-          u.identities?.find((i: any) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
+          identities.find((i) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.avatar_url ||
+          identities.find((i) => i.identity_data?.avatar_url || i.identity_data?.picture)?.identity_data?.picture;
         const gHandle = u.user_metadata?.user_name || u.user_metadata?.preferred_username;
         const av =
           u.user_metadata?.avatar_url ||
@@ -273,8 +267,8 @@ function BadgeContent({
           }
         }
 
-        if (typeof document !== "undefined" && (document as any).fonts) {
-          await (document as any).fonts.ready;
+        if (typeof document !== "undefined" && "fonts" in document) {
+          await document.fonts.ready;
         }
 
         const canvas = await html2canvas(badgeRef.current, {

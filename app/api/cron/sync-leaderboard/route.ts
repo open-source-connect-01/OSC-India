@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { syncGitHubContribution, syncAllProjectsAndContributors } from "@/lib/actions/github";
-import { getDbAllowedRepoSlugs } from "@/lib/actions/projects";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -50,8 +49,9 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
       ...result,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
     console.error("Leaderboard 5-Hour Cron Sync Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

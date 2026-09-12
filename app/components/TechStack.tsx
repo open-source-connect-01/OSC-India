@@ -13,16 +13,7 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
   const [error, setError] = useState("");
   const hasAutoSynced = useRef(false);
 
-  useEffect(() => {
-    // Auto-sync if stack is completely empty on first load
-    if (initialStack.length === 0 && providerAccountId && !hasAutoSynced.current) {
-      hasAutoSynced.current = true;
-      handleSync();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [providerAccountId, initialStack.length]);
-
-  const handleSync = async () => {
+  const handleSync = React.useCallback(async () => {
     if (!providerAccountId) {
       setError("No GitHub account linked.");
       return;
@@ -47,7 +38,7 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
       // 2. Fetch public repos
       const reposRes = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100&type=owner`);
       if (!reposRes.ok) throw new Error("Failed to fetch repositories.");
-      const repos = await reposRes.json();
+      const repos: Array<{ language?: string | null }> = await reposRes.json();
 
       // 3. Calculate Tech Stack
       const languageCounts: Record<string, number> = {};
@@ -78,12 +69,20 @@ export default function TechStack({ initialStack, providerAccountId }: TechStack
         console.warn("Tech stack save notice:", resData?.error);
       }
       setStack(topLanguages);
-    } catch (err: any) {
-      setError(err.message || "Failed to sync. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to sync. Please try again.");
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [providerAccountId]);
+
+  useEffect(() => {
+    // Auto-sync if stack is completely empty on first load
+    if (initialStack.length === 0 && providerAccountId && !hasAutoSynced.current) {
+      hasAutoSynced.current = true;
+      handleSync();
+    }
+  }, [providerAccountId, initialStack.length, handleSync]);
 
   return (
     <div style={{ flex: 1, minWidth: '200px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '24px' }}>

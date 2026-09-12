@@ -104,15 +104,17 @@ export async function GET(request: Request) {
               if (user.id !== linkingUserId) {
                 await syncGitHubContribution(user.id, incomingGithub);
               }
-            } catch (syncErr: any) {
-              console.warn("GitHub contribution sync warning during link:", syncErr?.message);
+            } catch (syncErr: unknown) {
+              const msg = syncErr instanceof Error ? syncErr.message : "Sync error";
+              console.warn("GitHub contribution sync warning during link:", msg);
             }
           } else {
             await syncUserProfile(user);
           }
         }
-      } catch (profileErr: any) {
-        console.error("Profile auto-provisioning warning:", profileErr?.message);
+      } catch (profileErr: unknown) {
+        const msg = profileErr instanceof Error ? profileErr.message : "Profile error";
+        console.error("Profile auto-provisioning warning:", msg);
         // Non-blocking so user can still access session
       }
 

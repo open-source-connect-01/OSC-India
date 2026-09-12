@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = await createClient();
     const {
@@ -70,8 +70,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: newCount });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to increment badge count";
     console.warn("Badge increment API error:", err);
-    return NextResponse.json({ error: err.message || "Failed to increment badge count" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

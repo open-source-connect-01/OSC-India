@@ -2,9 +2,23 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeaderboardUI from "./LeaderboardUI";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
+
+interface ContributorItem {
+  id: string;
+  email: string;
+  name: string;
+  username: string;
+  github: string;
+  role: string;
+  isAdmin: boolean;
+  points: number;
+  prs: number;
+  projects: number;
+  avatar: string;
+  country: string;
+}
 
 export default async function LeaderboardPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -28,7 +42,7 @@ export default async function LeaderboardPage(props: {
   const admin = createAdminClient();
 
   // 1. Fetch directly from public.profiles joined with public.users (blazing fast Postgres query)
-  let allContributors: any[] = [];
+  let allContributors: ContributorItem[] = [];
   try {
     let query = admin
       .from("profiles")
@@ -43,29 +57,30 @@ export default async function LeaderboardPage(props: {
 
     const { data: dbRows, error } = await query;
     if (!error && dbRows && dbRows.length > 0) {
-      allContributors = dbRows.map((p: any) => {
-        const u = p.users || {};
-        const email = (u.email || p.email || "").toLowerCase().trim();
-        const github = (p.github || "").replace(/^@+/, "").trim();
+      allContributors = dbRows.map((p: Record<string, unknown>) => {
+        const u = (p.users as Record<string, string | null>) || {};
+        const email = (u.email || (p.email as string) || "").toLowerCase().trim();
+        const github = ((p.github as string) || "").replace(/^@+/, "").trim();
 
         return {
-          id: p.user_id || p.id,
+          id: String(p.user_id || p.id),
           email,
-          name: p.full_name || u.name || "Contributor",
+          name: (p.full_name as string) || u.name || "Contributor",
           username: github ? `@${github}` : email ? `@${email.split("@")[0]}` : "@contributor",
           github,
-          role: p.role || "contributor",
+          role: (p.role as string) || "contributor",
           isAdmin: false,
           points: Number(p.score ?? 0),
           prs: Number(p.merged_prs ?? 0),
           projects: Number(p.projects_count ?? 0),
-          avatar: p.avatar_url || u.image || "",
-          country: p.country || "IN",
+          avatar: (p.avatar_url as string) || u.image || "",
+          country: (p.country as string) || "IN",
         };
       });
     }
-  } catch (err: any) {
-    console.warn("Leaderboard profiles fetch notice:", err.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Database fetch error";
+    console.warn("Leaderboard profiles fetch notice:", msg);
   }
 
   // 2. Fallback only if public.profiles returned nothing
@@ -74,11 +89,11 @@ export default async function LeaderboardPage(props: {
       const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
       if (!error && data?.users) {
         allContributors = data.users
-          .filter((u: any) => {
+          .filter((u) => {
             const role = u.user_metadata?.role || "contributor";
             return role !== "admin" && role !== "project-admin" && !u.user_metadata?.is_admin;
           })
-          .map((u: any) => {
+          .map((u) => {
             const meta = u.user_metadata || {};
             const email = (u.email || meta.email || "").trim().toLowerCase();
             const rawGithub = meta.github || meta.user_name || meta.preferred_username || "";
@@ -100,8 +115,9 @@ export default async function LeaderboardPage(props: {
             };
           });
       }
-    } catch (err: any) {
-      console.warn("Leaderboard auth.users fetch notice:", err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Auth users fetch error";
+      console.warn("Leaderboard auth.users fetch notice:", msg);
     }
   }
 

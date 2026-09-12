@@ -12,7 +12,7 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "@/lib/auth/admin-auth";
-import { getProjects, ProjectItem, getDbAllowedRepoSlugs } from "./projects";
+import { getProjects, getDbAllowedRepoSlugs } from "./projects";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -97,13 +97,36 @@ export async function getAdminData() {
 
   // 1. Fetch directly from public.profiles joined with public.users (blazing fast Postgres query)
   try {
+    interface DbProfileRow {
+      id?: string;
+      user_id?: string;
+      email?: string | null;
+      full_name?: string | null;
+      avatar_url?: string | null;
+      github?: string | null;
+      role?: string | null;
+      score?: number | null;
+      merged_prs?: number | null;
+      projects_count?: number | null;
+      badges_created?: number | null;
+      tech_stack?: string[] | null;
+      created_at?: string | null;
+      updated_at?: string | null;
+      users?: {
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+        created_at?: string | null;
+      } | null;
+    }
+
     const { data: dbRows, error } = await admin
       .from("profiles")
       .select("*, users(name, email, image, created_at)")
       .order("score", { ascending: false });
 
     if (!error && dbRows && dbRows.length > 0) {
-      unifiedProfiles = dbRows.map((p: any) => {
+      unifiedProfiles = (dbRows as DbProfileRow[]).map((p) => {
         const u = p.users || {};
         const email = (u.email || p.email || "").toLowerCase().trim();
         const isOwner = email === adminEmail;
@@ -135,9 +158,33 @@ export async function getAdminData() {
   // 2. Fallback only if public.profiles returned nothing
   if (unifiedProfiles.length === 0) {
     try {
+      interface AuthUserItem {
+        id: string;
+        email?: string;
+        user_metadata?: {
+          github?: string;
+          email?: string;
+          role?: string;
+          is_admin?: boolean;
+          full_name?: string;
+          name?: string;
+          avatar_url?: string;
+          picture?: string;
+          user_name?: string;
+          preferred_username?: string;
+          score?: number;
+          merged_prs?: number;
+          projects_count?: number;
+          badges_created?: number;
+          tech_stack?: string[];
+        };
+        created_at?: string;
+        updated_at?: string;
+      }
+
       const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
       if (!error && data?.users) {
-        unifiedProfiles = data.users.map((u: any) => {
+        unifiedProfiles = (data.users as unknown as AuthUserItem[]).map((u) => {
           const meta = u.user_metadata || {};
           const email = (u.email || meta.email || "").toLowerCase().trim();
           const isOwner = email === adminEmail;
@@ -206,7 +253,7 @@ export async function updateUserRole(
   const admin = createAdminClient();
 
   const isElevated = newRole === "admin" || newRole === "project-admin";
-  const profileUpdates: any = {
+  const profileUpdates: Partial<Profile> = {
     role: newRole,
     updated_at: new Date().toISOString(),
   };
@@ -219,11 +266,9 @@ export async function updateUserRole(
   }
 
   // 1. Update auth.users metadata (works unconditionally)
-  let userEmail = "";
   try {
     const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
     if (userData?.user) {
-      userEmail = userData.user.email || userData.user.user_metadata?.email || "";
       await admin.auth.admin.updateUserById(targetUserId, {
         user_metadata: {
           ...userData.user.user_metadata,
@@ -481,7 +526,7 @@ export async function deleteUserAction(
         .eq("user_id", targetUserId)
         .maybeSingle();
 
-      const userRecord: any = profile?.users;
+      const userRecord = profile?.users as { email?: string } | null | undefined;
       if (userRecord?.email) {
         targetEmail = userRecord.email;
       }
@@ -528,11 +573,11 @@ export async function deleteUserAction(
     // 5. Delete any linked child tables if present in database (contributions, leaderboard_stats)
     try {
       await admin.from("contributions").delete().eq("user_id", targetUserId);
-    } catch (_) {}
+    } catch {}
 
     try {
       await admin.from("leaderboard_stats").delete().eq("user_id", targetUserId);
-    } catch (_) {}
+    } catch {}
 
     // 6. Delete from Supabase auth.users
     try {

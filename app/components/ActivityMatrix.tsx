@@ -27,53 +27,26 @@ function formatLocalDate(d: Date): string {
 }
 
 export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProps) {
-  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [contributions, setContributions] = useState<Contribution[]>(() => {
+    if (typeof window === "undefined" || !providerAccountId) return [];
+    try {
+      const cacheKey = `github_activity_${providerAccountId}`;
+      const cachedStr = localStorage.getItem(cacheKey);
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr);
+        return Array.isArray(parsed) ? parsed : parsed?.contributions || [];
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
   const [isSyncing, setIsSyncing] = useState(false);
-  const [, setIsLoaded] = useState(false);
   const [error, setError] = useState("");
   const [customHandle, setCustomHandle] = useState("");
   const [isLinking, setIsLinking] = useState(false);
 
-  // Auto-fetch or read cache when providerAccountId is available
-  useEffect(() => {
-    if (providerAccountId) {
-      const cacheKey = `github_activity_${providerAccountId}`;
-      const cachedStr = localStorage.getItem(cacheKey);
-      let hasValidCache = false;
-
-      if (cachedStr) {
-        try {
-          const parsed = JSON.parse(cachedStr);
-          // Handle both new format ({ timestamp, contributions }) and legacy format (array)
-          const data: Contribution[] = Array.isArray(parsed)
-            ? parsed
-            : parsed?.contributions || [];
-          const timestamp = Array.isArray(parsed) ? 0 : parsed?.timestamp || 0;
-
-          if (data.length > 0) {
-            setContributions(data);
-            setIsLoaded(true);
-            hasValidCache = true;
-
-            // If cache is fresh (less than 1 hour old), do not refetch immediately
-            if (Date.now() - timestamp < CACHE_TTL_MS) {
-              return;
-            }
-          }
-        } catch {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-
-      // Revalidate in background or fetch if no cache
-      handleSync(providerAccountId, !hasValidCache);
-    } else {
-      setIsLoaded(true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [providerAccountId]);
-
-  const handleSync = async (overrideHandle?: string, showSpinner = true) => {
+  const handleSync = React.useCallback(async (overrideHandle?: string, showSpinner = true) => {
     const targetHandle = (overrideHandle || customHandle || providerAccountId || "")
       .replace(/^@/, "")
       .trim();
@@ -114,13 +87,58 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
         contributions: parsedEvents,
       };
       localStorage.setItem(`github_activity_${githubUsername}`, JSON.stringify(payload));
-      setIsLoaded(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to sync.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to sync.");
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [customHandle, providerAccountId]);
+
+  // Auto-fetch or read cache when providerAccountId is available
+  useEffect(() => {
+    if (!providerAccountId) return;
+
+    const cacheKey = `github_activity_${providerAccountId}`;
+    let hasValidCache = false;
+
+    try {
+      const cachedStr = localStorage.getItem(cacheKey);
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr);
+        const data: Contribution[] = Array.isArray(parsed)
+          ? parsed
+          : parsed?.contributions || [];
+        const timestamp = Array.isArray(parsed) ? 0 : parsed?.timestamp || 0;
+
+        if (data.length > 0) {
+          hasValidCache = true;
+          // If cache is fresh (less than 1 hour old), do not refetch immediately
+          if (Date.now() - timestamp < CACHE_TTL_MS) {
+            return;
+          }
+        }
+      }
+    } catch {
+      try {
+        localStorage.removeItem(cacheKey);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Revalidate in background or fetch if no cache (deferred to avoid synchronous setState in effect body)
+    let isCancelled = false;
+    const timer = setTimeout(() => {
+      if (!isCancelled) {
+        handleSync(providerAccountId, !hasValidCache);
+      }
+    }, 0);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [providerAccountId, handleSync]);
 
   const handleLinkAndSync = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,8 +159,8 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
         throw new Error(data.error || "Failed to link GitHub handle");
       }
       await handleSync(handle, true);
-    } catch (err: any) {
-      setError(err.message || "Failed to link GitHub handle");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to link GitHub handle");
     } finally {
       setIsLinking(false);
     }

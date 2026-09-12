@@ -21,7 +21,7 @@ interface GitHubIssueItem {
   html_url: string;
   repository_url?: string;
   labels?: Array<{ name: string }>;
-  pull_request?: any;
+  pull_request?: { url?: string; html_url?: string };
   closed_at?: string;
   created_at?: string;
 }
@@ -108,7 +108,7 @@ export async function syncGitHubContribution(
   }
 
   // 3. Extract Allowed Repositories strictly from the database (public.projects table)
-  const allowedSlugs = preFetchedAllowedSlugs || (await getDbAllowedRepoSlugs(admin));
+  const allowedSlugs = preFetchedAllowedSlugs || (await getDbAllowedRepoSlugs());
 
   // 4. Setup GitHub API headers with OAuth fallback for 5,000 req/hr
   const headers = getGitHubAuthHeaders();
@@ -174,7 +174,7 @@ export async function syncGitHubContribution(
     }> = [];
 
     const contributedRepos = new Set<string>();
-    const linkedIssuesCache = new Map<string, any>();
+    const linkedIssuesCache = new Map<string, GitHubIssueItem | null>();
 
     for (const pr of prItems) {
       let repoSlug = "";
@@ -254,7 +254,17 @@ export async function syncGitHubContribution(
         projectMap.set(slug, p.id);
       }
 
-      const contributionsToUpsert: any[] = [];
+      interface ContributionUpsertRow {
+        user_id: string;
+        project_id: string;
+        type: string;
+        github_url: string;
+        status: string;
+        points_awarded: number;
+        contributed_at: string;
+      }
+
+      const contributionsToUpsert: ContributionUpsertRow[] = [];
       for (const pr of validPRs) {
         const projectId = projectMap.get(pr.repoSlug);
         if (projectId) {
@@ -283,8 +293,8 @@ export async function syncGitHubContribution(
         },
         { onConflict: "user_id" }
       );
-    } catch (contribErr: any) {
-      console.warn("Notice: saving contributions in syncGitHubContribution:", contribErr?.message);
+    } catch (contribErr: unknown) {
+      console.warn("Notice: saving contributions in syncGitHubContribution:", contribErr instanceof Error ? contribErr.message : "Unknown error");
     }
 
     // 9. Update Supabase Auth user_metadata (unconditional resilience)
@@ -334,9 +344,9 @@ export async function syncGitHubContribution(
         expert: validPRs.filter((p) => p.difficulty === "expert").length,
       },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GitHub Sync Engine Exception:", err);
-    return { success: false, error: err.message || "Unknown error during sync." };
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error during sync." };
   }
 }
 
@@ -354,7 +364,7 @@ export async function syncAllProjectsAndContributors() {
   const startTime = Date.now();
 
   // 1. Fetch allowed projects strictly from database (guaranteed 17 competition repos)
-  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
+  const allowedSlugs = await getDbAllowedRepoSlugs();
   if (allowedSlugs.size === 0) {
     return { success: false, error: "No tracked projects found in database." };
   }
@@ -363,7 +373,29 @@ export async function syncAllProjectsAndContributors() {
   const headers = getGitHubAuthHeaders();
 
   // 3. Fetch all contributors from auth.users (primary source of truth in production)
-  let authUsers: any[] = [];
+  interface SyncAuthUser {
+    id: string;
+    email?: string;
+    user_metadata?: {
+      github?: string;
+      user_name?: string;
+      preferred_username?: string;
+      score?: number;
+      merged_prs?: number;
+      projects_count?: number;
+      role?: string;
+      is_admin?: boolean;
+    };
+    identities?: Array<{
+      provider?: string;
+      identity_data?: {
+        user_name?: string;
+        preferred_username?: string;
+      };
+    }>;
+  }
+
+  const authUsers: SyncAuthUser[] = [];
   try {
     let page = 1;
     while (true) {
@@ -372,12 +404,12 @@ export async function syncAllProjectsAndContributors() {
         perPage: 1000,
       });
       if (authErr || !pageData?.users || pageData.users.length === 0) break;
-      authUsers.push(...pageData.users);
+      authUsers.push(...(pageData.users as unknown as SyncAuthUser[]));
       if (pageData.users.length < 1000) break;
       page++;
     }
-  } catch (err: any) {
-    console.warn("Notice: reading auth.users during sync:", err.message);
+  } catch (err: unknown) {
+    console.warn("Notice: reading auth.users during sync:", err instanceof Error ? err.message : "Unknown error");
   }
 
   // Pre-load projects to map repo slug -> project_id
@@ -401,7 +433,7 @@ export async function syncAllProjectsAndContributors() {
     }>
   >();
 
-  const linkedIssuesCache = new Map<string, any>();
+  const linkedIssuesCache = new Map<string, GitHubIssueItem | null>();
   let totalPrsFetched = 0;
   let totalMergedPrsFound = 0;
 
@@ -506,8 +538,8 @@ export async function syncAllProjectsAndContributors() {
         if (pulls.length < 100) break;
         page++;
       }
-    } catch (repoErr: any) {
-      console.error(`Error fetching PRs for repo ${repoSlug}:`, repoErr?.message);
+    } catch (repoErr: unknown) {
+      console.error(`Error fetching PRs for repo ${repoSlug}:`, repoErr instanceof Error ? repoErr.message : "Unknown error");
     }
   }
 
@@ -522,8 +554,8 @@ export async function syncAllProjectsAndContributors() {
       if (meta.preferred_username) candidateHandles.add(normalizeGitHubHandle(meta.preferred_username).toLowerCase());
       for (const id of identities) {
         if (id.provider === "github" && id.identity_data) {
-          if (id.identity_data.user_name) candidateHandles.add(normalizeGitHubHandle(id.identity_data.user_name).toLowerCase());
-          if (id.identity_data.preferred_username) candidateHandles.add(normalizeGitHubHandle(id.identity_data.preferred_username).toLowerCase());
+          if (id.identity_data.user_name) candidateHandles.add(normalizeGitHubHandle(String(id.identity_data.user_name)).toLowerCase());
+          if (id.identity_data.preferred_username) candidateHandles.add(normalizeGitHubHandle(String(id.identity_data.preferred_username)).toLowerCase());
         }
       }
     }
@@ -580,8 +612,8 @@ export async function syncAllProjectsAndContributors() {
     if (meta.preferred_username) userHandles.add(normalizeGitHubHandle(meta.preferred_username).toLowerCase());
     for (const id of identities) {
       if (id.provider === "github" && id.identity_data) {
-        if (id.identity_data.user_name) userHandles.add(normalizeGitHubHandle(id.identity_data.user_name).toLowerCase());
-        if (id.identity_data.preferred_username) userHandles.add(normalizeGitHubHandle(id.identity_data.preferred_username).toLowerCase());
+        if (id.identity_data.user_name) userHandles.add(normalizeGitHubHandle(String(id.identity_data.user_name)).toLowerCase());
+        if (id.identity_data.preferred_username) userHandles.add(normalizeGitHubHandle(String(id.identity_data.preferred_username)).toLowerCase());
       }
     }
 
@@ -617,7 +649,17 @@ export async function syncAllProjectsAndContributors() {
 
     // Save individual PR contributions into public.contributions
     if (userPrs.length > 0) {
-      const contribRows: any[] = [];
+      interface ContribRow {
+        user_id: string;
+        project_id: string;
+        type: string;
+        github_url: string;
+        status: string;
+        points_awarded: number;
+        contributed_at: string;
+      }
+
+      const contribRows: ContribRow[] = [];
       for (const p of userPrs) {
         const projId = projectMap.get(p.repoSlug);
         if (projId && p.htmlUrl) {
@@ -636,8 +678,8 @@ export async function syncAllProjectsAndContributors() {
       if (contribRows.length > 0) {
         try {
           await admin.from("contributions").upsert(contribRows, { onConflict: "github_url" });
-        } catch (cErr: any) {
-          console.warn(`Notice: contributions batch save for ${user.id}:`, cErr?.message);
+        } catch (cErr: unknown) {
+          console.warn(`Notice: contributions batch save for ${user.id}:`, cErr instanceof Error ? cErr.message : "Unknown error");
         }
       }
 
@@ -667,8 +709,8 @@ export async function syncAllProjectsAndContributors() {
             projects_count: computedProjects,
           },
         });
-      } catch (authErr: any) {
-        console.warn(`Notice: updating auth metadata for ${user.id}:`, authErr?.message);
+      } catch (authErr: unknown) {
+        console.warn(`Notice: updating auth metadata for ${user.id}:`, authErr instanceof Error ? authErr.message : "Unknown error");
       }
 
       // Also update profiles table if profile exists

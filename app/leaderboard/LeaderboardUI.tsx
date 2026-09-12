@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import type { ClientProfilePayload } from "@/lib/auth/client";
 
 interface LeaderboardUser {
   id: string;
@@ -25,19 +26,21 @@ export default function LeaderboardUI({
   initialSearch = "",
 }: {
   initialUsers: LeaderboardUser[];
-  initialProfile?: any;
+  initialProfile?: ClientProfilePayload | null;
   initialSearch?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(initialSearch || searchParams?.get("q") || "");
   const [users, setUsers] = useState<LeaderboardUser[]>(initialUsers);
+  const [prevInitialUsers, setPrevInitialUsers] = useState(initialUsers);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
-  // Sync state if props change
-  useEffect(() => {
+  // Sync state if initialUsers prop changes
+  if (prevInitialUsers !== initialUsers) {
+    setPrevInitialUsers(initialUsers);
     setUsers(initialUsers);
-  }, [initialUsers]);
+  }
 
   // Debounced search
   useEffect(() => {
