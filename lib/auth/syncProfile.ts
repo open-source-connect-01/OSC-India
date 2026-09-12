@@ -3,6 +3,16 @@ import type { User } from "@supabase/supabase-js";
 import { syncGitHubContribution } from "@/lib/actions/github";
 import type { Profile } from "@/lib/supabase/database";
 
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
 /**
  * Synchronizes and provisions user profile in public.users and public.profiles.
  * Handles deduplication across GitHub and Google logins by matching emails,
@@ -73,6 +83,7 @@ export async function syncUserProfile(user: User) {
   const mergedFullName = existingProfile?.full_name || fullName;
 
   const profileRow: Partial<Profile> = {
+    id: user.id,
     user_id: user.id,
     full_name: mergedFullName,
     avatar_url: mergedAvatar,
@@ -104,12 +115,25 @@ export async function syncUserProfile(user: User) {
     // Non-blocking
   }
 
-  // Automatically sync GitHub contributions on login if user has a linked GitHub handle
+  // Decoupled, non-blocking GitHub contribution sync on login (with 30m cooldown)
+  // Ensures login returns instantly and prevents thundering herd API rate limits under 10k users
   if (mergedGithub) {
-    try {
-      await syncGitHubContribution(user.id, mergedGithub);
-    } catch (syncErr: unknown) {
-      console.warn("Notice: automatic contribution sync in syncUserProfile:", syncErr instanceof Error ? syncErr.message : "Unknown error");
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const isFresh = existingProfile?.updated_at && existingProfile.updated_at > thirtyMinAgo;
+
+    if (!isFresh) {
+      const baseUrl = getAppBaseUrl();
+      fetch(`${baseUrl}/api/sync/background`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-sync-secret": process.env.CRON_SECRET || "",
+        },
+        body: JSON.stringify({ userId: user.id, github: mergedGithub }),
+      }).catch(() => {
+        // Fallback: in-process non-blocking attempt if network call is unavailable
+        void syncGitHubContribution(user.id, mergedGithub).catch(() => {});
+      });
     }
   }
 

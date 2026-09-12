@@ -26,19 +26,42 @@ interface GitHubIssueItem {
   created_at?: string;
 }
 
+// Module-level token pool for round-robin rotation across multiple GitHub PATs
+let cachedTokenPool: string[] | null = null;
+let tokenRotationIndex = 0;
+
+function getTokenPool(): string[] {
+  if (cachedTokenPool !== null) {
+    return cachedTokenPool;
+  }
+  const pool: string[] = [];
+  for (let i = 1; i <= 5; i++) {
+    const t = process.env[`GITHUB_ACCESS_TOKEN_${i}`]?.trim();
+    if (t && !pool.includes(t)) pool.push(t);
+  }
+  const legacy = (process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT)?.trim();
+  if (legacy && !pool.includes(legacy)) pool.push(legacy);
+
+  cachedTokenPool = pool;
+  return pool;
+}
+
 /**
  * Returns GitHub API headers with optimal rate-limiting:
- * Prioritizes personal access token (GITHUB_ACCESS_TOKEN/PAT).
- * Falls back automatically to GitHub OAuth App Basic Auth (AUTH_GITHUB_ID/SECRET),
- * providing 5,000 req/hr core API and 30 req/min search API.
+ * Prioritizes a round-robin token pool (GITHUB_ACCESS_TOKEN_1..5, GITHUB_ACCESS_TOKEN/PAT)
+ * to multiply the 5,000 req/hr API quota across available tokens.
+ * Falls back automatically to GitHub OAuth App Basic Auth (AUTH_GITHUB_ID/SECRET).
  */
 function getGitHubAuthHeaders(): Record<string, string> {
-  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
+  const pool = getTokenPool();
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "OSC-India-Sync-Engine",
   };
-  if (token) {
+
+  if (pool.length > 0) {
+    const token = pool[tokenRotationIndex % pool.length];
+    tokenRotationIndex = (tokenRotationIndex + 1) % pool.length;
     headers.Authorization = `Bearer ${token}`;
   } else {
     const clientId = process.env.GITHUB_ID || process.env.AUTH_GITHUB_ID;
@@ -595,7 +618,39 @@ export async function syncAllProjectsAndContributors() {
   const nowIso = new Date().toISOString();
   const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
 
-  // 6. Update each contributor in auth.users and public.profiles
+  interface ContribRow {
+    user_id: string;
+    project_id: string;
+    type: string;
+    github_url: string;
+    status: string;
+    points_awarded: number;
+    contributed_at: string;
+  }
+
+  interface LeaderboardStatRow {
+    user_id: string;
+    total_points: number;
+    current_streak: number;
+    updated_at: string;
+  }
+
+  interface ProfileUpsertRow {
+    id: string;
+    user_id: string;
+    github: string | null;
+    score: number;
+    merged_prs: number;
+    projects_count: number;
+    updated_at: string;
+  }
+
+  const allContribRows: ContribRow[] = [];
+  const allLeaderboardStats: LeaderboardStatRow[] = [];
+  const allProfileUpdates: ProfileUpsertRow[] = [];
+  const authMetadataQueue: Array<{ userId: string; meta: Record<string, unknown> }> = [];
+
+  // 6. Aggregate each contributor across auth.users and compute points
   for (const user of authUsers) {
     const meta = user.user_metadata || {};
     const identities = user.identities || [];
@@ -649,23 +704,12 @@ export async function syncAllProjectsAndContributors() {
 
     const primaryHandle = meta.github || meta.user_name || Array.from(userHandles)[0] || null;
 
-    // Save individual PR contributions into public.contributions
+    // Accumulate individual PR contributions
     if (userPrs.length > 0) {
-      interface ContribRow {
-        user_id: string;
-        project_id: string;
-        type: string;
-        github_url: string;
-        status: string;
-        points_awarded: number;
-        contributed_at: string;
-      }
-
-      const contribRows: ContribRow[] = [];
       for (const p of userPrs) {
         const projId = projectMap.get(p.repoSlug);
         if (projId && p.htmlUrl) {
-          contribRows.push({
+          allContribRows.push({
             user_id: user.id,
             project_id: projId,
             type: "pr",
@@ -677,62 +721,78 @@ export async function syncAllProjectsAndContributors() {
         }
       }
 
-      if (contribRows.length > 0) {
-        try {
-          await admin.from("contributions").upsert(contribRows, { onConflict: "github_url" });
-        } catch (cErr: unknown) {
-          console.warn(`Notice: contributions batch save for ${user.id}:`, cErr instanceof Error ? cErr.message : "Unknown error");
-        }
-      }
-
-      // Upsert into leaderboard_stats
-      try {
-        await admin.from("leaderboard_stats").upsert(
-          {
-            user_id: user.id,
-            total_points: computedScore,
-            current_streak: 1,
-            updated_at: nowIso,
-          },
-          { onConflict: "user_id" }
-        );
-      } catch {}
+      allLeaderboardStats.push({
+        user_id: user.id,
+        total_points: computedScore,
+        current_streak: 1,
+        updated_at: nowIso,
+      });
     }
 
-    // Update if values changed or if contributor has points
+    // Queue profile and auth metadata update if values changed or has score
     if (hasChanged || computedScore > 0) {
-      try {
-        await admin.auth.admin.updateUserById(user.id, {
-          user_metadata: {
-            ...meta,
-            github: primaryHandle,
-            score: computedScore,
-            merged_prs: computedMergedPrs,
-            projects_count: computedProjects,
-          },
-        });
-      } catch (authErr: unknown) {
-        console.warn(`Notice: updating auth metadata for ${user.id}:`, authErr instanceof Error ? authErr.message : "Unknown error");
-      }
+      allProfileUpdates.push({
+        id: user.id,
+        user_id: user.id,
+        github: primaryHandle,
+        score: computedScore,
+        merged_prs: computedMergedPrs,
+        projects_count: computedProjects,
+        updated_at: nowIso,
+      });
 
-      // Also update profiles table if profile exists
-      try {
-        await admin
-          .from("profiles")
-          .update({
-            github: primaryHandle,
-            score: computedScore,
-            merged_prs: computedMergedPrs,
-            projects_count: computedProjects,
-            updated_at: nowIso,
-          })
-          .eq("user_id", user.id);
-      } catch {
-        // Non-blocking
-      }
+      authMetadataQueue.push({
+        userId: user.id,
+        meta: {
+          ...meta,
+          github: primaryHandle,
+          score: computedScore,
+          merged_prs: computedMergedPrs,
+          projects_count: computedProjects,
+        },
+      });
 
       updatedCount++;
     }
+  }
+
+  // 7. Perform scalable chunked upserts (500 rows per batch) to eliminate round-trip overhead
+  async function chunkedBatchUpsert(
+    table: string,
+    rows: unknown[],
+    onConflict: string,
+    chunkSize = 500
+  ) {
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      try {
+        await admin.from(table).upsert(chunk as never, { onConflict });
+      } catch (err: unknown) {
+        console.warn(`Notice: chunked upsert on ${table} failed:`, err instanceof Error ? err.message : "Unknown error");
+      }
+    }
+  }
+
+  if (allContribRows.length > 0) {
+    await chunkedBatchUpsert("contributions", allContribRows, "github_url", 500);
+  }
+
+  if (allLeaderboardStats.length > 0) {
+    await chunkedBatchUpsert("leaderboard_stats", allLeaderboardStats, "user_id", 500);
+  }
+
+  if (allProfileUpdates.length > 0) {
+    await chunkedBatchUpsert("profiles", allProfileUpdates, "id", 500);
+  }
+
+  // Best-effort non-blocking metadata sync for top 50 changed contributors to stay within function timeout
+  const topAuthUpdates = authMetadataQueue.slice(0, 50);
+  if (topAuthUpdates.length > 0) {
+    await Promise.allSettled(
+      topAuthUpdates.map(({ userId, meta }) =>
+        admin.auth.admin.updateUserById(userId, { user_metadata: meta }).catch(() => {})
+      )
+    );
   }
 
   revalidatePath("/leaderboard");

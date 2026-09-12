@@ -24,10 +24,16 @@ export default function LeaderboardUI({
   initialUsers,
   initialProfile,
   initialSearch = "",
+  currentPage = 1,
+  totalPages = 1,
+  totalCount = 0,
 }: {
   initialUsers: LeaderboardUser[];
   initialProfile?: ClientProfilePayload | null;
   initialSearch?: string;
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,6 +48,13 @@ export default function LeaderboardUI({
     setUsers(initialUsers);
   }
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    params.set("page", String(newPage));
+    router.push(`/leaderboard?${params.toString()}`);
+  };
+
   // Debounced search
   useEffect(() => {
     const currentQ = searchParams?.get("q") || "";
@@ -51,8 +64,10 @@ export default function LeaderboardUI({
       const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
       if (searchQuery) {
         params.set("q", searchQuery);
+        params.delete("page");
       } else {
         params.delete("q");
+        params.delete("page");
       }
       router.push(`/leaderboard?${params.toString()}`);
     }, 300);
@@ -90,12 +105,14 @@ export default function LeaderboardUI({
   }, [router]);
 
   const isSearching = Boolean(searchParams.get("q"));
+  const isPageOne = currentPage === 1;
 
-  // Top 3 Podium Users (1st, 2nd, 3rd)
-  const rank1 = users.find((u) => u.rank === 1);
-  const rank2 = users.find((u) => u.rank === 2);
-  const rank3 = users.find((u) => u.rank === 3);
-  const others = users.filter((u) => u.rank > 3);
+  // Top 3 Podium Users (1st, 2nd, 3rd) - displayed on Page 1 when not searching
+  const showPodium = !isSearching && isPageOne && users.length >= 1;
+  const rank1 = showPodium ? users.find((u) => u.rank === 1) : undefined;
+  const rank2 = showPodium ? users.find((u) => u.rank === 2) : undefined;
+  const rank3 = showPodium ? users.find((u) => u.rank === 3) : undefined;
+  const others = showPodium ? users.filter((u) => u.rank > 3) : users;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col font-sans text-white">
@@ -143,7 +160,7 @@ export default function LeaderboardUI({
         </div>
 
         {/* Podium Layout (Ranks 2, 1, 3) */}
-        {!isSearching && users.length >= 1 && (
+        {showPodium && (
           <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "20px", marginBottom: "56px", width: "100%", flexWrap: "wrap" }}>
             {/* Rank 2 (Silver - Left) */}
             {rank2 && (
@@ -239,7 +256,13 @@ export default function LeaderboardUI({
         {/* List Section (Ranks 4 to 50 or Search Results) */}
         <div style={{ width: "100%", maxWidth: "860px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px 8px 12px", color: "#9ca3af", fontSize: "12px", fontWeight: 600 }}>
-            <span>{isSearching ? `SEARCH RESULTS (${users.length})` : users.length > 3 ? "TOP CONTRIBUTORS (RANKS 4 - 50)" : "COMMUNITY CONTRIBUTORS"}</span>
+            <span>
+              {isSearching
+                ? `SEARCH RESULTS (${totalCount || users.length})`
+                : showPodium
+                ? "TOP CONTRIBUTORS (RANKS 4 - 50)"
+                : `CONTRIBUTORS (PAGE ${currentPage} OF ${totalPages})`}
+            </span>
             <span>SCORE & PRs</span>
           </div>
 
@@ -306,6 +329,49 @@ export default function LeaderboardUI({
             ))
           )}
         </div>
+
+        {/* Server-Side Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginTop: "32px", paddingBottom: "16px" }}>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "8px",
+                background: currentPage <= 1 ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)",
+                color: currentPage <= 1 ? "#52525b" : "#fff",
+                border: "1px solid rgba(255,255,255,0.1)",
+                cursor: currentPage <= 1 ? "not-allowed" : "pointer",
+                fontSize: "13px",
+                fontWeight: 600,
+                transition: "all 0.2s",
+              }}
+            >
+              ← Previous
+            </button>
+            <span style={{ color: "#9ca3af", fontSize: "13px", fontWeight: 500 }}>
+              Page <strong style={{ color: "#fff" }}>{currentPage}</strong> of <strong style={{ color: "#fff" }}>{totalPages}</strong> {totalCount > 0 && `(${totalCount} contributors)`}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "8px",
+                background: currentPage >= totalPages ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)",
+                color: currentPage >= totalPages ? "#52525b" : "#fff",
+                border: "1px solid rgba(255,255,255,0.1)",
+                cursor: currentPage >= totalPages ? "not-allowed" : "pointer",
+                fontSize: "13px",
+                fontWeight: 600,
+                transition: "all 0.2s",
+              }}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </main>
 
       <Footer />

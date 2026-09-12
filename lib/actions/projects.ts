@@ -349,12 +349,26 @@ export async function getProjects(): Promise<ProjectItem[]> {
   return DEFAULT_PROJECTS;
 }
 
+// Module-level cache for repo slugs (10-minute TTL to prevent repeated DB reads during high sync volume)
+let _slugCache: Set<string> | null = null;
+let _slugCacheAt = 0;
+const SLUG_CACHE_TTL_MS = 10 * 60 * 1000;
+
+export async function invalidateSlugCache(): Promise<void> {
+  _slugCache = null;
+  _slugCacheAt = 0;
+}
+
 /**
  * Fetches the set of allowed GitHub repository slugs directly from the active projects.
  * Guarantees 100% parity with the projects displayed in the /projects section.
  * PRs will ONLY be accepted if their repository slug is present in this set.
  */
 export async function getDbAllowedRepoSlugs(): Promise<Set<string>> {
+  if (_slugCache && Date.now() - _slugCacheAt < SLUG_CACHE_TTL_MS) {
+    return _slugCache;
+  }
+
   // Always include the exact official 17 competition repositories
   const allowed = new Set<string>(OFFICIAL_COMPETITION_REPO_SLUGS);
   try {
@@ -369,6 +383,8 @@ export async function getDbAllowedRepoSlugs(): Promise<Set<string>> {
     console.warn("Exception deriving allowed slugs from getProjects:", err);
   }
 
+  _slugCache = allowed;
+  _slugCacheAt = Date.now();
   return allowed;
 }
 
@@ -432,6 +448,7 @@ export async function createProjectAction(
   const currentLocal = readLocalCustomProjects();
   writeLocalCustomProjects([createdProject, ...currentLocal.filter((p) => p.id !== createdProject.id)]);
 
+  await invalidateSlugCache();
   revalidatePath("/projects");
   revalidatePath("/admin");
 
@@ -502,6 +519,7 @@ export async function deleteProjectAction(
   );
   writeLocalCustomProjects(filtered);
 
+  await invalidateSlugCache();
   revalidatePath("/projects");
   revalidatePath("/admin");
 
@@ -543,6 +561,7 @@ export async function deleteAllProjectsAction(): Promise<{ success: boolean; cou
     // 3. Clear local backup cache completely
     writeLocalCustomProjects([]);
 
+    await invalidateSlugCache();
     revalidatePath("/projects");
     revalidatePath("/admin");
 
