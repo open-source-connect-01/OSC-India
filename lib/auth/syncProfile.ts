@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
+import { syncGitHubContribution } from "@/lib/actions/github";
 
 /**
  * Synchronizes and provisions user profile in public.users and public.profiles.
@@ -100,6 +101,15 @@ export async function syncUserProfile(user: User) {
     });
   } catch {
     // Non-blocking
+  }
+
+  // Automatically sync GitHub contributions on login if user has a linked GitHub handle
+  if (mergedGithub) {
+    try {
+      await syncGitHubContribution(user.id, mergedGithub);
+    } catch (syncErr: any) {
+      console.warn("Notice: automatic contribution sync in syncUserProfile:", syncErr?.message);
+    }
   }
 
   return { ...existingProfile, ...profileRow, email: userEmail };

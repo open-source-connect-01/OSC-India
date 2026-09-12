@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,13 @@ export async function POST(request: Request) {
       });
     } catch {
       // non-blocking
+    }
+
+    // 4. Trigger instant contribution sync for this user's PRs on the official 17 repos
+    try {
+      await syncGitHubContribution(user.id, github);
+    } catch (sErr: any) {
+      console.warn("Notice: instant github sync on link:", sErr?.message);
     }
 
     return NextResponse.json({ success: true, github });
