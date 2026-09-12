@@ -305,46 +305,6 @@ export default function ActivityMatrix({ providerAccountId }: ActivityMatrixProp
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {!providerAccountId && (
-            <form
-              onSubmit={handleLinkAndSync}
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <input
-                type="text"
-                placeholder="GitHub username"
-                value={customHandle}
-                onChange={(e) => setCustomHandle(e.target.value)}
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: "6px",
-                  padding: "4px 8px",
-                  fontSize: "12px",
-                  color: "white",
-                  outline: "none",
-                  width: "140px",
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isLinking || !customHandle.trim()}
-                style={{
-                  background: "var(--orange)",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  color: "white",
-                  cursor: isLinking ? "not-allowed" : "pointer",
-                  opacity: isLinking || !customHandle.trim() ? 0.6 : 1,
-                }}
-              >
-                {isLinking ? "Linking..." : "Link"}
-              </button>
-            </form>
-          )}
 
           <button
             type="button"
