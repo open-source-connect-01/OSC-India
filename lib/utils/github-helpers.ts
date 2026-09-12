@@ -66,3 +66,29 @@ export function extractLinkedIssueNumbers(text?: string | null): number[] {
   }
   return numbers;
 }
+
+/**
+ * Extracts a normalized "owner/repo" slug from a GitHub URL or string
+ */
+export function extractRepoSlug(urlOrSlug?: string | null): string | null {
+  if (!urlOrSlug) return null;
+  const trimmed = urlOrSlug.trim();
+  if (!trimmed || trimmed === "#") return null;
+
+  // Match github.com/owner/repo in URLs
+  const match = trimmed.match(/github\.com\/([^\/\s#?]+)\/([^\/\s#?]+)/i);
+  if (match) {
+    const owner = match[1];
+    const repo = match[2].replace(/\.git$/i, "").replace(/\/+$/, "");
+    return `${owner}/${repo}`.toLowerCase();
+  }
+
+  // Match raw "owner/repo"
+  const clean = trimmed.replace(/^@+/, "").replace(/\.git$/i, "").replace(/\/+$/, "");
+  const parts = clean.split("/").filter(Boolean);
+  if (parts.length === 2 && !parts[0].includes(":") && !parts[1].includes(":")) {
+    return `${parts[0]}/${parts[1]}`.toLowerCase();
+  }
+
+  return null;
+}

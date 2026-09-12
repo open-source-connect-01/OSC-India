@@ -3,7 +3,7 @@
  * Usage: npx tsx scripts/debug-sync.ts <github_username>
  */
 
-import { getAllowedRepoSlugs } from "../data/projects";
+import { getDbAllowedRepoSlugs } from "../lib/actions/projects";
 import {
   normalizeGitHubHandle,
   detectDifficulty,
@@ -22,8 +22,8 @@ async function run() {
   const handle = normalizeGitHubHandle(username);
   console.log(`\n🔍 Debugging GitHub Sync for handle: "${handle}"`);
 
-  const allowedRepos = getAllowedRepoSlugs();
-  console.log(`📋 Tracked Competition Repos (${allowedRepos.size}):`);
+  const allowedRepos = await getDbAllowedRepoSlugs();
+  console.log(`📋 Tracked Database Projects (${allowedRepos.size}):`);
   allowedRepos.forEach((repo: string) => console.log(`   - ${repo}`));
 
   const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;

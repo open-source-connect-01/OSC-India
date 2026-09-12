@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAllowedRepoSlugs, isAllowedRepoSlug } from "@/data/projects";
+import { getDbAllowedRepoSlugs } from "@/lib/actions/projects";
 import {
   normalizeGitHubHandle,
   detectDifficulty,
@@ -59,8 +59,8 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
     }
   }
 
-  // 3. Extract Allowed Repositories
-  const allowedSlugs = getAllowedRepoSlugs();
+  // 3. Extract Allowed Repositories strictly from the database (public.projects table)
+  const allowedSlugs = await getDbAllowedRepoSlugs(admin);
 
   // 4. Fetch GitHub Data via Search API
   const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
@@ -102,14 +102,19 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
       issueItems = issueData.items || [];
     }
 
-    // Map issues by repoSlug + issue number for fast O(1) lookup
+    // Map issues by repoSlug + issue number for fast O(1) lookup (only for allowed DB projects)
     const issuesMap = new Map<string, GitHubIssueItem>();
     for (const issue of issueItems) {
-      const repoSlug = issue.repository_url.replace("https://api.github.com/repos/", "").toLowerCase();
-      issuesMap.set(`${repoSlug}#${issue.number}`, issue);
+      const repoSlug = issue.repository_url
+        .replace(/^https?:\/\/api\.github\.com\/repos\//i, "")
+        .replace(/\/+$/, "")
+        .toLowerCase();
+      if (allowedSlugs.has(repoSlug)) {
+        issuesMap.set(`${repoSlug}#${issue.number}`, issue);
+      }
     }
 
-    // 5. Filter: Only keep PRs matching the allowed competition list
+    // 5. Filter: Only keep PRs matching the allowed projects in the database
     const validPRs: Array<{
       item: GitHubIssueItem;
       repoSlug: string;
@@ -120,10 +125,13 @@ export async function syncGitHubContribution(userId: string, rawHandle: string) 
     const contributedRepos = new Set<string>();
 
     for (const pr of prItems) {
-      const repoSlug = pr.repository_url.replace("https://api.github.com/repos/", "").toLowerCase();
+      const repoSlug = pr.repository_url
+        .replace(/^https?:\/\/api\.github\.com\/repos\//i, "")
+        .replace(/\/+$/, "")
+        .toLowerCase();
 
-      // Skip if repository is not registered in competition
-      if (!isAllowedRepoSlug(repoSlug)) {
+      // Only accept PRs on projects that exist in the database
+      if (!allowedSlugs.has(repoSlug)) {
         continue;
       }
 

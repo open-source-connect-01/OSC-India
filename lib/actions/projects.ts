@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAdminSession } from "@/lib/auth/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { extractRepoSlug } from "@/lib/utils/github-helpers";
 
 export interface ProjectItem {
   id: string;
@@ -330,6 +331,71 @@ export async function getProjects(): Promise<ProjectItem[]> {
   }
 
   return DEFAULT_PROJECTS;
+}
+
+/**
+ * Fetches the set of allowed GitHub repository slugs directly from the database (public.projects table).
+ * PRs will ONLY be accepted if their repository slug is present in this set.
+ */
+export async function getDbAllowedRepoSlugs(adminClient?: any): Promise<Set<string>> {
+  const allowed = new Set<string>();
+  const admin = adminClient || createAdminClient();
+
+  try {
+    const { data: dbProjects, error } = await admin
+      .from("projects")
+      .select("*");
+
+    if (!error && Array.isArray(dbProjects)) {
+      for (const row of dbProjects) {
+        const rawUrl = row.github_repo_url || row.github_url || row.githubUrl || "";
+        let slug = extractRepoSlug(rawUrl);
+        if (!slug && row.description) {
+          const metaMatch = row.description.match(/<!--meta:(.*?)-->/);
+          if (metaMatch) {
+            try {
+              const parsed = JSON.parse(metaMatch[1]);
+              if (parsed.githubUrl || parsed.github_url) {
+                slug = extractRepoSlug(parsed.githubUrl || parsed.github_url);
+              }
+            } catch {
+              // ignore parse error
+            }
+          }
+        }
+        if (slug) {
+          allowed.add(slug.toLowerCase());
+        }
+      }
+      return allowed;
+    }
+
+    if (error) {
+      console.warn("Notice: Failed to fetch projects from DB for allowed slugs:", error.message);
+    }
+  } catch (err) {
+    console.warn("Exception fetching projects from DB for allowed slugs:", err);
+  }
+
+  // Fallback to local store cache ONLY if the database connection / network failed
+  try {
+    const local = readLocalCustomProjects();
+    for (const p of local) {
+      const slug = extractRepoSlug(p.githubUrl);
+      if (slug) allowed.add(slug.toLowerCase());
+    }
+    if (allowed.size > 0) return allowed;
+  } catch {
+    // ignore
+  }
+
+  // Fallback to DEFAULT_PROJECTS if local cache is also empty and DB failed
+  for (const p of DEFAULT_PROJECTS) {
+    const slug = extractRepoSlug(p.githubUrl);
+    if (slug) allowed.add(slug.toLowerCase());
+  }
+
+  return allowed;
 }
 
 /**
