@@ -120,29 +120,22 @@ export async function getAdminData() {
   const unifiedProfiles: Profile[] = [];
   const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
 
-  function findUnifiedUser(email?: string | null, github?: string | null, id?: string | null, fullName?: string | null) {
+  function findUnifiedUser(email?: string | null, github?: string | null, id?: string | null) {
     const cleanEmail = (email || "").trim().toLowerCase();
     const cleanGithub = (github || "").replace(/^@/, "").trim().toLowerCase();
-    const cleanName = (fullName || "").trim().toLowerCase();
 
     return unifiedProfiles.find((item) => {
-      // 1. Search by email (primary key for user identity)
-      if (cleanEmail && item.email && item.email.trim().toLowerCase() === cleanEmail) {
-        return true;
-      }
-      // 2. Search by GitHub handle
-      if (cleanGithub && item.github && item.github.replace(/^@/, "").trim().toLowerCase() === cleanGithub) {
-        return true;
-      }
-      // 3. Search by ID
+      // 1. Match strictly by ID
       if (id && item.id === id) {
         return true;
       }
-      // 4. If names match exactly and either user lacks an email, unify them as the same person
-      if (cleanName && item.full_name && item.full_name.trim().toLowerCase() === cleanName) {
-        if (!cleanEmail || !item.email || cleanEmail === item.email.trim().toLowerCase()) {
-          return true;
-        }
+      // 2. Match by email (unique per registered user)
+      if (cleanEmail && item.email && item.email.trim().toLowerCase() === cleanEmail) {
+        return true;
+      }
+      // 3. Match by verified GitHub username (only if both are non-empty)
+      if (cleanGithub && item.github && item.github.replace(/^@/, "").trim().toLowerCase() === cleanGithub) {
+        return true;
       }
       return false;
     });
@@ -181,7 +174,7 @@ export async function getAdminData() {
   // A. Ingest database profile records first (AUTHORITATIVE SOURCE OF TRUTH)
   for (const p of rawProfiles) {
     const rawP = p as any;
-    const existing = findUnifiedUser(p.email, p.github, p.id || rawP.user_id, p.full_name);
+    const existing = findUnifiedUser(p.email, p.github, p.id || rawP.user_id);
     if (existing) {
       mergeContributor(existing, p, true);
     } else {
@@ -232,7 +225,7 @@ export async function getAdminData() {
       updated_at: u.updated_at || new Date().toISOString(),
     } as Profile;
 
-    const existing = findUnifiedUser(candidate.email, candidate.github, candidate.id, candidate.full_name);
+    const existing = findUnifiedUser(candidate.email, candidate.github, candidate.id);
     if (existing) {
       // Supplemental only (never overwrite verified DB metrics with old auth metadata)
       mergeContributor(existing, candidate, false);

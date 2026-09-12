@@ -309,7 +309,7 @@ export async function syncAllProjectsAndContributors() {
   const admin = createAdminClient();
   const startTime = Date.now();
 
-  // 1. Fetch allowed projects strictly from database
+  // 1. Fetch allowed projects strictly from database (guaranteed 17 competition repos)
   const allowedSlugs = await getDbAllowedRepoSlugs(admin);
   if (allowedSlugs.size === 0) {
     return { success: false, error: "No tracked projects found in database." };
@@ -317,6 +317,24 @@ export async function syncAllProjectsAndContributors() {
 
   // 2. Setup GitHub API headers with OAuth fallback for 5,000 req/hr
   const headers = getGitHubAuthHeaders();
+
+  // 3. Fetch all contributors from auth.users (primary source of truth in production)
+  let authUsers: any[] = [];
+  try {
+    let page = 1;
+    while (true) {
+      const { data: pageData, error: authErr } = await admin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (authErr || !pageData?.users || pageData.users.length === 0) break;
+      authUsers.push(...pageData.users);
+      if (pageData.users.length < 1000) break;
+      page++;
+    }
+  } catch (err: any) {
+    console.warn("Notice: reading auth.users during sync:", err.message);
+  }
 
   // Map: normalized lowercase github handle -> array of valid merged PR items
   const contributorPrMap = new Map<
@@ -333,11 +351,36 @@ export async function syncAllProjectsAndContributors() {
   let totalPrsFetched = 0;
   let totalMergedPrsFound = 0;
 
-  // 3. For each competition project repository, fetch closed PRs via REST API
+  function registerPr(
+    rawAuthor: string,
+    repoSlug: string,
+    prNumber: number,
+    diff: DifficultyLevel
+  ) {
+    const authorHandle = normalizeGitHubHandle(rawAuthor || "").toLowerCase();
+    if (!authorHandle || authorHandle.includes("[bot]")) return;
+
+    if (!contributorPrMap.has(authorHandle)) {
+      contributorPrMap.set(authorHandle, []);
+    }
+    const list = contributorPrMap.get(authorHandle)!;
+    if (!list.some((p) => p.repoSlug === repoSlug && p.prNumber === prNumber)) {
+      totalMergedPrsFound++;
+      list.push({
+        repoSlug,
+        prNumber,
+        difficulty: diff,
+        points: DIFFICULTY_POINTS[diff],
+      });
+    }
+  }
+
+  // 4. Primary Pass: Fast repo-centric sweep of all 17 competition projects via REST API
   for (const repoSlug of Array.from(allowedSlugs)) {
     try {
+      const maxPages = repoSlug === "kanishjebamathewm/truxify" ? 10 : 5;
       let page = 1;
-      while (page <= 5) {
+      while (page <= maxPages) {
         const url = `https://api.github.com/repos/${repoSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
         const res = await fetch(url, { headers, next: { revalidate: 0 } });
 
@@ -356,23 +399,18 @@ export async function syncAllProjectsAndContributors() {
         totalPrsFetched += pulls.length;
 
         for (const pr of pulls) {
-          // Only truly merged PRs count!
           if (!pr.merged_at) continue;
-
           const rawAuthor = pr.user?.login;
-          const authorHandle = normalizeGitHubHandle(rawAuthor || "").toLowerCase();
-          if (!authorHandle) continue;
+          if (!rawAuthor) continue;
 
-          totalMergedPrsFound++;
-
-          // Detect difficulty from labels / title / body
+          // Detect difficulty
           let prDifficulty = detectDifficulty({
             title: pr.title,
             body: pr.body,
             labels: pr.labels,
           });
 
-          // Check linked issues in this repo
+          // Check linked issues
           const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
           for (const num of linkedNumbers) {
             const cacheKey = `${repoSlug}#${num}`;
@@ -403,17 +441,7 @@ export async function syncAllProjectsAndContributors() {
             }
           }
 
-          const prEntry = {
-            repoSlug,
-            prNumber: pr.number,
-            difficulty: prDifficulty,
-            points: DIFFICULTY_POINTS[prDifficulty],
-          };
-
-          if (!contributorPrMap.has(authorHandle)) {
-            contributorPrMap.set(authorHandle, []);
-          }
-          contributorPrMap.get(authorHandle)!.push(prEntry);
+          registerPr(rawAuthor, repoSlug, pr.number, prDifficulty);
         }
 
         if (pulls.length < 100) break;
@@ -424,29 +452,56 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 4. Fetch all contributors from auth.users (primary source of truth in production)
-  let authUsers: any[] = [];
+  // 5. Secondary Pass: Multi-author batch search across registered handles to guarantee 100% PR capture
   try {
-    let page = 1;
-    while (true) {
-      const { data: pageData, error: authErr } = await admin.auth.admin.listUsers({
-        page,
-        perPage: 1000,
-      });
-      if (authErr || !pageData?.users || pageData.users.length === 0) break;
-      authUsers.push(...pageData.users);
-      if (pageData.users.length < 1000) break;
-      page++;
+    const candidateHandles = new Set<string>();
+    for (const user of authUsers) {
+      const meta = user.user_metadata || {};
+      const identities = user.identities || [];
+      if (meta.github) candidateHandles.add(normalizeGitHubHandle(meta.github).toLowerCase());
+      if (meta.user_name) candidateHandles.add(normalizeGitHubHandle(meta.user_name).toLowerCase());
+      if (meta.preferred_username) candidateHandles.add(normalizeGitHubHandle(meta.preferred_username).toLowerCase());
+      for (const id of identities) {
+        if (id.provider === "github" && id.identity_data) {
+          if (id.identity_data.user_name) candidateHandles.add(normalizeGitHubHandle(id.identity_data.user_name).toLowerCase());
+          if (id.identity_data.preferred_username) candidateHandles.add(normalizeGitHubHandle(id.identity_data.preferred_username).toLowerCase());
+        }
+      }
     }
-  } catch (err: any) {
-    console.warn("Notice: reading auth.users during sync:", err.message);
+
+    const repoFilter = Array.from(allowedSlugs).map((s) => `repo:${s}`).join(" ");
+    const uniqueHandles = Array.from(candidateHandles).filter(Boolean);
+    for (let i = 0; i < uniqueHandles.length; i += 15) {
+      const batch = uniqueHandles.slice(i, i + 15);
+      const q = encodeURIComponent(`is:pr is:merged ${repoFilter} ${batch.map((h) => `author:${h}`).join(" ")}`);
+      const searchRes = await fetch(`https://api.github.com/search/issues?q=${q}&per_page=100`, {
+        headers,
+        next: { revalidate: 0 },
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        for (const item of searchData.items || []) {
+          const repoSlug = (extractRepoSlug(item.repository_url || item.html_url) || "").toLowerCase();
+          if (repoSlug && allowedSlugs.has(repoSlug)) {
+            const author = item.user?.login;
+            if (author) {
+              const diff = detectDifficulty(item);
+              registerPr(author, repoSlug, item.number, diff);
+            }
+          }
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+  } catch (searchErr) {
+    console.warn("Notice: batch search supplementary pass:", searchErr);
   }
 
   let updatedCount = 0;
   const nowIso = new Date().toISOString();
   const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
 
-  // 5. Update each contributor in auth.users and public.profiles
+  // 6. Update each contributor in auth.users and public.profiles
   for (const user of authUsers) {
     const meta = user.user_metadata || {};
     const identities = user.identities || [];
@@ -458,17 +513,32 @@ export async function syncAllProjectsAndContributors() {
       continue;
     }
 
-    let rawHandle = meta.github || meta.user_name || meta.preferred_username;
-    if (!rawHandle) {
-      const ghId = identities.find((i: any) => i.provider === "github");
-      if (ghId?.identity_data) {
-        rawHandle = ghId.identity_data.user_name || ghId.identity_data.preferred_username;
+    // Collect all handles that belong to this user
+    const userHandles = new Set<string>();
+    if (meta.github) userHandles.add(normalizeGitHubHandle(meta.github).toLowerCase());
+    if (meta.user_name) userHandles.add(normalizeGitHubHandle(meta.user_name).toLowerCase());
+    if (meta.preferred_username) userHandles.add(normalizeGitHubHandle(meta.preferred_username).toLowerCase());
+    for (const id of identities) {
+      if (id.provider === "github" && id.identity_data) {
+        if (id.identity_data.user_name) userHandles.add(normalizeGitHubHandle(id.identity_data.user_name).toLowerCase());
+        if (id.identity_data.preferred_username) userHandles.add(normalizeGitHubHandle(id.identity_data.preferred_username).toLowerCase());
       }
     }
 
-    const cleanHandle = rawHandle ? normalizeGitHubHandle(rawHandle).toLowerCase() : "";
-    const userPrs = cleanHandle ? (contributorPrMap.get(cleanHandle) || []) : [];
+    // Merge all PRs across the user's handles without duplication
+    const mergedPrMap = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number }>();
+    for (const handle of userHandles) {
+      if (handle && contributorPrMap.has(handle)) {
+        for (const pr of contributorPrMap.get(handle)!) {
+          const key = `${pr.repoSlug}#${pr.prNumber}`;
+          if (!mergedPrMap.has(key)) {
+            mergedPrMap.set(key, pr);
+          }
+        }
+      }
+    }
 
+    const userPrs = Array.from(mergedPrMap.values());
     const computedScore = userPrs.reduce((sum, p) => sum + p.points, 0);
     const computedMergedPrs = userPrs.length;
     const uniqueRepos = new Set(userPrs.map((p) => p.repoSlug));
@@ -483,13 +553,15 @@ export async function syncAllProjectsAndContributors() {
       currentPrs !== computedMergedPrs ||
       currentRepos !== computedProjects;
 
+    const primaryHandle = meta.github || meta.user_name || Array.from(userHandles)[0] || null;
+
     // Update if values changed or if contributor has points
     if (hasChanged || computedScore > 0) {
       try {
         await admin.auth.admin.updateUserById(user.id, {
           user_metadata: {
             ...meta,
-            github: rawHandle || meta.github || null,
+            github: primaryHandle,
             score: computedScore,
             merged_prs: computedMergedPrs,
             projects_count: computedProjects,
@@ -504,7 +576,7 @@ export async function syncAllProjectsAndContributors() {
         await admin
           .from("profiles")
           .update({
-            github: rawHandle || null,
+            github: primaryHandle,
             score: computedScore,
             merged_prs: computedMergedPrs,
             projects_count: computedProjects,
