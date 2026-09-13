@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { syncAllProjectsAndContributors, syncGitHubContribution } from "@/lib/actions/github";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * 6-Hour Contributor Recalculation Cron Handler

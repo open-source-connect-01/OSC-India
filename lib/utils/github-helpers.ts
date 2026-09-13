@@ -7,6 +7,9 @@ export const DIFFICULTY_POINTS: Record<DifficultyLevel, number> = {
   expert: 50,
 };
 
+/** Points awarded to a project-admin for every OSCI'26-labelled PR they merge. */
+export const MERGER_POINTS = 5;
+
 export const DIFFICULTY_RANK: Record<DifficultyLevel, number> = {
   easy: 1,
   medium: 2,
