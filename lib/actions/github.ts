@@ -587,69 +587,11 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 5. Secondary Pass: Multi-author batch search across registered handles to guarantee 100% PR capture.
-  // Repos are split into groups of 5 to avoid GitHub Search API URL length limits.
-  try {
-    const candidateHandles = new Set<string>();
-    for (const user of authUsers) {
-      const meta = user.user_metadata || {};
-      const identities = user.identities || [];
-      if (meta.github) candidateHandles.add(normalizeGitHubHandle(meta.github).toLowerCase());
-      if (meta.user_name) candidateHandles.add(normalizeGitHubHandle(meta.user_name).toLowerCase());
-      if (meta.preferred_username) candidateHandles.add(normalizeGitHubHandle(meta.preferred_username).toLowerCase());
-      for (const id of identities) {
-        if (id.provider === "github" && id.identity_data) {
-          if (id.identity_data.user_name) candidateHandles.add(normalizeGitHubHandle(String(id.identity_data.user_name)).toLowerCase());
-          if (id.identity_data.preferred_username) candidateHandles.add(normalizeGitHubHandle(String(id.identity_data.preferred_username)).toLowerCase());
-        }
-      }
-    }
-
-    // Split repos into groups of 5 to respect GitHub Search API URL length limit
-    const slugArray = Array.from(allowedSlugs);
-    const repoGroups: string[][] = [];
-    for (let i = 0; i < slugArray.length; i += 5) {
-      repoGroups.push(slugArray.slice(i, i + 5));
-    }
-
-    const uniqueHandles = Array.from(candidateHandles).filter(Boolean);
-    for (const repoGroup of repoGroups) {
-      const repoFilter = repoGroup.map((s) => `repo:${s}`).join(" ");
-      for (let i = 0; i < uniqueHandles.length; i += 15) {
-        const batch = uniqueHandles.slice(i, i + 15);
-        // Include label:"OSCI'26" to match only official competition PRs
-        const q = encodeURIComponent(
-          `is:pr is:merged label:"OSCI'26" ${repoFilter} ${batch.map((h) => `author:${h}`).join(" ")}`
-        );
-        const searchRes = await fetch(`https://api.github.com/search/issues?q=${q}&per_page=100`, {
-          headers,
-          next: { revalidate: 0 },
-        });
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          for (const item of searchData.items || []) {
-            // Double-check the OSCI'26 label is present on the item
-            const hasOsciLabel = Array.isArray(item.labels) &&
-              item.labels.some((l: { name: string }) => l.name.toLowerCase() === "osci'26");
-            if (!hasOsciLabel) continue;
-
-            const repoSlug = (extractRepoSlug(item.repository_url || item.html_url) || "").toLowerCase();
-            if (repoSlug && allowedSlugs.has(repoSlug)) {
-              const author = item.user?.login;
-              if (author) {
-                const diff = detectDifficulty(item);
-                const itemMergedAt = item.closed_at || item.created_at || new Date().toISOString();
-                registerPr(author, repoSlug, item.number, diff, item.html_url, itemMergedAt);
-              }
-            }
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 150));
-      }
-    }
-  } catch (searchErr) {
-    console.warn("Notice: batch search supplementary pass:", searchErr);
-  }
+  // NOTE: The secondary batch search pass has been removed.
+  // The primary repo-centric sweep (pass 4) already fetches all closed PRs from every one of the
+  // 17 competition repos and filters by the OSCI'26 label — it captures 100% of valid PRs.
+  // The secondary pass added ~30s of sleep delays (repoGroups × handleBatches × 150ms) which
+  // caused consistent Vercel 504 timeouts without adding meaningful new coverage.
 
   let updatedCount = 0;
   const nowIso = new Date().toISOString();
