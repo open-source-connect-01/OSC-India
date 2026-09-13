@@ -137,55 +137,69 @@ export async function syncGitHubContribution(
   const headers = getGitHubAuthHeaders();
 
   try {
-    // 5. Fetch ALL Merged PRs targeted strictly to the 17 competition projects
-    const repoFilter = Array.from(allowedSlugs).map((s) => `repo:${s}`).join(" ");
+    // 5. Fetch ALL Merged PRs targeted strictly to the 17 competition projects.
+    // GitHub Search API has a URL length limit that silently truncates queries with many repos.
+    // To avoid this, split repos into groups of 5 and merge deduplicated results.
+    const slugArray = Array.from(allowedSlugs);
+    const repoGroups: string[][] = [];
+    for (let i = 0; i < slugArray.length; i += 5) {
+      repoGroups.push(slugArray.slice(i, i + 5));
+    }
+
     const prItems: GitHubIssueItem[] = [];
     const seenPrIds = new Set<number | string>();
-    let page = 1;
 
-    while (page <= 10) {
-      const prQuery = encodeURIComponent(`author:${handle} type:pr is:merged ${repoFilter}`);
-      const prResponse = await fetch(
-        `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
-        {
-          headers,
-          next: { revalidate: 0 },
+    for (const group of repoGroups) {
+      const repoFilter = group.map((s) => `repo:${s}`).join(" ");
+      let page = 1;
+
+      while (page <= 10) {
+        // Include label:"OSCI'26" to match only official competition PRs
+        const prQuery = encodeURIComponent(
+          `author:${handle} type:pr is:merged label:"OSCI'26" ${repoFilter}`
+        );
+        const prResponse = await fetch(
+          `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
+          {
+            headers,
+            next: { revalidate: 0 },
+          }
+        );
+
+        if (!prResponse.ok) {
+          if (prResponse.status === 403 || prResponse.status === 429) {
+            const resetTime = prResponse.headers.get("x-ratelimit-reset");
+            console.warn(`GitHub Search API rate limit reached during sync for @${handle}. Status: ${prResponse.status}`);
+            return {
+              success: false,
+              rateLimited: true,
+              error: "GitHub Search API rate limit exceeded.",
+              resetTime: resetTime ? Number(resetTime) : undefined,
+            };
+          }
+          const errText = await prResponse.text();
+          console.error(`GitHub PR search error for @${handle} (group ${group.join(",")}):`, errText);
+          break; // skip this group on error, continue with next
         }
-      );
 
-      if (!prResponse.ok) {
-        if (prResponse.status === 403 || prResponse.status === 429) {
-          const resetTime = prResponse.headers.get("x-ratelimit-reset");
-          console.warn(`GitHub Search API rate limit reached during sync for @${handle}. Status: ${prResponse.status}`);
-          return {
-            success: false,
-            rateLimited: true,
-            error: "GitHub Search API rate limit exceeded.",
-            resetTime: resetTime ? Number(resetTime) : undefined,
-          };
+        const prData = await prResponse.json();
+        const items: GitHubIssueItem[] = prData.items || [];
+
+        for (const item of items) {
+          const uniqueKey = item.id || `${item.number}-${item.html_url}`;
+          if (!seenPrIds.has(uniqueKey)) {
+            seenPrIds.add(uniqueKey);
+            prItems.push(item);
+          }
         }
-        const errText = await prResponse.text();
-        console.error(`GitHub PR search error for @${handle}:`, errText);
-        return { success: false, error: `GitHub API error: ${prResponse.statusText}` };
-      }
 
-      const prData = await prResponse.json();
-      const items: GitHubIssueItem[] = prData.items || [];
-
-      for (const item of items) {
-        const uniqueKey = item.id || `${item.number}-${item.html_url}`;
-        if (!seenPrIds.has(uniqueKey)) {
-          seenPrIds.add(uniqueKey);
-          prItems.push(item);
+        // If page had fewer than 100 items, done with this group
+        if (items.length < 100) {
+          break;
         }
-      }
 
-      // If page had fewer than 100 items or we collected all total results, done
-      if (items.length < 100 || prItems.length >= (prData.total_count || 0)) {
-        break;
+        page++;
       }
-
-      page++;
     }
 
     // 6. Filter: Only keep PRs matching the allowed projects in the database
@@ -517,6 +531,11 @@ export async function syncAllProjectsAndContributors() {
           const rawAuthor = pr.user?.login;
           if (!rawAuthor) continue;
 
+          // Only count PRs that carry the official competition label
+          const hasOsciLabel = Array.isArray(pr.labels) &&
+            pr.labels.some((l: { name: string }) => l.name.toLowerCase() === "osci'26");
+          if (!hasOsciLabel) continue;
+
           // Detect difficulty
           let prDifficulty = detectDifficulty({
             title: pr.title,
@@ -568,7 +587,8 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 5. Secondary Pass: Multi-author batch search across registered handles to guarantee 100% PR capture
+  // 5. Secondary Pass: Multi-author batch search across registered handles to guarantee 100% PR capture.
+  // Repos are split into groups of 5 to avoid GitHub Search API URL length limits.
   try {
     const candidateHandles = new Set<string>();
     for (const user of authUsers) {
@@ -585,30 +605,47 @@ export async function syncAllProjectsAndContributors() {
       }
     }
 
-    const repoFilter = Array.from(allowedSlugs).map((s) => `repo:${s}`).join(" ");
+    // Split repos into groups of 5 to respect GitHub Search API URL length limit
+    const slugArray = Array.from(allowedSlugs);
+    const repoGroups: string[][] = [];
+    for (let i = 0; i < slugArray.length; i += 5) {
+      repoGroups.push(slugArray.slice(i, i + 5));
+    }
+
     const uniqueHandles = Array.from(candidateHandles).filter(Boolean);
-    for (let i = 0; i < uniqueHandles.length; i += 15) {
-      const batch = uniqueHandles.slice(i, i + 15);
-      const q = encodeURIComponent(`is:pr is:merged ${repoFilter} ${batch.map((h) => `author:${h}`).join(" ")}`);
-      const searchRes = await fetch(`https://api.github.com/search/issues?q=${q}&per_page=100`, {
-        headers,
-        next: { revalidate: 0 },
-      });
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
-        for (const item of searchData.items || []) {
-          const repoSlug = (extractRepoSlug(item.repository_url || item.html_url) || "").toLowerCase();
-          if (repoSlug && allowedSlugs.has(repoSlug)) {
-            const author = item.user?.login;
-            if (author) {
-              const diff = detectDifficulty(item);
-              const itemMergedAt = item.closed_at || item.created_at || new Date().toISOString();
-              registerPr(author, repoSlug, item.number, diff, item.html_url, itemMergedAt);
+    for (const repoGroup of repoGroups) {
+      const repoFilter = repoGroup.map((s) => `repo:${s}`).join(" ");
+      for (let i = 0; i < uniqueHandles.length; i += 15) {
+        const batch = uniqueHandles.slice(i, i + 15);
+        // Include label:"OSCI'26" to match only official competition PRs
+        const q = encodeURIComponent(
+          `is:pr is:merged label:"OSCI'26" ${repoFilter} ${batch.map((h) => `author:${h}`).join(" ")}`
+        );
+        const searchRes = await fetch(`https://api.github.com/search/issues?q=${q}&per_page=100`, {
+          headers,
+          next: { revalidate: 0 },
+        });
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          for (const item of searchData.items || []) {
+            // Double-check the OSCI'26 label is present on the item
+            const hasOsciLabel = Array.isArray(item.labels) &&
+              item.labels.some((l: { name: string }) => l.name.toLowerCase() === "osci'26");
+            if (!hasOsciLabel) continue;
+
+            const repoSlug = (extractRepoSlug(item.repository_url || item.html_url) || "").toLowerCase();
+            if (repoSlug && allowedSlugs.has(repoSlug)) {
+              const author = item.user?.login;
+              if (author) {
+                const diff = detectDifficulty(item);
+                const itemMergedAt = item.closed_at || item.created_at || new Date().toISOString();
+                registerPr(author, repoSlug, item.number, diff, item.html_url, itemMergedAt);
+              }
             }
           }
         }
+        await new Promise((resolve) => setTimeout(resolve, 150));
       }
-      await new Promise((resolve) => setTimeout(resolve, 150));
     }
   } catch (searchErr) {
     console.warn("Notice: batch search supplementary pass:", searchErr);
