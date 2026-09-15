@@ -42,3 +42,6 @@ yarn-error.log*
 next-env.d.ts
 
 .next
+
+linkedin_ids.txt
+linkedin_urls.txt
