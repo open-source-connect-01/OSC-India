@@ -326,14 +326,37 @@ export default async function DashboardPage(props: {
     };
   });
 
-  // 8. Build Daily Contributions starting from Sep 11, 2026 with true Supabase data
+  // 8. Build Daily Contributions starting from Sep 11, 2026 with dynamic today calculation
+  const now = new Date();
+  let todayIso = "";
+  try {
+    todayIso = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(now);
+  } catch {
+    todayIso = now.toISOString().split("T")[0];
+  }
+
+  const startDate = new Date(Date.UTC(2026, 8, 11)); // Sep 11, 2026
+  const programEndDate = new Date(Date.UTC(2026, 10, 15)); // Nov 15, 2026
+  // Ensure the date range spans through at least Nov 15, 2026 or today, whichever is later
+  const maxDate = new Date(Math.max(programEndDate.getTime(), now.getTime()));
+  const totalDays = Math.max(
+    14,
+    Math.round((maxDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  );
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const dailyContributions: DayContribution[] = [];
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(Date.UTC(2026, 8, 11 + i)); // Month 8 is September
-    const isoDate = d.toISOString().split("T")[0]; // "2026-09-11"
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(Date.UTC(2026, 8, 11 + i));
+    const isoDate = d.toISOString().split("T")[0];
     const dateStr = `${monthNames[d.getUTCMonth()]} ${d.getUTCDate()}`;
-    const isToday = isoDate === "2026-09-14";
+    const isToday = isoDate === todayIso;
 
     const dayCount = allPRs.filter((p) => {
       return p.contributed_at && p.contributed_at.startsWith(isoDate);
@@ -358,11 +381,24 @@ export default async function DashboardPage(props: {
       ? profile.merged_prs
       : allPRs.length;
 
-  const weeklyScore = allPRs
-    .filter((p) => p.contributed_at && p.contributed_at.startsWith("2026-09"))
-    .reduce((sum, p) => sum + (p.points_awarded || 10), 0);
+  const sevenDaysAgoTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyContributions = allPRs.filter((p) => {
+    if (!p.contributed_at) return false;
+    const t = new Date(p.contributed_at).getTime();
+    return !isNaN(t) && t >= sevenDaysAgoTime;
+  });
 
-  const weeklyPRs = allPRs.filter((p) => p.contributed_at && p.contributed_at.startsWith("2026-09")).length;
+  const weeklyScore =
+    weeklyContributions.length > 0
+      ? weeklyContributions.reduce((sum, p) => sum + (p.points_awarded || 10), 0)
+      : allPRs
+          .filter((p) => p.contributed_at && p.contributed_at.startsWith(todayIso.slice(0, 7)))
+          .reduce((sum, p) => sum + (p.points_awarded || 10), 0);
+
+  const weeklyPRs =
+    weeklyContributions.length > 0
+      ? weeklyContributions.length
+      : allPRs.filter((p) => p.contributed_at && p.contributed_at.startsWith(todayIso.slice(0, 7))).length;
 
   const projectsCount = isProjectAdmin
     ? managedProjects.length
@@ -419,8 +455,8 @@ export default async function DashboardPage(props: {
           width: "100%",
           paddingTop: "24px",
           paddingBottom: "96px",
-          paddingLeft: "clamp(20px, 4vw, 40px)",
-          paddingRight: "clamp(20px, 4vw, 40px)",
+          paddingLeft: "clamp(14px, 4vw, 40px)",
+          paddingRight: "clamp(14px, 4vw, 40px)",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",

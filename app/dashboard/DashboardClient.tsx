@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 
 export interface PRContribution {
@@ -75,14 +75,83 @@ export default function DashboardClient({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Selected Day in Daily Contributions (Default to Today or Sep 14)
+  // Responsive visible days count: 3 on mobile (<640px), 5 on tablet (<1024px), 7 on desktop
+  const [visibleDaysCount, setVisibleDaysCount] = useState(7);
+
+  useEffect(() => {
+    const updateCount = () => {
+      if (typeof window !== "undefined") {
+        if (window.innerWidth < 640) {
+          setVisibleDaysCount(3);
+        } else if (window.innerWidth < 1024) {
+          setVisibleDaysCount(5);
+        } else {
+          setVisibleDaysCount(7);
+        }
+      }
+    };
+    updateCount();
+    window.addEventListener("resize", updateCount);
+    return () => window.removeEventListener("resize", updateCount);
+  }, []);
+
+  // Dynamic today ISO calculation (fallback to SSR day if present)
+  const [todayIso, setTodayIso] = useState<string>(() => {
+    const found = initialDaily.find((d) => d.isToday);
+    return found ? found.fullDate : "";
+  });
+
+  // Selected Day in Daily Contributions (Default to Today)
   const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
     const todayIdx = initialDaily.findIndex((d) => d.isToday);
     return todayIdx !== -1 ? todayIdx : 0;
   });
 
-  // Daily Contributions carousel window index (for < and > navigation)
-  const [dailyWindowStart, setDailyWindowStart] = useState(0);
+  // Daily Contributions carousel window index (centers Today in visible days)
+  const [dailyWindowStart, setDailyWindowStart] = useState(() => {
+    const todayIdx = initialDaily.findIndex((d) => d.isToday);
+    if (todayIdx === -1) return 0;
+    const maxStart = Math.max(0, initialDaily.length - 7);
+    return Math.max(0, Math.min(todayIdx - 3, maxStart));
+  });
+
+  // Sync with client-side date on mount and re-center today when screen size/window count changes
+  useEffect(() => {
+    try {
+      const clientIso = new Intl.DateTimeFormat("en-CA").format(new Date());
+      setTodayIso(clientIso);
+      const clientTodayIdx = initialDaily.findIndex((d) => d.fullDate === clientIso);
+      if (clientTodayIdx !== -1) {
+        setSelectedDayIndex((prev) => {
+          const wasToday = initialDaily[prev]?.isToday;
+          return wasToday || prev === 0 ? clientTodayIdx : prev;
+        });
+        const centerOffset = Math.floor(visibleDaysCount / 2);
+        const maxStart = Math.max(0, initialDaily.length - visibleDaysCount);
+        setDailyWindowStart(Math.max(0, Math.min(clientTodayIdx - centerOffset, maxStart)));
+      }
+    } catch {
+      // Ignore
+    }
+  }, [initialDaily, visibleDaysCount]);
+
+  // Touch swiping handlers for mobile carousel
+  const touchStartXRef = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+    if (diff > 35) {
+      handleNextDays();
+    } else if (diff < -35) {
+      handlePrevDays();
+    }
+    touchStartXRef.current = null;
+  };
 
   // Add tech modal state
   const [isAddTechOpen, setIsAddTechOpen] = useState(false);
@@ -94,17 +163,19 @@ export default function DashboardClient({
   const roleDisplay = isProjectAdmin ? "Project Admin" : "Contributor";
   const githubUsername = profile.github || "";
 
-  // Visible daily contributions (7 days window)
+  // Visible daily contributions (responsive window size)
   const visibleDays = useMemo(() => {
-    return initialDaily.slice(dailyWindowStart, dailyWindowStart + 7);
-  }, [initialDaily, dailyWindowStart]);
+    return initialDaily.slice(dailyWindowStart, dailyWindowStart + visibleDaysCount);
+  }, [initialDaily, dailyWindowStart, visibleDaysCount]);
 
   const handlePrevDays = () => {
     setDailyWindowStart((prev) => Math.max(0, prev - 1));
   };
 
   const handleNextDays = () => {
-    setDailyWindowStart((prev) => Math.min(Math.max(0, initialDaily.length - 7), prev + 1));
+    setDailyWindowStart((prev) =>
+      Math.min(Math.max(0, initialDaily.length - visibleDaysCount), prev + 1)
+    );
   };
 
   // Helper for difficulty determination
@@ -644,14 +715,7 @@ export default function DashboardClient({
           </div>
 
           {/* Row 2: Projects Information (Managed Project for Admin / Contributed Projects for Contributor) + Tech Stack */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "16px",
-              width: "100%",
-            }}
-          >
+          <div className="dashboard-row2-grid">
             {/* Project Admin: Managed Project & Repo URL */}
             {isProjectAdmin && managedProjects.length > 0 && (
               <div
@@ -951,6 +1015,7 @@ export default function DashboardClient({
           MIDDLE SECTION: Your Daily Contributions (Starting Sep 11 with true data)
          ========================================================= */}
       <div
+        className="dashboard-section-card"
         style={{
           background: "#0d0e12",
           border: "1px solid #1c1e26",
@@ -962,6 +1027,7 @@ export default function DashboardClient({
       >
         {/* Header */}
         <div
+          className="daily-contributions-header"
           style={{
             display: "flex",
             alignItems: "center",
@@ -1005,6 +1071,7 @@ export default function DashboardClient({
 
           {/* Date Range Badge Starting Sep 11 */}
           <div
+            className="daily-date-badge"
             style={{
               display: "flex",
               alignItems: "center",
@@ -1029,65 +1096,44 @@ export default function DashboardClient({
         </div>
 
         {/* Daily Carousel Container */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
           {/* Prev Button */}
           <button
             onClick={handlePrevDays}
             disabled={dailyWindowStart === 0}
+            className="daily-carousel-arrow"
             style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "#13141a",
-              border: "1px solid #232530",
-              color: "#8b929e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               cursor: dailyWindowStart === 0 ? "not-allowed" : "pointer",
               opacity: dailyWindowStart === 0 ? 0.3 : 1,
-              flexShrink: 0,
-              transition: "all 0.15s ease",
             }}
             aria-label="Previous days"
           >
             &lt;
           </button>
 
-          {/* 7 Days Grid */}
+          {/* Days Grid (Responsive) */}
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gap: "12px",
-              flex: 1,
-            }}
+            className="daily-carousel-grid"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
             {visibleDays.map((day, idx) => {
               const actualIdx = dailyWindowStart + idx;
               const isSelected = selectedDayIndex === actualIdx;
+              const isToday = todayIso ? day.fullDate === todayIso : Boolean(day.isToday);
               return (
                 <button
                   key={day.fullDate}
                   onClick={() => setSelectedDayIndex(actualIdx)}
+                  className="daily-day-card"
                   style={{
-                    borderRadius: "14px",
-                    padding: "16px 8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    textAlign: "center",
-                    position: "relative",
                     background: isSelected ? "#3a2213" : "#13141a",
                     border: isSelected ? "1.5px solid #d97706" : "1px solid #232530",
                     boxShadow: isSelected ? "0 0 20px rgba(217, 119, 6, 0.25)" : "none",
-                    transition: "all 0.15s ease",
                   }}
                 >
                   {/* Today Badge */}
-                  {day.isToday && (
+                  {isToday && (
                     <span
                       style={{
                         fontSize: "10px",
@@ -1104,6 +1150,7 @@ export default function DashboardClient({
 
                   {/* Date */}
                   <span
+                    className="daily-card-date"
                     style={{
                       fontSize: "12px",
                       fontWeight: 600,
@@ -1116,6 +1163,7 @@ export default function DashboardClient({
 
                   {/* Count */}
                   <span
+                    className="daily-card-count"
                     style={{
                       fontSize: "20px",
                       fontWeight: 800,
@@ -1129,6 +1177,7 @@ export default function DashboardClient({
 
                   {/* Subtitle */}
                   <span
+                    className="daily-card-sub"
                     style={{
                       fontSize: "11px",
                       color: isSelected ? "#fed7aa" : "#6b7280",
@@ -1144,21 +1193,11 @@ export default function DashboardClient({
           {/* Next Button */}
           <button
             onClick={handleNextDays}
-            disabled={dailyWindowStart >= initialDaily.length - 7}
+            disabled={dailyWindowStart >= initialDaily.length - visibleDaysCount}
+            className="daily-carousel-arrow"
             style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "#13141a",
-              border: "1px solid #232530",
-              color: "#8b929e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: dailyWindowStart >= initialDaily.length - 7 ? "not-allowed" : "pointer",
-              opacity: dailyWindowStart >= initialDaily.length - 7 ? 0.3 : 1,
-              flexShrink: 0,
-              transition: "all 0.15s ease",
+              cursor: dailyWindowStart >= initialDaily.length - visibleDaysCount ? "not-allowed" : "pointer",
+              opacity: dailyWindowStart >= initialDaily.length - visibleDaysCount ? 0.3 : 1,
             }}
             aria-label="Next days"
           >
@@ -1184,6 +1223,7 @@ export default function DashboardClient({
           BOTTOM SECTION: PRs Table (Managed Repository PRs)
          ========================================================= */}
       <div
+        className="dashboard-section-card"
         style={{
           background: "#0d0e12",
           border: "1px solid #1c1e26",
@@ -1195,6 +1235,7 @@ export default function DashboardClient({
       >
         {/* Table Header Controls */}
         <div
+          className="pr-table-header"
           style={{
             display: "flex",
             alignItems: "center",
@@ -1239,9 +1280,9 @@ export default function DashboardClient({
           </div>
 
           {/* Search & Difficulty Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="pr-table-controls" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {/* Search Input */}
-            <div style={{ position: "relative" }}>
+            <div className="pr-search-wrapper" style={{ position: "relative" }}>
               <input
                 type="text"
                 placeholder="Search PRs..."
@@ -1250,6 +1291,7 @@ export default function DashboardClient({
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
+                className="pr-search-input"
                 style={{
                   background: "#14151b",
                   border: "1px solid #232530",
@@ -1304,7 +1346,7 @@ export default function DashboardClient({
 
         {/* PRs Data Table */}
         <div style={{ width: "100%", overflowX: "auto" }}>
-          <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table style={{ width: "100%", minWidth: "680px", textAlign: "left", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr
                 style={{
@@ -1337,7 +1379,11 @@ export default function DashboardClient({
                         day: "numeric",
                         year: "numeric",
                       })
-                    : "Sep 13, 2026";
+                    : new Date().toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
 
                   const repoName = c.project_name || "Project";
 
