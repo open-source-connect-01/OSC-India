@@ -1039,7 +1039,147 @@ input:autofill {
 
 @media (max-width: 640px) {
   .dashboard-metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-metrics-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* Dashboard Row 2 (Managed / Contributed Projects + Tech Stack) */
+.dashboard-row2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+@media (max-width: 860px) {
+  .dashboard-row2-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Section Cards on mobile */
+@media (max-width: 640px) {
+  .dashboard-section-card {
+    padding: 18px 14px !important;
+    border-radius: 16px !important;
+  }
+  .daily-contributions-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  .daily-date-badge {
+    align-self: flex-start !important;
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+  }
+}
+
+/* Daily Contributions Carousel */
+.daily-carousel-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 1023px) {
+  .daily-carousel-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+}
+@media (max-width: 639px) {
+  .daily-carousel-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
+.daily-day-card {
+  border-radius: 14px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+@media (max-width: 639px) {
+  .daily-day-card {
+    padding: 12px 3px !important;
+    border-radius: 10px !important;
+  }
+  .daily-card-count {
+    font-size: 17px !important;
+  }
+  .daily-card-date {
+    font-size: 11px !important;
+  }
+  .daily-card-sub {
+    font-size: 9.5px !important;
+    letter-spacing: -0.02em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+}
+
+.daily-carousel-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #13141a;
+  border: 1px solid #232530;
+  color: #8b929e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+@media (max-width: 639px) {
+  .daily-carousel-arrow {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* PR Table Controls on mobile */
+@media (max-width: 640px) {
+  .pr-table-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+  .pr-table-controls {
+    width: 100% !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+  .pr-search-wrapper {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .pr-search-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 

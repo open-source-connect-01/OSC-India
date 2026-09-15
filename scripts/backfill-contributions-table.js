@@ -306,8 +306,31 @@ async function main() {
   console.log("Resetting all profile scores...");
   await admin.from("profiles").update({ score: 0, merged_prs: 0, projects_count: 0 }).neq("id", "00000000-0000-0000-0000-000000000000");
 
-  console.log(`Updating ${contributorStats.size} contributor profiles...`);
+  // 5. Build unified score map across contributors and project admins
+  const unifiedUserStats = new Map(); // userId -> { points, count, repos: Set }
+
   for (const [userId, stats] of contributorStats.entries()) {
+    if (!unifiedUserStats.has(userId)) {
+      unifiedUserStats.set(userId, { points: 0, count: 0, repos: new Set() });
+    }
+    const u = unifiedUserStats.get(userId);
+    u.points += stats.points;
+    u.count += stats.count;
+    stats.repos.forEach((r) => u.repos.add(r));
+  }
+
+  for (const [adminUid, ast] of projectAdminStats.entries()) {
+    if (!unifiedUserStats.has(adminUid)) {
+      unifiedUserStats.set(adminUid, { points: 0, count: 0, repos: new Set() });
+    }
+    const u = unifiedUserStats.get(adminUid);
+    u.points += ast.points;
+    u.count += ast.count;
+    ast.repos.forEach((r) => u.repos.add(r));
+  }
+
+  console.log(`Updating ${unifiedUserStats.size} active profiles...`);
+  for (const [userId, stats] of unifiedUserStats.entries()) {
     await admin
       .from("profiles")
       .update({
@@ -318,33 +341,13 @@ async function main() {
       .or(`user_id.eq.${userId},id.eq.${userId}`);
   }
 
-  console.log(`Updating ${projectAdminStats.size} project admin profiles...`);
-  for (const [adminUid, ast] of projectAdminStats.entries()) {
-    await admin
-      .from("profiles")
-      .update({
-        score: ast.points,
-        merged_prs: ast.count,
-        projects_count: ast.repos.size || 1,
-      })
-      .or(`user_id.eq.${adminUid},id.eq.${adminUid}`);
-  }
-
   // 6. Update public.leaderboard_stats
   const nowIso = new Date().toISOString();
   const leaderboardStats = [];
-  for (const [userId, stats] of contributorStats.entries()) {
+  for (const [userId, stats] of unifiedUserStats.entries()) {
     leaderboardStats.push({
       user_id: userId,
       total_points: stats.points,
-      current_streak: 1,
-      updated_at: nowIso,
-    });
-  }
-  for (const [adminUid, ast] of projectAdminStats.entries()) {
-    leaderboardStats.push({
-      user_id: adminUid,
-      total_points: ast.points,
       current_streak: 1,
       updated_at: nowIso,
     });
