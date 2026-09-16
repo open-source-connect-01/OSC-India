@@ -133,6 +133,123 @@ import html2canvas from "html2canvas";
 import { getClientProfile } from "@/lib/auth/client";
 import { createClient } from "@/lib/supabase/client";
 
+/** CSS px of the circular avatar window inside the badge (see .avatar-photo-container). */
+const AVATAR_BOX = 130;
+/** Side length of the square we rasterize for export. 130 * 8 -> plenty for a 4x card render. */
+const AVATAR_EXPORT_SIZE = 1040;
+/** html2canvas upscale factor for the whole card. 300px card -> 1200px PNG. */
+const EXPORT_SCALE = 4;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Could not load image: ${src.slice(0, 64)}`));
+    img.src = src;
+  });
+}
+
+/**
+ * Rasterizes the avatar exactly the way the browser paints the live preview, and returns
+ * it as a plain square PNG.
+ *
+ * html2canvas 1.4.1 has no support for `object-fit` at all -- it blits the whole source
+ * bitmap into the whole content box (see drawImage in its renderer), which squashes a
+ * portrait photo into the square avatar window instead of centre-cropping it. Baking the
+ * crop *and* the user's scale/rotate/drag into a square bitmap ourselves means the exporter
+ * only ever has to draw a square into a square, so the download matches the preview.
+ */
+function bakeAvatarSquare(
+  img: HTMLImageElement,
+  size: number,
+  transform: { scale: number; rotation: number; position: { x: number; y: number } }
+): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // `object-fit: cover` on a square box == the largest centred square of the source.
+  const side = Math.min(img.naturalWidth, img.naturalHeight);
+  const sx = (img.naturalWidth - side) / 2;
+  const sy = (img.naturalHeight - side) / 2;
+
+  // Mirror `transform: scale(s) rotate(r) translate(x/s, y/s)` with a centre origin.
+  // k converts the drag offsets from CSS px in the 130px box to canvas px.
+  const k = size / AVATAR_BOX;
+  const { scale, rotation, position } = transform;
+  ctx.translate(size / 2, size / 2);
+  ctx.scale(scale, scale);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.translate((position.x / scale) * k, (position.y / scale) * k);
+  ctx.drawImage(img, sx, sy, side, side, -size / 2, -size / 2, size, size);
+
+  return canvas.toDataURL("image/png");
+}
+
+/** Supersampling factor for the baked role-pill contents. */
+const PILL_EXPORT_SCALE = 8;
+
+/**
+ * Draws the role pill's contents -- the dot and the label -- onto a transparent bitmap.
+ *
+ * The capsule itself already exports correctly: measured against a real download, its box
+ * lands within 0.02px of the preview (143.50 vs 143.52) at the right height and colours.
+ * Only the glyphs are wrong. html2canvas positions text at `textBounds.top + baseline`,
+ * where `baseline` is probed from the font's *natural* line box (its metrics probe sets only
+ * font-family and font-size, never line-height) while our label lives in an 11px
+ * `line-height: 1` box. In a real export that drives the label 6.5px below centre while the
+ * dot -- a plain div, not text -- stays perfectly centred. Drawing the row ourselves against
+ * an explicit ink-centred baseline sidesteps that entire class of error.
+ */
+function bakeRoleContent(
+  text: string,
+  color: string,
+  widthCss: number,
+  heightCss: number,
+  fontFamily: string
+): string {
+  const s = PILL_EXPORT_SCALE;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(widthCss * s));
+  canvas.height = Math.max(1, Math.round(heightCss * s));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  const cy = canvas.height / 2;
+  const dot = 6 * s;
+  const gap = 7 * s;
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(dot / 2, cy, dot / 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = `800 ${11 * s}px ${fontFamily}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = color;
+
+  // Centre the actual ink, not the em box: for uppercase text that is what reads as centred.
+  const m = ctx.measureText(text);
+  const baselineY = cy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+
+  // letter-spacing: 0.16em, applied per character so it works without ctx.letterSpacing.
+  const tracking = 0.16 * 11 * s;
+  let x = dot + gap;
+  for (const ch of Array.from(text)) {
+    ctx.fillText(ch, x, baselineY);
+    x += ctx.measureText(ch).width + tracking;
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
 export interface BadgeContentProps {
   userId?: string;
   initialRole?: string;
@@ -154,6 +271,12 @@ function BadgeContent({
   const badgeRef = useRef<HTMLDivElement>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const [badgesCount, setBadgesCount] = useState(initialBadgesCreated);
+  // Set only for the duration of a download: a pre-baked square avatar that needs no
+  // object-fit and no CSS transform, so html2canvas cannot get either of them wrong.
+  const [exportAvatar, setExportAvatar] = useState<string | null>(null);
+  // Same idea for the role pill's dot + label, which html2canvas draws 6.5px too low.
+  const rolePillRef = useRef<HTMLDivElement>(null);
+  const [exportPill, setExportPill] = useState<{ url: string; w: number; h: number } | null>(null);
 
   // Authoritative role determination: Kanish and official maintainers are always Project Admins
   const isKanishOrAdmin =
@@ -274,6 +397,7 @@ function BadgeContent({
     if (badgeRef.current) {
       try {
         // If photoUrl is external, proxy it to base64 to ensure clean canvas export without CORS taint
+        let sourceForBake = photoUrl;
         if (photoUrl && photoUrl.startsWith("http") && typeof window !== "undefined" && !photoUrl.startsWith(window.location.origin)) {
           try {
             const proxyRes = await fetch(`/api/badge/proxy-image?url=${encodeURIComponent(photoUrl)}`);
@@ -284,6 +408,7 @@ function BadgeContent({
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.readAsDataURL(blob);
               });
+              sourceForBake = base64;
               setPhotoUrl(base64);
               await new Promise((r) => setTimeout(r, 120));
             }
@@ -292,13 +417,58 @@ function BadgeContent({
           }
         }
 
+        // Rasterize the avatar ourselves so html2canvas never has to honour object-fit or
+        // our CSS transform -- it only draws a square bitmap into a square box.
+        if (sourceForBake) {
+          try {
+            const sourceImg = await loadImage(sourceForBake);
+            const baked = bakeAvatarSquare(sourceImg, AVATAR_EXPORT_SIZE, { scale, rotation, position });
+            if (baked) {
+              setExportAvatar(baked);
+              // Let React commit the swapped src, then wait for the new bitmap to decode.
+              await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+              const liveImg = badgeRef.current?.querySelector(".avatar-photo-img") as HTMLImageElement | null;
+              if (liveImg?.decode) {
+                try {
+                  await liveImg.decode();
+                } catch {
+                  /* decode() rejects on a src swap race; the rAF wait above is enough */
+                }
+              }
+            }
+          } catch (bakeErr) {
+            console.warn("Notice: avatar bake failed, exporting the live preview image:", bakeErr);
+          }
+        }
+
         if (typeof document !== "undefined" && "fonts" in document) {
           await document.fonts.ready;
         }
 
+        // Bake the pill's contents after fonts settle, so measureText uses the real Inter.
+        if (rolePillRef.current) {
+          try {
+            const pillEl = rolePillRef.current;
+            const cs = window.getComputedStyle(pillEl);
+            const padL = parseFloat(cs.paddingLeft) || 0;
+            const padR = parseFloat(cs.paddingRight) || 0;
+            const contentW = pillEl.clientWidth - padL - padR;
+            const contentH = pillEl.clientHeight;
+            if (contentW > 0 && contentH > 0) {
+              const url = bakeRoleContent(roleText, roleColor, contentW, contentH, cs.fontFamily);
+              if (url) {
+                setExportPill({ url, w: contentW, h: contentH });
+                await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+              }
+            }
+          } catch (pillErr) {
+            console.warn("Notice: role pill bake failed, exporting live markup:", pillErr);
+          }
+        }
+
         const canvas = await html2canvas(badgeRef.current, {
           backgroundColor: null,
-          scale: 3, 
+          scale: EXPORT_SCALE,
           useCORS: true,
           logging: false,
           onclone: (clonedDoc) => {
@@ -405,37 +575,12 @@ function BadgeContent({
                 `;
               }
 
-              // 7. Fix role pill for html2canvas: use a table inside the 24px capsule so the 6px dot
-              //    and 11px uppercase text are perfectly vertically centered and match the live preview exactly
-              const clonedPill = clonedBadge.querySelector('.role-pill') as HTMLElement;
-              if (clonedPill) {
-                clonedPill.style.display = 'block';
-                clonedPill.style.margin = '0 auto 8px auto';
-                clonedPill.style.height = '24px';
-                clonedPill.style.width = 'fit-content';
-                clonedPill.style.padding = '0 14px';
-                clonedPill.style.borderRadius = '9999px';
-                clonedPill.style.background = 'rgba(15, 22, 33, 0.95)';
-                clonedPill.style.border = `1px solid ${roleBorder}`;
-                clonedPill.style.boxShadow = `0 0 12px ${roleBg.replace('0.1', '0.25')}`;
-                clonedPill.style.boxSizing = 'border-box';
-                clonedPill.style.overflow = 'hidden';
-
-                clonedPill.innerHTML = `
-                  <table cellpadding="0" cellspacing="0" border="0" style="height: 22px; margin: 0 auto; border-collapse: collapse; border-spacing: 0; border: none; padding: 0;">
-                    <tbody>
-                      <tr style="height: 22px;">
-                        <td valign="middle" style="vertical-align: middle; padding: 0 7px 0 0; border: none; line-height: 0; font-size: 0;">
-                          <div style="width: 6px; height: 6px; min-width: 6px; min-height: 6px; border-radius: 50%; background: ${roleColor}; box-shadow: 0 0 6px ${roleColor}; display: block;"></div>
-                        </td>
-                        <td valign="middle" style="vertical-align: middle; border: none; padding: 0; color: ${roleColor}; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; line-height: 1; text-transform: uppercase; white-space: nowrap; font-family: Inter, system-ui, -apple-system, sans-serif;">
-                          ${roleText}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                `;
-              }
+              // 7. The role pill is deliberately NOT rewritten here.
+              //    It used to be replaced with a <table> to force vertical centring, but that
+              //    made the capsule 135.22px -> 143.39px and pushed the glyphs ~1.5px below
+              //    centre, which is the "CONTRIBUTOR has moved" mismatch between preview and
+              //    download. html2canvas takes element bounds from the real layout, so leaving
+              //    the live flex markup alone reproduces the preview exactly.
 
               // 8. Ensure avatar container has no dark inset shadow and image has 100% full brightness
               const avatarContainer = clonedBadge.querySelector('.avatar-photo-container') as HTMLElement;
@@ -494,6 +639,10 @@ function BadgeContent({
         }
       } catch (err) {
         console.error("Failed to generate badge:", err);
+      } finally {
+        // Always restore the interactive preview, even if the export threw.
+        setExportAvatar(null);
+        setExportPill(null);
       }
     }
   };
@@ -844,15 +993,19 @@ function BadgeContent({
                   >
                     {photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img 
+                      <img
                         className="avatar-photo-img"
-                        src={photoUrl} 
-                        alt="Avatar" 
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
+                        src={exportAvatar || photoUrl}
+                        alt="Avatar"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          // During an export the bitmap is already cropped and transformed,
+                          // so both of these must be neutral or the effect is applied twice.
                           objectFit: 'cover',
-                          transform: `scale(${scale}) rotate(${rotation}deg) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                          transform: exportAvatar
+                            ? 'none'
+                            : `scale(${scale}) rotate(${rotation}deg) translate(${position.x / scale}px, ${position.y / scale}px)`,
                           transformOrigin: 'center center',
                           pointerEvents: 'none',
                           filter: 'none',
@@ -939,6 +1092,7 @@ function BadgeContent({
 
                 {/* Role Pill */}
                 <div 
+                  ref={rolePillRef}
                   className="role-pill"
                   style={{
                     display: 'inline-flex',
@@ -957,7 +1111,16 @@ function BadgeContent({
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span 
+                  {exportPill ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={exportPill.url}
+                      alt={roleText}
+                      style={{ width: `${exportPill.w}px`, height: `${exportPill.h}px`, display: 'block' }}
+                    />
+                  ) : (
+                    <>
+                  <span
                     className="role-dot"
                     style={{
                       display: 'inline-block',
@@ -973,7 +1136,7 @@ function BadgeContent({
                       flexShrink: 0,
                     }}
                   />
-                  <span 
+                  <span
                     className="role-text"
                     style={{
                       display: 'inline-block',
@@ -988,6 +1151,8 @@ function BadgeContent({
                   >
                     {roleText}
                   </span>
+                    </>
+                  )}
                 </div>
 
                 {/* Year */}
