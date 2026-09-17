@@ -235,40 +235,6 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
       >
         {/* Left Column: Heading & Description */}
         <div style={{ flex: 1, minWidth: "300px", maxWidth: "620px" }}>
-          {/* Green Pill Badge */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "5px 14px",
-              borderRadius: "9999px",
-              background: "rgba(16, 185, 129, 0.08)",
-              border: "1px solid rgba(16, 185, 129, 0.25)",
-              marginBottom: "16px",
-            }}
-          >
-            <span
-              style={{
-                width: "7px",
-                height: "7px",
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 8px #10b981",
-              }}
-            />
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#10b981",
-                letterSpacing: "0.02em",
-              }}
-            >
-              Open Source. Real Impact.
-            </span>
-          </div>
-
           {/* Heading */}
           <h1
             style={{

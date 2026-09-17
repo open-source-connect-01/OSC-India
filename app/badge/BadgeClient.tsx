@@ -687,10 +687,6 @@ function BadgeContent({
         
         {/* Header Section */}
         <div style={{ textAlign: 'center', marginBottom: '64px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-          <div style={{ background: roleBg, border: `1px solid ${roleColor}`, color: roleColor, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: roleColor }}></div>
-            {roleText} Recognition
-          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight" style={{ marginBottom: '16px', wordBreak: 'break-word' }}>
             {roleText === "CONTRIBUTOR" ? "Contributor" : roleText === "MENTOR" ? "Mentor" : roleText === "PROJECT ADMIN" ? "Project Admin" : "Admin"} <span style={{ color: roleColor }}>Badge</span>
           </h1>
