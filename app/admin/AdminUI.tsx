@@ -614,33 +614,6 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
         {/* Header */}
         <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "36px", flexWrap: "wrap", gap: "20px" }}>
           <div>
-            <div 
-              style={{ 
-                display: "inline-flex", 
-                alignItems: "center", 
-                gap: "8px", 
-                background: "rgba(255, 117, 24, 0.08)", 
-                border: "1px solid rgba(255, 117, 24, 0.25)", 
-                color: "#FF8822", 
-                padding: "5px 14px", 
-                borderRadius: "20px", 
-                fontSize: "11px", 
-                fontWeight: 700, 
-                letterSpacing: "0.08em",
-                marginBottom: "14px" 
-              }}
-            >
-              <span 
-                style={{ 
-                  width: "6px", 
-                  height: "6px", 
-                  borderRadius: "50%", 
-                  background: "#FF7518", 
-                  boxShadow: "0 0 8px #FF7518" 
-                }} 
-              />
-              RESTRICTED • ADMIN COMMAND CENTER
-            </div>
             <h1 style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.025em" }} className="text-white">
               Command Center
             </h1>
