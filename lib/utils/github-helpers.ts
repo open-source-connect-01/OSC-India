@@ -37,12 +37,11 @@ export const OFFICIAL_COMPETITION_REPOS = [
   "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
   "https://github.com/pratyushjha06/Dockfleet",
   "https://github.com/aashutoshkumarbhardwaj/CreatorOs",
-  "https://github.com/ItsVikasA/Innovision-Open-Source",
   "https://github.com/AseemPrasad/Air-Quality-Intelligence",
 ] as const;
 
 /**
- * Normalized lowercase "owner/repo" slugs for all 17 official competition repositories.
+ * Normalized lowercase "owner/repo" slugs for all official competition repositories.
  */
 export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
   "sandesh13fr/tcalc",
@@ -60,7 +59,6 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
   "abhaycs24/cbsot_sip_project-1-",
   "pratyushjha06/dockfleet",
   "aashutoshkumarbhardwaj/creatoros",
-  "itsvikasa/innovision-open-source",
   "aseemprasad/air-quality-intelligence",
 ]);
 

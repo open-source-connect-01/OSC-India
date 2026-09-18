@@ -1,5 +1,5 @@
 -- ==============================================================================
--- OSC-India: Seed 17 Active Projects
+-- OSC-India: Seed 16 Active Projects
 -- Populates the public.projects table with official tracked repositories
 -- ==============================================================================
 
@@ -67,13 +67,6 @@ VALUES
   'https://github.com/logeshv586-code/AIproductfactory',
   'AI Product Factory is an open-source agentic platform that helps developers and non-technical founders transform product ideas into implementation-ready software projects. It connects AI models, generates evidence-backed plans, designs architectures, and coordinates specialized AI agents to generate, test, and improve applications.
 <!--meta:{"language":"TypeScript","accentColor":"#ec4899","stars":"0","forks":"0"}-->'
-),
-(
-  'f61fb2ac-2858-4965-a3c6-e24ee653384b',
-  'InnoVision',
-  'https://github.com/ItsVikasA/Innovision-Open-Source',
-  'InnoVision is an AI-powered learning platform that dynamically generates structured and engaging courses from any topic. It aims to overcome limitations of traditional courses by providing a flexible and adaptive learning experience powered by AI and machine learning.
-<!--meta:{"language":"JavaScript","accentColor":"#38bdf8","stars":"0","forks":"1"}-->'
 ),
 (
   'db1a69c6-e71d-4ba8-87ff-922af70bc5bc',
