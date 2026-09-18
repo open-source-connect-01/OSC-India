@@ -817,12 +817,12 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
             className="hover:border-[rgba(167,139,250,0.3)]"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <span style={{ color: "#a78bfa", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em" }}>ADMINS & MODS</span>
+              <span style={{ color: "#a78bfa", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em" }}>SITE ADMINS</span>
               <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(167,139,250,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa" }}>
                 <ShieldCheckIcon className="w-4 h-4" />
               </div>
             </div>
-            <div style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.02em" }}>{(metrics.admins ?? 0) + (metrics.projectAdmins ?? 0)}</div>
+            <div style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.02em" }}>{metrics.admins ?? 0}</div>
           </div>
 
           {/* Active Projects */}

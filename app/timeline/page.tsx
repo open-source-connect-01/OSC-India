@@ -56,8 +56,8 @@ export default function TimelinePage() {
       date: "26th August, 2026",
       description: "Open-source organizations, startups, and independent maintainers are invited to onboard their projects.",
       location: "GitHub / Maintainer Portal",
-      ctaText: "Admin Portal",
-      ctaHref: "/admin",
+      ctaText: "Explore Projects",
+      ctaHref: "/projects",
     },
     {
       phase: "PHASE 04",

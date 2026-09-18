@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
+import type { ProjectAdminData } from "@/lib/actions/project-admin";
 
 export interface PRContribution {
   id: string;
@@ -52,6 +53,7 @@ interface DashboardClientProps {
   weeklyScore?: number;
   weeklyPRs?: number;
   rank?: number | null;
+  projectAdminData?: ProjectAdminData | null;
 }
 
 export default function DashboardClient({
@@ -63,7 +65,8 @@ export default function DashboardClient({
   contributedProjects = [],
   weeklyScore = 120,
   weeklyPRs = 12,
-  rank = 1,
+  rank = null,
+  projectAdminData = null,
 }: DashboardClientProps) {
   const [techStack, setTechStack] = useState<string[]>(
     profile.tech_stack && profile.tech_stack.length > 0
@@ -487,231 +490,282 @@ export default function DashboardClient({
 
         {/* RIGHT COLUMN: 4 Metric Cards (Row 1) + Managed Project/Contributions & Tech Stack (Row 2) */}
         <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
-          {/* Row 1: 4 Metric Cards */}
+          {/* Row 1: Metric Cards — project-admins see admin overview; contributors see score/rank */}
           <div
             className="dashboard-metrics-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: isProjectAdmin ? "repeat(3, 1fr)" : "repeat(4, 1fr)",
               gap: "16px",
               width: "100%",
             }}
           >
-            {/* 1. Total Merit Score */}
-            <div
-              style={{
-                background: "#0d0e12",
-                border: "1px solid #1c1e26",
-                borderRadius: "18px",
-                padding: "20px 18px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "140px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
-                    background: "#2a180c",
-                    border: "1px solid rgba(255, 117, 24, 0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#ff7518",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                    <path d="M4 22h16" />
-                    <path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34" />
-                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-                  </svg>
+            {isProjectAdmin ? (
+              <>
+                {/* Admin Card 1: PRs Merged on their project */}
+                <div style={{ background: "#0d0e12", border: "1px solid #1c1e26", borderRadius: "18px", padding: "20px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "140px", boxSizing: "border-box" }}>
+                  <div>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#2a180c", border: "1px solid rgba(255, 117, 24, 0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff7518", marginBottom: "12px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M13 6h3a2 2 0 0 1 2 2v7" /><line x1="6" y1="9" x2="6" y2="21" /></svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>PRs Merged</div>
+                    <div style={{ fontSize: "28px", fontWeight: 800, color: "#ff7518", lineHeight: 1 }}>
+                      {projectAdminData?.totalPRsMerged ?? 0}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px" }}>On your project</div>
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
-                  Total Merit Score
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <span style={{ fontSize: "28px", fontWeight: 800, color: "#ff7518", lineHeight: 1 }}>
-                    {profile.score}
-                  </span>
-                  <span style={{ fontSize: "12px", color: "#8b929e" }}>pts</span>
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  color: "#22c55e",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  marginTop: "8px",
-                }}
-              >
-                <span>↑</span> +{weeklyScore} this week
-              </div>
-            </div>
 
-            {/* 2. Merged PRs */}
-            <div
-              style={{
-                background: "#0d0e12",
-                border: "1px solid #1c1e26",
-                borderRadius: "18px",
-                padding: "20px 18px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "140px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
-                    background: "#2a180c",
-                    border: "1px solid rgba(255, 117, 24, 0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#ff7518",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="18" cy="18" r="3" />
-                    <circle cx="6" cy="6" r="3" />
-                    <path d="M13 6h3a2 2 0 0 1 2 2v7" />
-                    <line x1="6" y1="9" x2="6" y2="21" />
-                  </svg>
+                {/* Admin Card 2: Unique Contributors */}
+                <div style={{ background: "#0d0e12", border: "1px solid #1c1e26", borderRadius: "18px", padding: "20px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "140px", boxSizing: "border-box" }}>
+                  <div>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#0c1e30", border: "1px solid rgba(56, 189, 248, 0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#38bdf8", marginBottom: "12px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>Contributors</div>
+                    <div style={{ fontSize: "28px", fontWeight: 800, color: "#38bdf8", lineHeight: 1 }}>
+                      {projectAdminData?.totalContributors ?? 0}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px" }}>Unique contributors</div>
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
-                  Merged PRs
-                </div>
-                <div style={{ fontSize: "28px", fontWeight: 800, color: "#ff7518", lineHeight: 1 }}>
-                  {profile.merged_prs}
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  color: "#22c55e",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  marginTop: "8px",
-                }}
-              >
-                <span>↑</span> +{weeklyPRs} this week
-              </div>
-            </div>
 
-            {/* 3. Projects */}
-            <div
-              style={{
-                background: "#0d0e12",
-                border: "1px solid #1c1e26",
-                borderRadius: "18px",
-                padding: "20px 18px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "140px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div>
+                {/* Admin Card 3: Total Points Awarded */}
+                <div style={{ background: "#0d0e12", border: "1px solid #1c1e26", borderRadius: "18px", padding: "20px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "140px", boxSizing: "border-box" }}>
+                  <div>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#0b2218", border: "1px solid rgba(34, 197, 94, 0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#22c55e", marginBottom: "12px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>Points Awarded</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                      <span style={{ fontSize: "28px", fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
+                        {projectAdminData?.totalPointsAwarded ?? 0}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "#8b929e" }}>pts</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px" }}>Given to contributors</div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* 1. Total Merit Score */}
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
-                    background: "#0c1e30",
-                    border: "1px solid rgba(56, 189, 248, 0.25)",
+                    background: "#0d0e12",
+                    border: "1px solid #1c1e26",
+                    borderRadius: "18px",
+                    padding: "20px 18px",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#38bdf8",
-                    marginBottom: "12px",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "140px",
+                    boxSizing: "border-box",
                   }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
-                  </svg>
+                  <div>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "#2a180c",
+                        border: "1px solid rgba(255, 117, 24, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ff7518",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                      </svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
+                      Total Merit Score
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                      <span style={{ fontSize: "28px", fontWeight: 800, color: "#ff7518", lineHeight: 1 }}>
+                        {profile.score}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "#8b929e" }}>pts</span>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#22c55e",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      marginTop: "8px",
+                    }}
+                  >
+                    <span>↑</span> +{weeklyScore} this week
+                  </div>
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
-                  Projects
-                </div>
-                <div style={{ fontSize: "28px", fontWeight: 800, color: "#38bdf8", lineHeight: 1 }}>
-                  {profile.projects_count}
-                </div>
-              </div>
-              <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px" }}>
-                Active contribution
-              </div>
-            </div>
 
-            {/* 4. Rank */}
-            <Link
-              href="/leaderboard"
-              style={{
-                background: "#0d0e12",
-                border: "1px solid #1c1e26",
-                borderRadius: "18px",
-                padding: "20px 18px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "140px",
-                boxSizing: "border-box",
-                textDecoration: "none",
-                transition: "all 0.15s ease",
-              }}
-              className="hover:border-[rgba(245,158,11,0.4)] hover:bg-[#121319]"
-            >
-              <div>
+                {/* 2. Merged PRs */}
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
-                    background: "#281f0b",
-                    border: "1px solid rgba(245, 158, 11, 0.25)",
+                    background: "#0d0e12",
+                    border: "1px solid #1c1e26",
+                    borderRadius: "18px",
+                    padding: "20px 18px",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#f59e0b",
-                    marginBottom: "12px",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "140px",
+                    boxSizing: "border-box",
                   }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="8" r="6" />
-                    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                  </svg>
+                  <div>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "#2a180c",
+                        border: "1px solid rgba(255, 117, 24, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ff7518",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="18" cy="18" r="3" />
+                        <circle cx="6" cy="6" r="3" />
+                        <path d="M13 6h3a2 2 0 0 1 2 2v7" />
+                        <line x1="6" y1="9" x2="6" y2="21" />
+                      </svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
+                      Merged PRs
+                    </div>
+                    <div style={{ fontSize: "28px", fontWeight: 800, color: "#ff7518", lineHeight: 1 }}>
+                      {profile.merged_prs}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#22c55e",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      marginTop: "8px",
+                    }}
+                  >
+                    <span>↑</span> +{weeklyPRs} this week
+                  </div>
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
-                  Rank
+
+                {/* 3. Projects */}
+                <div
+                  style={{
+                    background: "#0d0e12",
+                    border: "1px solid #1c1e26",
+                    borderRadius: "18px",
+                    padding: "20px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "140px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "#0c1e30",
+                        border: "1px solid rgba(56, 189, 248, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#38bdf8",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+                      </svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
+                      Projects
+                    </div>
+                    <div style={{ fontSize: "28px", fontWeight: 800, color: "#38bdf8", lineHeight: 1 }}>
+                      {profile.projects_count}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px" }}>
+                    Active contribution
+                  </div>
                 </div>
-                <div style={{ fontSize: "28px", fontWeight: 800, color: "#f59e0b", lineHeight: 1 }}>
-                  #{rank && rank > 0 ? rank : 1}
-                </div>
-              </div>
-              <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span>Leaderboard position</span>
-                <span style={{ color: "#f59e0b", fontWeight: 700 }}>&rarr;</span>
-              </div>
-            </Link>
+
+                {/* 4. Rank */}
+                <Link
+                  href="/leaderboard"
+                  style={{
+                    background: "#0d0e12",
+                    border: "1px solid #1c1e26",
+                    borderRadius: "18px",
+                    padding: "20px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "140px",
+                    boxSizing: "border-box",
+                    textDecoration: "none",
+                    transition: "all 0.15s ease",
+                  }}
+                  className="hover:border-[rgba(245,158,11,0.4)] hover:bg-[#121319]"
+                >
+                  <div>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "#281f0b",
+                        border: "1px solid rgba(245, 158, 11, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#f59e0b",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                      </svg>
+                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#8b929e", marginBottom: "4px" }}>
+                      Rank
+                    </div>
+                    <div style={{ fontSize: "28px", fontWeight: 800, color: "#f59e0b", lineHeight: 1 }}>
+                      #{rank && rank > 0 ? rank : 1}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>Leaderboard position</span>
+                    <span style={{ color: "#f59e0b", fontWeight: 700 }}>&rarr;</span>
+                  </div>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Row 2: Projects Information (Managed Project for Admin / Contributed Projects for Contributor) + Tech Stack */}
@@ -1218,6 +1272,8 @@ export default function DashboardClient({
           &ldquo;Consistency today, impact tomorrow.&rdquo;
         </div>
       </div>
+
+
 
       {/* =========================================================
           BOTTOM SECTION: PRs Table (Managed Repository PRs)

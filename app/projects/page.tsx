@@ -273,7 +273,8 @@ export default async function ProjectsPage() {
       email: currentUser.email || "",
       avatar: av,
       role: r,
-      isAdmin: r === "project-admin",
+      isAdmin: r === "admin",
+      isProjectAdmin: r === "project-admin",
       github: gh,
     };
   }

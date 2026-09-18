@@ -75,9 +75,9 @@ async function requireAdminOrProjectAdmin() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const hasAccess = profile?.role === "admin" || profile?.role === "project-admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
+  const hasAccess = profile?.role === "admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
   if (profErr || !profile || !hasAccess) {
-    throw new Error("Forbidden. Elevated privileges required.");
+    throw new Error("Forbidden. Admin privileges required.");
   }
 
   return { user, profile };
@@ -131,7 +131,7 @@ export async function getAdminData() {
         const email = (u.email || p.email || "").toLowerCase().trim();
         const isOwner = email === adminEmail;
         const role = isOwner ? "admin" : (p.role || "contributor");
-        const isAdmin = Boolean(isOwner || role === "admin" || role === "project-admin");
+        const isAdmin = Boolean(isOwner || role === "admin");
 
         return {
           id: p.user_id || p.id,

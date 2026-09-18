@@ -95,19 +95,35 @@ export async function GET(request: Request) {
       updated_at: string;
     }> = [];
 
+    // Protect project-admins and admins: they must never receive leaderboard score
+    const { data: allProfiles } = await admin
+      .from("profiles")
+      .select("id, user_id, role");
+
+    const nonScoringUsers = new Set<string>();
+    for (const p of allProfiles || []) {
+      if (p.role === "admin" || p.role === "project-admin") {
+        if (p.id) nonScoringUsers.add(p.id);
+        if (p.user_id) nonScoringUsers.add(p.user_id);
+      }
+    }
+
     for (const [userId, agg] of userAggMap.entries()) {
+      const isNonScoring = nonScoringUsers.has(userId);
+      const computedScore = isNonScoring ? 0 : agg.score;
+
       profileUpdates.push({
         id: userId,
         user_id: userId,
-        score: agg.score,
+        score: computedScore,
         merged_prs: agg.merged_prs,
         projects_count: agg.projects.size,
       });
 
       leaderboardStats.push({
         user_id: userId,
-        total_points: agg.score,
-        current_streak: 1,
+        total_points: computedScore,
+        current_streak: isNonScoring ? 0 : 1,
         updated_at: nowIso,
       });
     }

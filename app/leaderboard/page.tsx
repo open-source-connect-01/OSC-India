@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeaderboardUI from "./LeaderboardUI";
 import { redirect } from "next/navigation";
+import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export default async function LeaderboardPage(props: {
       .from("profiles")
       .select("*, users(name, email, image)", { count: "exact" })
       .neq("role", "admin")
+      .neq("role", "project-admin")
       .order("score", { ascending: false })
       .order("merged_prs", { ascending: false })
       .order("projects_count", { ascending: false })
@@ -111,15 +113,19 @@ export default async function LeaderboardPage(props: {
       currentProfile = profileById;
     }
 
-    profilePayload = {
-      id: user.id,
-      name: currentProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Contributor",
-      email: user.email,
-      avatar: currentProfile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-      role: currentProfile?.role || user.user_metadata?.role || "contributor",
-      isAdmin: Boolean(currentProfile?.is_admin || user.user_metadata?.is_admin),
-      github: currentProfile?.github || user.user_metadata?.github || user.user_metadata?.user_name || null,
-    };
+      const userGh = (currentProfile?.github || user.user_metadata?.github || user.user_metadata?.user_name || "").replace(/^@+/, "").trim().toLowerCase();
+      const userRole = currentProfile?.role || user.user_metadata?.role || "contributor";
+      const isProjAdmin = userRole === "project-admin" || (userGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(userGh));
+      profilePayload = {
+        id: user.id,
+        name: currentProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Contributor",
+        email: user.email,
+        avatar: currentProfile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        role: isProjAdmin ? "project-admin" : userRole,
+        isAdmin: !isProjAdmin && (userRole === "admin" || Boolean(currentProfile?.is_admin)),
+        isProjectAdmin: Boolean(isProjAdmin),
+        github: currentProfile?.github || user.user_metadata?.github || user.user_metadata?.user_name || null,
+      };
   }
 
   return (
