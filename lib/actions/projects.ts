@@ -124,16 +124,6 @@ const DEFAULT_PROJECTS: ProjectItem[] = [
     forks: "0",
   },
   {
-    id: "f61fb2ac-2858-4965-a3c6-e24ee653384b",
-    title: "InnoVision",
-    description: "InnoVision is an AI-powered learning platform that dynamically generates structured and engaging courses from any topic. It aims to overcome limitations of traditional courses by providing a flexible and adaptive learning experience powered by AI and machine learning.",
-    githubUrl: "https://github.com/ItsVikasA/Innovision-Open-Source",
-    language: "JavaScript",
-    accentColor: "#38bdf8",
-    stars: "0",
-    forks: "1",
-  },
-  {
     id: "db1a69c6-e71d-4ba8-87ff-922af70bc5bc",
     title: "CreatorOS",
     description: "CreatorOS is an open-source all-in-one dashboard for creators to manage their business from a single platform. It combines bio links, DM automation, CRM, analytics, and content planning, reducing the need to use multiple separate creator tools.",
@@ -377,7 +367,7 @@ export async function getDbAllowedRepoSlugs(): Promise<Set<string>> {
     return _slugCache;
   }
 
-  // Always include the exact official 17 competition repositories
+  // Always include the exact official competition repositories
   const allowed = new Set<string>(OFFICIAL_COMPETITION_REPO_SLUGS);
   try {
     const projects = await getProjects();

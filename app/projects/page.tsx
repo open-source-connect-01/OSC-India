@@ -177,18 +177,6 @@ const PROJECT_META_MAP: Record<string, ProjectMeta> = {
     openIssues: "5",
     unassignedIssues: "0",
   },
-  "InnoVision": {
-    tags: ["JavaScript", "EdTech", "AI/ML", "React"],
-    category: "Machine Learning / AI",
-    iconType: "brain",
-    accentColor: "#38bdf8",
-    mockupDescription:
-      "An AI-powered learning platform that dynamically generates structured and engaging courses from any topic with adaptive personalization.",
-    stars: "4",
-    forks: "14",
-    openIssues: "19",
-    unassignedIssues: "19",
-  },
   "JugaadLang": {
     tags: ["Python", "Compiler", "Language Design"],
     category: "Systems & Low Level",

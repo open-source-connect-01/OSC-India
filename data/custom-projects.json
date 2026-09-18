@@ -168,18 +168,6 @@
     "unassignedIssues": "2"
   },
   {
-    "id": "f61fb2ac-2858-4965-a3c6-e24ee653384b",
-    "title": "InnoVision",
-    "description": "InnoVision is an AI-powered learning platform that dynamically generates structured and engaging courses from any topic. It aims to overcome limitations of traditional courses by providing a flexible and adaptive learning experience powered by AI and machine learning.",
-    "githubUrl": "https://github.com/ItsVikasA/Innovision-Open-Source",
-    "language": "JavaScript",
-    "accentColor": "#38bdf8",
-    "stars": "4",
-    "forks": "14",
-    "openIssues": "19",
-    "unassignedIssues": "19"
-  },
-  {
     "id": "28593cc9-2bda-4cab-b139-9c748ffcd434",
     "title": "JugaadLang",
     "description": "JugaadLang is a modern programming language designed with Hindi keywords for Indian developers. It provides an alternative programming experience where developers can write code using familiar Hindi terminology.",

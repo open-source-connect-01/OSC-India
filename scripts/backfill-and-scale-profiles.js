@@ -61,7 +61,6 @@ const OFFICIAL_REPOS = [
   "abhaycs24/CBSOT_SIP_PROJECT-1-",
   "pratyushjha06/Dockfleet",
   "aashutoshkumarbhardwaj/CreatorOs",
-  "ItsVikasA/Innovision-Open-Source",
   "AseemPrasad/Air-Quality-Intelligence",
 ];
 
