@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
 
 export interface ClientProfilePayload {
   id: string;
@@ -7,6 +8,7 @@ export interface ClientProfilePayload {
   avatar: string | null;
   role: string;
   isAdmin: boolean;
+  isProjectAdmin: boolean;
   github: string | null;
 }
 
@@ -213,7 +215,12 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       (github ? `https://avatars.githubusercontent.com/${github}` : null);
 
     const role = profile?.role || user.user_metadata?.role || "contributor";
-    const isAdmin = Boolean(role === "admin" || user.user_metadata?.is_admin);
+    const cleanGh = (github || "").replace(/^@+/, "").trim().toLowerCase();
+    const isProjectAdmin = Boolean(
+      role === "project-admin" || (cleanGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(cleanGh))
+    );
+    // Project admins are organizers and never site admins
+    const isAdmin = !isProjectAdmin && role === "admin";
 
     return {
       id: user.id,
@@ -222,6 +229,7 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       avatar,
       role,
       isAdmin,
+      isProjectAdmin,
       github,
     };
   } catch (err: unknown) {

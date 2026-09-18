@@ -7,8 +7,7 @@ export const DIFFICULTY_POINTS: Record<DifficultyLevel, number> = {
   expert: 50,
 };
 
-/** Points awarded to a project-admin for every OSCI'26-labelled PR they merge. */
-export const MERGER_POINTS = 5;
+
 
 export const DIFFICULTY_RANK: Record<DifficultyLevel, number> = {
   easy: 1,
@@ -60,6 +59,28 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
   "pratyushjha06/dockfleet",
   "aashutoshkumarbhardwaj/creatoros",
   "aseemprasad/air-quality-intelligence",
+]);
+
+/**
+ * 16 Official Project Admin GitHub handles mapped to repository patterns.
+ */
+export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
+  "sandesh13fr",
+  "srishtisonam",
+  "jugaadlang",
+  "soumyamishra-7",
+  "srigadaakshaykumar",
+  "sushmitha-2007",
+  "kanishjebamathewm",
+  "adityapainuli",
+  "l3tchupkt",
+  "sidaksethi-singh",
+  "logeshv586-code",
+  "gauravkarakoti",
+  "abhaycs24",
+  "pratyushjha06",
+  "aashutoshkumarbhardwaj",
+  "aseemprasad",
 ]);
 
 /**

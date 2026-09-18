@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { syncUserProfile } from "@/lib/auth/syncProfile";
 import Link from "next/link";
 import DashboardClient, { PRContribution, DayContribution, ProjectSummary } from "./DashboardClient";
+import { getProjectAdminData, ProjectAdminData } from "@/lib/actions/project-admin";
+import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -190,7 +192,12 @@ export default async function DashboardPage(props: {
     (profile?.role as string) ||
     (isOwnProfile ? (currentUser?.user_metadata?.role as string) : "") ||
     "contributor";
-  const isProjectAdmin = rawRole === "project-admin";
+  const isOfficialProjectAdmin = OFFICIAL_PROJECT_ADMIN_HANDLES.has(githubUsername.toLowerCase());
+  const isProjectAdmin = rawRole === "project-admin" || isOfficialProjectAdmin;
+
+  if (isOwnProfile && isProjectAdmin) {
+    redirect("/projectadmin");
+  }
 
   const badgesCreated = Number(profile?.badges_created || 0);
   const techStack =
@@ -210,51 +217,23 @@ export default async function DashboardPage(props: {
     .order("contributed_at", { ascending: false });
   const allContributions = allContributionsRaw || [];
 
-  // 5. For Project Admin: find their managed project and its statistics
+  // 5. For Project Admin: fetch managed project data via dedicated server action
+  let projectAdminData: ProjectAdminData | null = null;
   let managedProjects: ProjectSummary[] = [];
-  let relevantPRs: typeof allContributions = [];
 
-  if (isProjectAdmin) {
-    const matchedProjects = allProjects.filter((p) => {
-      if (!p.github_repo_url) return false;
-      const urlLower = p.github_repo_url.toLowerCase();
-      return (
-        Boolean(githubUsername) &&
-        (urlLower.includes(`/${githubUsername.toLowerCase()}/`) ||
-         urlLower.endsWith(`/${githubUsername.toLowerCase()}`))
-      );
-    });
-
-    const matchedProjectIds = new Set(matchedProjects.map((p) => p.id));
-    relevantPRs = allContributions.filter((c) => {
-      if (c.project_id && matchedProjectIds.has(c.project_id)) return true;
-      if (
-        c.github_url &&
-        matchedProjects.some((p) => {
-          const short = p.name.split("–")[0].trim().toLowerCase();
-          return c.github_url.toLowerCase().includes(short);
-        })
-      ) {
-        return true;
-      }
-      return false;
-    });
-
-    managedProjects = matchedProjects.map((proj) => {
-      const projShort = proj.name.split("–")[0].trim().toLowerCase();
-      const projContribs = relevantPRs.filter(
-        (c) => c.project_id === proj.id || (c.github_url && c.github_url.toLowerCase().includes(projShort))
-      );
-      const prCount = projContribs.length;
-      const totalPoints = projContribs.reduce((sum, c) => sum + (c.points_awarded || 10), 0);
-      return {
-        id: proj.id,
-        name: proj.name,
-        url: proj.github_repo_url,
-        prCount,
-        totalPoints,
-      };
-    });
+  if (isProjectAdmin && githubUsername) {
+    projectAdminData = await getProjectAdminData(githubUsername);
+    if (projectAdminData) {
+      managedProjects = [
+        {
+          id: projectAdminData.project.id,
+          name: projectAdminData.project.name,
+          url: projectAdminData.project.url,
+          prCount: projectAdminData.totalPRsMerged,
+          totalPoints: projectAdminData.totalPointsAwarded,
+        },
+      ];
+    }
   }
 
   // 6. For Contributors: group user's contributions by project and calculate points
@@ -295,10 +274,8 @@ export default async function DashboardPage(props: {
     }
   }
 
-  // 7. Select PRs to display in the main contributions table
-  const displayContributions = isProjectAdmin
-    ? relevantPRs
-    : userContribs;
+  // 7. Select PRs to display in the main contributions table (contributors only for project-admins, own PRs for contributors)
+  const displayContributions = userContribs;
 
   const allPRs: PRContribution[] = displayContributions.map((c) => {
     const project = Array.isArray(c.projects) ? c.projects[0] : c.projects;
@@ -371,8 +348,10 @@ export default async function DashboardPage(props: {
   }
 
   // 9. Metric counts: score & merged PRs
-  const totalPoints =
-    typeof profile?.score === "number" && profile.score >= 0
+  // Project admins always have score=0 — they are organizers, not competitors.
+  const totalPoints = isProjectAdmin
+    ? 0
+    : typeof profile?.score === "number" && profile.score >= 0
       ? profile.score
       : allPRs.reduce((sum, p) => sum + (p.points_awarded || 10), 0);
 
@@ -388,8 +367,9 @@ export default async function DashboardPage(props: {
     return !isNaN(t) && t >= sevenDaysAgoTime;
   });
 
-  const weeklyScore =
-    weeklyContributions.length > 0
+  const weeklyScore = isProjectAdmin
+    ? 0
+    : weeklyContributions.length > 0
       ? weeklyContributions.reduce((sum, p) => sum + (p.points_awarded || 10), 0)
       : allPRs
           .filter((p) => p.contributed_at && p.contributed_at.startsWith(todayIso.slice(0, 7)))
@@ -404,20 +384,22 @@ export default async function DashboardPage(props: {
     ? managedProjects.length
     : (contributedProjects.length || Number(profile?.projects_count || 0));
 
-  // 10. Calculate user's leaderboard rank
-  let userRank = 1;
-  try {
-    const { count, error } = await admin
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .neq("role", "admin")
-      .or(`score.gt.${totalPoints},and(score.eq.${totalPoints},merged_prs.gt.${mergedPRs})`);
+  // 10. Calculate leaderboard rank (project-admins are excluded — they don't compete)
+  let userRank: number | null = null;
+  if (!isProjectAdmin) {
+    try {
+      const { count, error } = await admin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .neq("role", "admin")
+        .or(`score.gt.${totalPoints},and(score.eq.${totalPoints},merged_prs.gt.${mergedPRs})`);
 
-    if (!error && count !== null) {
-      userRank = count + 1;
+      if (!error && count !== null) {
+        userRank = count + 1;
+      }
+    } catch (err) {
+      console.warn("Notice: Rank computation error:", err);
     }
-  } catch (err) {
-    console.warn("Notice: Rank computation error:", err);
   }
 
   // Viewer profile for Navbar
@@ -427,7 +409,8 @@ export default async function DashboardPage(props: {
     email: currentUser?.email || (githubUsername ? `${githubUsername}@osc-india.org` : ""),
     avatar: (currentUser?.user_metadata?.avatar_url as string) || (currentUser?.user_metadata?.picture as string) || avatar,
     role: isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor"),
-    isAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "project-admin",
+    isAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "admin",
+    isProjectAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "project-admin",
     github: isOwnProfile ? githubUsername : ((currentUser?.user_metadata?.user_name as string) || ""),
   };
 
@@ -610,6 +593,7 @@ export default async function DashboardPage(props: {
           weeklyScore={weeklyScore}
           weeklyPRs={weeklyPRs}
           rank={userRank}
+          projectAdminData={projectAdminData}
         />
       </main>
 

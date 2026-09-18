@@ -10,7 +10,6 @@ import {
   extractRepoSlug,
   DIFFICULTY_POINTS,
   DIFFICULTY_RANK,
-  MERGER_POINTS,
   DifficultyLevel,
   getGitHubAuthHeaders,
 } from "@/lib/utils/github-helpers";
@@ -209,7 +208,9 @@ export async function syncGitHubContribution(
         }
       }
 
-      const mergerScore = validMergePRs.reduce((sum, p) => sum + p.points, 0);
+      // Project admins earn zero personal score — they are organizers, not competitors.
+      // Their pr_merge rows are kept (points_awarded=0) for display in the Project Admin dashboard.
+      const mergerScore = 0;
       const contributedRepos = new Set(validMergePRs.map((p) => p.repoSlug));
 
       // Fetch projects to map repoSlug -> project_id
@@ -230,7 +231,7 @@ export async function syncGitHubContribution(
             type: "pr_merge",
             github_url: `merged:${pr.htmlUrl}`,
             status: "merged",
-            points_awarded: pr.points,
+            points_awarded: 0, // admins earn no points
             contributed_at: pr.mergedAt,
           });
         }
@@ -243,8 +244,8 @@ export async function syncGitHubContribution(
       await admin.from("leaderboard_stats").upsert(
         {
           user_id: userId,
-          total_points: mergerScore,
-          current_streak: 1,
+          total_points: 0,
+          current_streak: 0,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -258,8 +259,8 @@ export async function syncGitHubContribution(
             user_metadata: {
               ...userData.user.user_metadata,
               github: handle,
-              score: mergerScore,
-              merged_prs: 0,
+              score: 0,
+              merged_prs: validMergePRs.length,
               projects_count: contributedRepos.size,
             },
           });
@@ -273,8 +274,8 @@ export async function syncGitHubContribution(
           .from("profiles")
           .update({
             github: handle,
-            score: mergerScore,
-            merged_prs: 0,
+            score: 0,
+            merged_prs: validMergePRs.length,
             projects_count: contributedRepos.size,
           })
           .eq(updateCol, userId);
@@ -284,8 +285,8 @@ export async function syncGitHubContribution(
         success: true,
         handle,
         role: "project-admin",
-        score: mergerScore,
-        merged_prs: 0,
+        score: 0,
+        merged_prs: validMergePRs.length,
         projects_count: contributedRepos.size,
         merged_pr_count: validMergePRs.length,
       };
@@ -1018,7 +1019,7 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 7. Project-admin pass: award MERGER_POINTS for each OSCI'26-labelled PR in their repository or merged by them
+  // 7. Project-admin pass: record merged PRs for dashboard display (no points awarded)
   for (const user of allCandidateUsers) {
     const meta = user.user_metadata || {};
     const prof = profileMap.get(user.id);
@@ -1066,13 +1067,14 @@ export async function syncAllProjectsAndContributors() {
     if (mergedByAdmin.size === 0) continue;
 
     const userMergePrs = Array.from(mergedByAdmin.values());
-    const mergerScore = userMergePrs.reduce((sum, p) => sum + p.points, 0);
+    // Project admins earn zero personal score — organizers, not competitors.
+    const mergerScore = 0;
     const primaryHandle = prof?.github || meta.github || meta.user_name || Array.from(userHandles)[0] || null;
     const adminProjects = new Set(userMergePrs.map((m) => m.repoSlug));
 
     const targetAdminUserId = prof?.user_id || user.id;
 
-    // Store each merged PR as a "pr_merge" contribution row
+    // Store each merged PR as a "pr_merge" contribution row (points_awarded=0)
     for (const m of userMergePrs) {
       const projId = projectMap.get(m.repoSlug);
       if (projId && m.htmlUrl) {
@@ -1083,7 +1085,7 @@ export async function syncAllProjectsAndContributors() {
           // Unique key: prefix URL so it doesn't collide with the contributor's "pr" row
           github_url: `merged:${m.htmlUrl}`,
           status: "merged",
-          points_awarded: m.points,
+          points_awarded: 0, // admins earn no points
           contributed_at: m.mergedAt,
         });
       }
@@ -1091,8 +1093,8 @@ export async function syncAllProjectsAndContributors() {
 
     allLeaderboardStats.push({
       user_id: targetAdminUserId,
-      total_points: mergerScore,
-      current_streak: 1,
+      total_points: 0,
+      current_streak: 0,
       updated_at: nowIso,
     });
 
@@ -1100,7 +1102,7 @@ export async function syncAllProjectsAndContributors() {
       id: prof?.id || user.id,
       user_id: targetAdminUserId,
       github: primaryHandle,
-      score: mergerScore,
+      score: 0,
       merged_prs: userMergePrs.length,
       projects_count: adminProjects.size,
     });
@@ -1110,7 +1112,7 @@ export async function syncAllProjectsAndContributors() {
       meta: {
         ...meta,
         github: primaryHandle,
-        score: mergerScore,
+        score: 0,
         merged_prs: userMergePrs.length,
         projects_count: adminProjects.size,
       },
