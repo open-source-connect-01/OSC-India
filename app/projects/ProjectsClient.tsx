@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 export interface ProjectData {
   id: string;
@@ -200,26 +200,7 @@ function ProjectIcon({ type, color }: { type?: string; color: string }) {
 }
 
 export default function ProjectsClient({ projects }: ProjectsClientProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
-
   const orderedProjects = projects;
-
-  // Pagination calculation
-  const totalPages = Math.max(1, Math.ceil(orderedProjects.length / itemsPerPage));
-  const activePage = Math.min(currentPage, totalPages);
-  const startIdx = (activePage - 1) * itemsPerPage;
-  const paginatedProjects = orderedProjects.slice(startIdx, startIdx + itemsPerPage);
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      const catalogEl = document.getElementById("projects-catalog");
-      if (catalogEl) {
-        catalogEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
 
 
   return (
@@ -482,9 +463,9 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
 
       {/* =========================================================
-          PROJECTS CARDS GRID (3 Columns x 3 Rows = 9 per page)
+          PROJECTS CARDS GRID
          ========================================================= */}
-      {paginatedProjects.length === 0 ? (
+      {orderedProjects.length === 0 ? (
         <div
           style={{
             background: "#0d0e12",
@@ -524,7 +505,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
         </div>
       ) : (
         <div className="projects-catalog-grid" style={{ width: "100%", marginBottom: "36px" }}>
-          {paginatedProjects.map((project) => {
+          {orderedProjects.map((project) => {
             const accent = project.accentColor || "#FF7518";
             const tags = Array.isArray(project.tags) && project.tags.length > 0
               ? project.tags
@@ -737,103 +718,6 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
           })}
         </div>
       )}
-
-      {/* =========================================================
-          PAGINATION & PROJECTS COUNTER
-         ========================================================= */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "16px",
-          width: "100%",
-          paddingTop: "8px",
-        }}
-      >
-        {/* Pagination Buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* Prev button */}
-          <button
-            onClick={() => handlePageChange(activePage - 1)}
-            disabled={activePage <= 1}
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "#12141a",
-              border: "1px solid #1f222c",
-              color: "#8b929e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: activePage <= 1 ? "not-allowed" : "pointer",
-              opacity: activePage <= 1 ? 0.35 : 1,
-              transition: "all 0.15s ease",
-            }}
-            aria-label="Previous Page"
-          >
-            &lt;
-          </button>
-
-          {/* Page numbers */}
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-            const isSelected = activePage === pageNum;
-            return (
-              <button
-                key={pageNum}
-                onClick={() => handlePageChange(pageNum)}
-                style={{
-                  minWidth: "36px",
-                  height: "36px",
-                  padding: "0 10px",
-                  borderRadius: "8px",
-                  background: isSelected ? "#ff7518" : "#12141a",
-                  border: isSelected ? "none" : "1px solid #1f222c",
-                  color: isSelected ? "#ffffff" : "#8b929e",
-                  fontSize: "13px",
-                  fontWeight: isSelected ? 700 : 500,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-                className={!isSelected ? "hover:text-white hover:border-[#ff7518]" : ""}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-
-          {/* Next button */}
-          <button
-            onClick={() => handlePageChange(activePage + 1)}
-            disabled={activePage >= totalPages}
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "#12141a",
-              border: "1px solid #1f222c",
-              color: "#8b929e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: activePage >= totalPages ? "not-allowed" : "pointer",
-              opacity: activePage >= totalPages ? 0.35 : 1,
-              transition: "all 0.15s ease",
-            }}
-            aria-label="Next Page"
-          >
-            &gt;
-          </button>
-        </div>
-
-        {/* Counter text */}
-        <div style={{ fontSize: "13px", color: "#8b929e", fontWeight: 500 }}>
-          Showing {paginatedProjects.length > 0 ? startIdx + 1 : 0} –{" "}
-          {startIdx + paginatedProjects.length} of {projects.length} projects
-        </div>
-      </div>
     </div>
   );
 }
