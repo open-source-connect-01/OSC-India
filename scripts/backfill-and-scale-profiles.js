@@ -46,28 +46,15 @@ if (token) {
 
 // 3. Official 17 Competition Repositories
 const OFFICIAL_REPOS = [
-  "Sandesh13fr/TCalc",
-  "SrishtiSonam/AtomicBinding",
-  "JugaadLang/jugaadlang",
-  "SoumyaMishra-7/WalletWise",
-  "SrigadaAkshayKumar/stock",
-  "Sushmitha-2007/Eco-vision",
-  "KanishJebaMathewM/Truxify",
-  "AdityaPainuli/clippings-vids",
-  "l3tchupkt/adaptq",
-  "SidakSethi-Singh/LawSathi-Rag",
-  "logeshv586-code/AIproductfactory",
-  "GauravKarakoti/Secureflow",
-  "abhaycs24/CBSOT_SIP_PROJECT-1-",
-  "pratyushjha06/Dockfleet",
-  "aashutoshkumarbhardwaj/CreatorOs",
-  "AseemPrasad/Air-Quality-Intelligence",
   "parvathishetty405-max/nari-shield",
+  "abhaycs24/cbsot_sip_project-1-",
   "akash290802/smart_prompt_extn",
   "tanishqmahadik/netguard",
   "tanmayjaiswal28/halo-v1-app",
   "anu5565/lifeos-ai",
+  "sushmitha-2007/eco-vision",
   "revatikadam0607/devmomentum",
+  "sidaksethi-singh/lawsathi-rag",
   "kaushik6715/team-alpha",
   "rootdeveloperds/j.a.r.v.i.s.",
   "onitshubham14/c-practicle",
@@ -140,8 +127,7 @@ async function main() {
   let totalMerged = 0;
 
   const repoPromises = OFFICIAL_REPOS.map(async (repo) => {
-    const slug = repo.toLowerCase();
-    const maxPages = slug.includes("truxify") || slug.includes("secureflow") ? 5 : 3;
+    const maxPages = 5;
     const pullsForRepo = [];
 
     for (let page = 1; page <= maxPages; page++) {

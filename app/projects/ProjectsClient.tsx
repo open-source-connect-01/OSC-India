@@ -203,14 +203,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  // Always ensure Truxify is the 1st project
-  const orderedProjects = [...projects].sort((a, b) => {
-    const isTruxifyA = a.title.toLowerCase().includes("truxify") || a.githubUrl.toLowerCase().includes("truxify");
-    const isTruxifyB = b.title.toLowerCase().includes("truxify") || b.githubUrl.toLowerCase().includes("truxify");
-    if (isTruxifyA && !isTruxifyB) return -1;
-    if (!isTruxifyA && isTruxifyB) return 1;
-    return 0;
-  });
+  const orderedProjects = projects;
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(orderedProjects.length / itemsPerPage));

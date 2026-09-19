@@ -737,10 +737,10 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 4. Primary Pass: Fast repo-centric sweep of all 17 competition projects via REST API
+  // 4. Primary Pass: Fast repo-centric sweep of all competition projects via REST API
   for (const repoSlug of Array.from(allowedSlugs)) {
     try {
-      const maxPages = repoSlug === "kanishjebamathewm/truxify" ? 10 : 5;
+      const maxPages = 5;
       let page = 1;
       while (page <= maxPages) {
         const url = `https://api.github.com/repos/${repoSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
