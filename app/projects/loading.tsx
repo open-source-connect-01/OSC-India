@@ -31,8 +31,8 @@ export default function ProjectsLoading() {
         }}
       >
         {/* Hero Skeleton */}
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "40px", marginBottom: "44px", flexWrap: "wrap" }} className="animate-pulse">
-          <div style={{ flex: 1, minWidth: "300px", maxWidth: "620px" }}>
+        <div style={{ marginBottom: "44px", maxWidth: "760px" }} className="animate-pulse">
+          <div>
             <div style={{ width: "160px", height: "26px", borderRadius: "9999px", background: "rgba(255,255,255,0.08)", marginBottom: "16px" }} />
             <div style={{ width: "280px", height: "48px", borderRadius: "8px", background: "rgba(255,255,255,0.12)", marginBottom: "16px" }} />
             <div style={{ width: "100%", height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.06)", marginBottom: "8px" }} />
@@ -41,7 +41,6 @@ export default function ProjectsLoading() {
               <div style={{ width: "160px", height: "44px", borderRadius: "9999px", background: "rgba(255,117,24,0.3)" }} />
             </div>
           </div>
-          <div style={{ width: "380px", height: "200px", borderRadius: "16px", background: "rgba(255,255,255,0.04)" }} />
         </div>
 
 
