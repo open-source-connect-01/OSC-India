@@ -4,24 +4,24 @@
     "title": "Customer Segmentation and Churn Prediction",
     "description": "Delivers an end-to-end Machine Learning and Predictive Analytics pipeline designed to uncover hidden behavioral patterns and proactively identify customer churn risks using K-Means clustering and Random Forest classification.",
     "githubUrl": "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
-    "language": "Python",
+    "language": "Jupyter Notebook",
     "accentColor": "#a855f7",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "stars": "8",
+    "forks": "28",
+    "openIssues": "20",
+    "unassignedIssues": "20"
   },
   {
     "id": "585baad7-e2ca-46aa-bc1d-12d1040abb9e",
     "title": "Eco vision",
     "description": "An AI-based environmental monitoring project that uses computer vision and data analysis to identify waste, monitor environmental conditions, and promote smart waste management.",
     "githubUrl": "https://github.com/Sushmitha-2007/Eco-vision",
-    "language": "Python",
+    "language": "JavaScript",
     "accentColor": "#22c55e",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "stars": "7",
+    "forks": "20",
+    "openIssues": "10",
+    "unassignedIssues": "10"
   },
   {
     "id": "86052217-73a6-4f0a-80b1-3288fd3e4388",
@@ -30,10 +30,10 @@
     "githubUrl": "https://github.com/SidakSethi-Singh/LawSathi-Rag",
     "language": "Python",
     "accentColor": "#eab308",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "stars": "7",
+    "forks": "26",
+    "openIssues": "29",
+    "unassignedIssues": "29"
   },
   {
     "id": "cf66728e-67dd-444d-9536-bf05ccf8e581",
@@ -42,10 +42,10 @@
     "githubUrl": "https://github.com/RootDeveloperDS/J.A.R.V.I.S.",
     "language": "Python",
     "accentColor": "#0284c7",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "stars": "9",
+    "forks": "12",
+    "openIssues": "1",
+    "unassignedIssues": "1"
   },
   {
     "id": "a7ccbff8-f3fd-4a07-a9d4-fba5a667490d",
@@ -55,9 +55,9 @@
     "language": "C",
     "accentColor": "#64748b",
     "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "forks": "2",
+    "openIssues": "4",
+    "unassignedIssues": "4"
   },
   {
     "id": "823673b1-14f7-4de1-8944-836dd8486a17",
@@ -78,20 +78,8 @@
     "githubUrl": "https://github.com/kaushik6715/Team-Alpha",
     "language": "JavaScript",
     "accentColor": "#10b981",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
-  },
-  {
-    "id": "f61fb2ac-2858-4965-a3c6-e24ee653384b",
-    "title": "Innovision",
-    "description": "An AI-powered adaptive learning platform that dynamically generates structured, personalized curriculum and courses on demand for any topic.",
-    "githubUrl": "https://github.com/ItsVikasA/Innovision-Open-Source",
-    "language": "JavaScript",
-    "accentColor": "#38bdf8",
-    "stars": "0",
-    "forks": "0",
+    "stars": "1",
+    "forks": "1",
     "openIssues": "0",
     "unassignedIssues": "0"
   },
@@ -140,8 +128,8 @@
     "accentColor": "#10b981",
     "stars": "0",
     "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "openIssues": "6",
+    "unassignedIssues": "6"
   },
   {
     "id": "bbd4b878-1802-46cf-81a0-6bc098e118a4",
@@ -150,10 +138,10 @@
     "githubUrl": "https://github.com/revatikadam0607/DevMomentum",
     "language": "JavaScript",
     "accentColor": "#3b82f6",
-    "stars": "0",
-    "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "stars": "1",
+    "forks": "1",
+    "openIssues": "2",
+    "unassignedIssues": "2"
   },
   {
     "id": "f180dd00-fb06-43b0-bbb5-815d88dd2b8a",
@@ -163,7 +151,7 @@
     "language": "Python",
     "accentColor": "#f97316",
     "stars": "0",
-    "forks": "0",
+    "forks": "1",
     "openIssues": "0",
     "unassignedIssues": "0"
   },
@@ -186,7 +174,7 @@
     "githubUrl": "https://github.com/Ansika-Singh/Agni-AI",
     "language": "TypeScript",
     "accentColor": "#f43f5e",
-    "stars": "0",
+    "stars": "3",
     "forks": "0",
     "openIssues": "0",
     "unassignedIssues": "0"
@@ -198,7 +186,7 @@
     "githubUrl": "https://github.com/Vaishnav-Sabari-Girish/wireforge",
     "language": "Rust",
     "accentColor": "#dea584",
-    "stars": "0",
+    "stars": "4",
     "forks": "0",
     "openIssues": "0",
     "unassignedIssues": "0"
@@ -210,7 +198,7 @@
     "githubUrl": "https://github.com/Kunjalb29/kleatsv1",
     "language": "Java",
     "accentColor": "#f59e0b",
-    "stars": "0",
+    "stars": "1",
     "forks": "0",
     "openIssues": "0",
     "unassignedIssues": "0"
@@ -270,7 +258,7 @@
     "githubUrl": "https://github.com/Tanmay-Mirgal/scout",
     "language": "TypeScript",
     "accentColor": "#6366f1",
-    "stars": "0",
+    "stars": "1",
     "forks": "0",
     "openIssues": "0",
     "unassignedIssues": "0"
@@ -308,7 +296,7 @@
     "accentColor": "#a855f7",
     "stars": "0",
     "forks": "0",
-    "openIssues": "0",
+    "openIssues": "1",
     "unassignedIssues": "0"
   },
   {
@@ -320,8 +308,8 @@
     "accentColor": "#38bdf8",
     "stars": "0",
     "forks": "0",
-    "openIssues": "0",
-    "unassignedIssues": "0"
+    "openIssues": "2",
+    "unassignedIssues": "2"
   },
   {
     "id": "c9348e6e-7ba7-416b-897b-8cccfe94512b",
