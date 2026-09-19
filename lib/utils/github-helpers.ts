@@ -37,7 +37,6 @@ export const OFFICIAL_COMPETITION_REPOS = [
   "https://github.com/Sameer005Y/servicewale-backend",
   "https://github.com/Ansika-Singh/Agni-AI",
   "https://github.com/Vaishnav-Sabari-Girish/wireforge",
-  "https://github.com/ItsVikasA/Innovision-Open-Source",
   "https://github.com/AyushKhaitan1/FinSight",
   "https://github.com/Kunjalb29/kleatsv1",
   "https://github.com/Manyatomar21/Dnasequencematchingfrontend",
@@ -72,7 +71,6 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
   "sameer005y/servicewale-backend",
   "ansika-singh/agni-ai",
   "vaishnav-sabari-girish/wireforge",
-  "itsvikasa/innovision-open-source",
   "ayushkhaitan1/finsight",
   "kunjalb29/kleatsv1",
   "manyatomar21/dnasequencematchingfrontend",
@@ -88,7 +86,7 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
 ]);
 
 /**
- * 29 Official Project Admin GitHub handles mapped to repository patterns.
+ * 28 Official Project Admin GitHub handles mapped to repository patterns.
  */
 export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "parvathishetty405-max",
@@ -107,7 +105,6 @@ export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "sameer005y",
   "ansika-singh",
   "vaishnav-sabari-girish",
-  "itsvikasa",
   "ayushkhaitan1",
   "kunjalb29",
   "manyatomar21",

@@ -194,16 +194,6 @@ const DEFAULT_PROJECTS: ProjectItem[] = [
     forks: "0",
   },
   {
-    id: "f61fb2ac-2858-4965-a3c6-e24ee653384b",
-    title: "Innovision",
-    description: "An AI-powered adaptive learning platform that dynamically generates structured, personalized curriculum and courses on demand for any topic.",
-    githubUrl: "https://github.com/ItsVikasA/Innovision-Open-Source",
-    language: "JavaScript",
-    accentColor: "#38bdf8",
-    stars: "0",
-    forks: "0",
-  },
-  {
     id: "8edec7ee-3f19-455b-b1b8-7b361b4980a1",
     title: "FinSight - Personal Finance & Investment Tracker",
     description: "A comprehensive personal finance tracking dashboard featuring automated SIP analysis, AI forecasting, receipt optical character recognition (OCR), and investment portfolio management.",

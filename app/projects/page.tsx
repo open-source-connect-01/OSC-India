@@ -197,17 +197,6 @@ const PROJECT_META_MAP: Record<string, ProjectMeta> = {
     openIssues: "0",
     unassignedIssues: "0",
   },
-  "Innovision": {
-    tags: ["React.js","Next.js","Express.js","Node.js","Firebase","Razorpay","EdTech"],
-    category: "EdTech & Personalized Learning",
-    iconType: "brain",
-    accentColor: "#38bdf8",
-    mockupDescription: "An AI-powered adaptive learning platform that dynamically generates structured, personalized curriculum and courses on demand for any topic.",
-    stars: "0",
-    forks: "0",
-    openIssues: "0",
-    unassignedIssues: "0",
-  },
   "FinSight - Personal Finance & Investment Tracker": {
     tags: ["React","TypeScript","Node.js","Express","MongoDB","OCR","FinTech"],
     category: "FinTech & Financial Analytics",

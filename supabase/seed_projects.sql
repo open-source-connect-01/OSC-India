@@ -1,5 +1,5 @@
 -- ==============================================================================
--- OSC-India: Seed 29 Active Projects
+-- OSC-India: Seed 28 Active Projects
 -- Populates the public.projects table with official tracked repositories
 -- ==============================================================================
 
@@ -116,13 +116,6 @@ VALUES
   'https://github.com/Vaishnav-Sabari-Girish/wireforge',
   'A Braille wireframe viewer and terminal user interface (TUI) editor created in Rust using the Ratatui framework.
 <!--meta:{"language":"Rust","accentColor":"#dea584","stars":"0","forks":"0"}-->'
-),
-(
-  'f61fb2ac-2858-4965-a3c6-e24ee653384b',
-  'Innovision',
-  'https://github.com/ItsVikasA/Innovision-Open-Source',
-  'An AI-powered adaptive learning platform that dynamically generates structured, personalized curriculum and courses on demand for any topic.
-<!--meta:{"language":"JavaScript","accentColor":"#38bdf8","stars":"0","forks":"0"}-->'
 ),
 (
   '8edec7ee-3f19-455b-b1b8-7b361b4980a1',

@@ -62,7 +62,6 @@ const OFFICIAL_REPOS = [
   "sameer005y/servicewale-backend",
   "ansika-singh/agni-ai",
   "vaishnav-sabari-girish/wireforge",
-  "itsvikasa/innovision-open-source",
   "ayushkhaitan1/finsight",
   "kunjalb29/kleatsv1",
   "manyatomar21/dnasequencematchingfrontend",
