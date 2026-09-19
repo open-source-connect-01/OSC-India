@@ -206,255 +206,66 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
       {/* =========================================================
-          HERO SECTION: Left Title & Actions + Right Illustration
+          HERO SECTION: Left Title & Actions
          ========================================================= */}
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "40px",
-          flexWrap: "wrap",
           marginBottom: "44px",
           width: "100%",
+          maxWidth: "760px",
         }}
       >
-        {/* Left Column: Heading & Description */}
-        <div style={{ flex: 1, minWidth: "300px", maxWidth: "620px" }}>
-          {/* Heading */}
-          <h1
-            style={{
-              fontSize: "clamp(38px, 5.5vw, 52px)",
-              fontWeight: 800,
-              color: "#ffffff",
-              letterSpacing: "-0.025em",
-              lineHeight: 1.15,
-              margin: "0 0 16px 0",
-            }}
-          >
-            Our <span style={{ color: "#ff7518" }}>Projects</span>
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            style={{
-              fontSize: "15px",
-              color: "#8b929e",
-              lineHeight: 1.65,
-              margin: "0 0 28px 0",
-            }}
-          >
-            Explore a collection of open source projects built by the OSC India community.
-            <br />
-            Contribute, learn, and be a part of something bigger.
-          </p>
-
-          {/* Action Buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-            <button
-              onClick={() => {
-                const el = document.getElementById("projects-catalog");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{
-                padding: "12px 28px",
-                borderRadius: "9999px",
-                background: "linear-gradient(135deg, #ff7518 0%, #ff5500 100%)",
-                color: "#ffffff",
-                fontSize: "13.5px",
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 4px 16px rgba(255, 117, 24, 0.35)",
-                transition: "all 0.2s ease",
-              }}
-              className="hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Explore Projects
-            </button>
-          </div>
-        </div>
-
-        {/* Right Column: Quote Box & Open Source Graphic */}
-        <div
+        {/* Heading */}
+        <h1
           style={{
-            flex: 1,
-            minWidth: "300px",
-            maxWidth: "480px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
+            fontSize: "clamp(38px, 5.5vw, 52px)",
+            fontWeight: 800,
+            color: "#ffffff",
+            letterSpacing: "-0.025em",
+            lineHeight: 1.15,
+            margin: "0 0 16px 0",
           }}
         >
-          {/* Top Quote Card */}
-          <div
-            style={{
-              background: "rgba(20, 20, 25, 0.6)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "16px",
-              padding: "16px 22px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-              boxSizing: "border-box",
+          Our <span style={{ color: "#ff7518" }}>Projects</span>
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          style={{
+            fontSize: "15px",
+            color: "#8b929e",
+            lineHeight: 1.65,
+            margin: "0 0 28px 0",
+          }}
+        >
+          Explore a collection of open source projects built by the OSC India community.
+          <br />
+          Contribute, learn, and be a part of something bigger.
+        </p>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+          <button
+            onClick={() => {
+              const el = document.getElementById("projects-catalog");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
             }}
-          >
-            <div
-              style={{
-                fontSize: "34px",
-                lineHeight: 1,
-                fontFamily: "serif",
-                color: "#ff7518",
-                flexShrink: 0,
-                userSelect: "none",
-              }}
-            >
-              “
-            </div>
-            <div style={{ flex: 1 }}>
-              <p
-                style={{
-                  fontSize: "13px",
-                  fontStyle: "italic",
-                  color: "#d1d5db",
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
-                &ldquo;Great projects start with a great community.&rdquo;
-              </p>
-              <span
-                style={{
-                  fontSize: "11px",
-                  color: "#8b929e",
-                  display: "block",
-                  textAlign: "right",
-                  marginTop: "6px",
-                  fontWeight: 500,
-                }}
-              >
-                — OSC India
-              </span>
-            </div>
-          </div>
-
-          {/* Illustration with Floating Tags */}
-          <div
             style={{
-              position: "relative",
-              width: "100%",
-              height: "170px",
-              borderRadius: "20px",
-              background:
-                "radial-gradient(ellipse 260px 140px at 50% 50%, rgba(255, 117, 24, 0.08), transparent 75%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              padding: "12px 28px",
+              borderRadius: "9999px",
+              background: "linear-gradient(135deg, #ff7518 0%, #ff5500 100%)",
+              color: "#ffffff",
+              fontSize: "13.5px",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(255, 117, 24, 0.35)",
+              transition: "all 0.2s ease",
             }}
+            className="hover:scale-[1.02] active:scale-[0.98]"
           >
-            {/* Center Stylized Wireframe Code Window */}
-            <div
-              style={{
-                width: "210px",
-                height: "110px",
-                background: "rgba(18, 20, 26, 0.8)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                borderRadius: "12px",
-                padding: "10px 12px",
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              {/* Window dots */}
-              <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#ef4444" }} />
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#f59e0b" }} />
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }} />
-              </div>
-              {/* Code lines */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "2px" }}>
-                <div style={{ width: "45%", height: "5px", borderRadius: "3px", background: "rgba(255, 117, 24, 0.6)" }} />
-                <div style={{ width: "70%", height: "5px", borderRadius: "3px", background: "rgba(255, 255, 255, 0.15)" }} />
-                <div style={{ width: "55%", height: "5px", borderRadius: "3px", background: "rgba(59, 130, 246, 0.5)" }} />
-                <div style={{ width: "80%", height: "5px", borderRadius: "3px", background: "rgba(255, 255, 255, 0.1)" }} />
-              </div>
-            </div>
-
-            {/* Floating Tag: </> (Top Left) */}
-            <div
-              style={{
-                position: "absolute",
-                top: "16px",
-                left: "32px",
-                padding: "5px 12px",
-                borderRadius: "8px",
-                background: "#141722",
-                border: "1px solid rgba(255, 255, 255, 0.15)",
-                fontSize: "11px",
-                fontWeight: 600,
-                color: "#e5e7eb",
-                fontFamily: "monospace",
-              }}
-            >
-              &lt;/&gt;
-            </div>
-
-            {/* Floating Tag: Build (Top Right) */}
-            <div
-              style={{
-                position: "absolute",
-                top: "22px",
-                right: "42px",
-                padding: "5px 14px",
-                borderRadius: "8px",
-                background: "#24180e",
-                border: "1px solid rgba(245, 158, 11, 0.35)",
-                fontSize: "11.5px",
-                fontWeight: 600,
-                color: "#f59e0b",
-              }}
-            >
-              Build
-            </div>
-
-            {/* Floating Tag: Collaborate (Bottom Left) */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "16px",
-                left: "14px",
-                padding: "5px 14px",
-                borderRadius: "8px",
-                background: "#0c2419",
-                border: "1px solid rgba(16, 185, 129, 0.4)",
-                fontSize: "11.5px",
-                fontWeight: 600,
-                color: "#10b981",
-              }}
-            >
-              Collaborate
-            </div>
-
-            {/* Floating Tag: Open Source (Bottom Right) */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "12px",
-                right: "22px",
-                padding: "5px 14px",
-                borderRadius: "8px",
-                background: "#0d1e34",
-                border: "1px solid rgba(59, 130, 246, 0.4)",
-                fontSize: "11.5px",
-                fontWeight: 600,
-                color: "#60a5fa",
-              }}
-            >
-              Open Source
-            </div>
-          </div>
+            Explore Projects
+          </button>
         </div>
       </div>
 
