@@ -189,10 +189,21 @@ function ProjectIcon({ type, color }: { type?: string; color: string }) {
 
 export default function ProjectsClient({ projects }: ProjectsClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 9;
 
+  const filteredProjects = projects.filter((p) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.title.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      (p.tags && p.tags.some((tag) => tag.toLowerCase().includes(q)))
+    );
+  });
+
   // Always ensure Truxify is the 1st project
-  const orderedProjects = [...projects].sort((a, b) => {
+  const orderedProjects = [...filteredProjects].sort((a, b) => {
     const isTruxifyA = a.title.toLowerCase().includes("truxify") || a.githubUrl.toLowerCase().includes("truxify");
     const isTruxifyB = b.title.toLowerCase().includes("truxify") || b.githubUrl.toLowerCase().includes("truxify");
     if (isTruxifyA && !isTruxifyB) return -1;
@@ -509,6 +520,31 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
       {/* Anchor for Smooth Scroll */}
       <div id="projects-catalog" style={{ scrollMarginTop: "100px" }} />
 
+      {/* SEARCH BAR */}
+      <div style={{ marginBottom: "32px", width: "100%" }}>
+        <input
+          type="text"
+          placeholder="Search projects by name, description, or tags..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
+          style={{
+            width: "100%",
+            padding: "16px 20px",
+            borderRadius: "12px",
+            background: "#0d0e12",
+            border: "1px solid #1c1e26",
+            color: "#ffffff",
+            fontSize: "15px",
+            outline: "none",
+            boxSizing: "border-box",
+            transition: "border-color 0.2s ease"
+          }}
+          className="focus:border-[#ff7518]"
+        />
+      </div>
 
       {/* =========================================================
           PROJECTS CARDS GRID (3 Columns x 3 Rows = 9 per page)
@@ -860,7 +896,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
         {/* Counter text */}
         <div style={{ fontSize: "13px", color: "#8b929e", fontWeight: 500 }}>
           Showing {paginatedProjects.length > 0 ? startIdx + 1 : 0} –{" "}
-          {startIdx + paginatedProjects.length} of {projects.length} projects
+          {startIdx + paginatedProjects.length} of {filteredProjects.length} projects
         </div>
       </div>
     </div>
