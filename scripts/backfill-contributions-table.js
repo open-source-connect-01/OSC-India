@@ -28,7 +28,7 @@ if (!supabaseUrl || !serviceKey) {
 const admin = createClient(supabaseUrl, serviceKey);
 
 // 2. Setup GitHub auth headers (5,000 req/hr rate limit)
-const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
+const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT || process.env.PAT_TOKEN;
 const headers = {
   Accept: "application/vnd.github.v3+json",
   "User-Agent": "OSC-India-Recalculate-28",
@@ -110,6 +110,26 @@ async function main() {
   console.log("================================================================================");
   console.log("OSC-India: Recalculating All Participants Strictly Based on the 28 Projects");
   console.log("================================================================================\n");
+
+  // Check GitHub API Rate Limit
+  if (token) {
+    try {
+      const rlRes = await fetchWithTimeout("https://api.github.com/rate_limit", { headers }, 5000);
+      if (rlRes.ok) {
+        const rlData = await rlRes.json();
+        const core = rlData.resources?.core;
+        if (core) {
+          const resetTime = new Date(core.reset * 1000).toLocaleTimeString();
+          console.log(`[GitHub API] Authenticated. Quota: ${core.remaining}/${core.limit} requests remaining (Resets at ${resetTime})`);
+        }
+      }
+    } catch (e) {
+      console.warn("[GitHub API] Rate limit check warning:", e.message);
+    }
+  } else {
+    console.warn("[GitHub API] WARNING: Running unauthenticated. Rate limits will be capped at 60 requests/hr.");
+  }
+
 
   // Step 1: Load strictly the official 28 projects from public.projects
   const { data: dbProjects, error: pErr } = await admin
