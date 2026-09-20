@@ -427,7 +427,7 @@ export default async function DashboardPage(props: {
     email: currentUser?.email || (githubUsername ? `${githubUsername}@osc-india.org` : ""),
     avatar: (currentUser?.user_metadata?.avatar_url as string) || (currentUser?.user_metadata?.picture as string) || avatar,
     role: isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor"),
-    isAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "project-admin",
+    isAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "admin",
     github: isOwnProfile ? githubUsername : ((currentUser?.user_metadata?.user_name as string) || ""),
   };
 
@@ -484,6 +484,65 @@ export default async function DashboardPage(props: {
               className="hover:bg-[rgba(255,117,24,0.15)] hover:border-[rgba(255,117,24,0.4)]"
             >
               ← Back to Leaderboard
+            </Link>
+          </div>
+        )}
+
+        {/* Project Admin Portal Announcement Banner */}
+        {isProjectAdmin && isOwnProfile && (
+          <div
+            style={{
+              width: "100%",
+              marginBottom: "24px",
+              background: "linear-gradient(90deg, rgba(255, 117, 24, 0.12) 0%, rgba(255, 85, 0, 0.05) 100%)",
+              border: "1px solid rgba(255, 117, 24, 0.3)",
+              borderRadius: "14px",
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "14px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <span
+                style={{
+                  background: "rgba(255, 117, 24, 0.2)",
+                  color: "#FF8822",
+                  padding: "4px 10px",
+                  borderRadius: "20px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Project Admin
+              </span>
+              <span style={{ fontSize: "14px", color: "#f3f4f6" }}>
+                You have dedicated maintainer access. View your repositories, track active contributors, and award merit points in the new portal.
+              </span>
+            </div>
+
+            <Link
+              href="/project-admin"
+              style={{
+                background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                color: "white",
+                padding: "8px 18px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 700,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 10px rgba(255, 117, 24, 0.3)",
+              }}
+            >
+              <span>Open Project Admin Portal</span>
+              <span>→</span>
             </Link>
           </div>
         )}

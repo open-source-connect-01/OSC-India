@@ -365,6 +365,32 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                     <span>Badge Studio</span>
                   </Link>
 
+                  {(profile.role === "project-admin" || profile.isAdmin) && (
+                    <Link
+                      href="/project-admin"
+                      style={{
+                        padding: "7px 10px",
+                        color: "#d4d4d8",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        borderRadius: "6px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "9px",
+                        transition: "background-color 0.12s ease, color 0.12s ease",
+                      }}
+                      className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                        <path d="M6 6h10" />
+                        <path d="M6 10h10" />
+                      </svg>
+                      <span>Project Admin</span>
+                    </Link>
+                  )}
+
                   {profile.isAdmin && (
                     <Link
                       href="/admin"
@@ -550,6 +576,16 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                   </svg>
                   <span>Badge Studio</span>
                 </Link>
+                {(profile.role === "project-admin" || profile.isAdmin) && (
+                  <Link href="/project-admin" style={{ color: "#FF8822", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                      <path d="M6 6h10" />
+                      <path d="M6 10h10" />
+                    </svg>
+                    <span>Project Admin Portal</span>
+                  </Link>
+                )}
                 {profile.isAdmin && (
                   <Link href="/admin" style={{ color: "#f87171", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>

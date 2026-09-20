@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useEffect } from "react";
+import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
@@ -672,6 +673,28 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
               <FolderPlusIcon className="w-4 h-4" />
               <span>+ Add Project</span>
             </button>
+
+            <Link
+              href="/project-admin"
+              style={{
+                background: "rgba(255, 117, 24, 0.1)",
+                border: "1px solid rgba(255, 117, 24, 0.3)",
+                color: "#FF8822",
+                padding: "10px 16px",
+                borderRadius: "12px",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+              }}
+              className="hover:bg-[rgba(255,117,24,0.18)] hover:border-[rgba(255,117,24,0.5)] active:scale-[0.98]"
+            >
+              <span>Project Admin Portal</span>
+              <span>↗</span>
+            </Link>
 
             <button
               onClick={handleExportCSV}
