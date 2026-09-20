@@ -1,4 +1,5 @@
 import React from "react";
+import { projectStatusOf } from "@/lib/utils/project-meta";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { createClient } from "@/lib/supabase/server";
@@ -202,7 +203,8 @@ export default async function DashboardPage(props: {
   const { data: dbProjects } = await admin
     .from("projects")
     .select("id, name, github_repo_url, description");
-  const allProjects = dbProjects || [];
+  // Pending / rejected project submissions are not part of the competition yet
+  const allProjects = (dbProjects || []).filter((p) => projectStatusOf(p.description) === "approved");
 
   const { data: allContributionsRaw } = await admin
     .from("contributions")

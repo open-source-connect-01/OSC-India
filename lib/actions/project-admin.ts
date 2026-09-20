@@ -3,9 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAdminSession } from "@/lib/auth/admin-auth";
-import { getProjects, ProjectItem } from "./projects";
+import { getProjects, getAllProjectsForAdmins, invalidateSlugCache, ProjectItem } from "./projects";
+import { withProjectMeta } from "@/lib/utils/project-meta";
 import { syncSingleUser, updateUserScore } from "./admin";
-import { extractRepoSlug } from "@/lib/utils/github-helpers";
+import { extractRepoSlug, getGitHubAuthHeaders } from "@/lib/utils/github-helpers";
 import { revalidatePath } from "next/cache";
 
 export interface ProjectAdminProject {
@@ -82,6 +83,14 @@ export interface ProjectAdminData {
     repoCount: number;
   }>;
   managedProjects: ProjectAdminProject[];
+  /** Projects this admin submitted that are awaiting approval or were rejected. */
+  submissions: Array<{
+    id: string;
+    name: string;
+    githubRepoUrl: string;
+    status: "pending" | "rejected";
+    rejectionReason?: string;
+  }>;
   contributors: ProjectAdminContributor[];
   pullRequests: ProjectAdminPR[];
   metrics: ProjectAdminMetrics;
@@ -461,6 +470,20 @@ export async function getProjectAdminData(
     };
   });
 
+  // Submissions by this admin awaiting approval (or rejected)
+  const submissionHandle = (caller.github || "").replace(/^@+/, "").trim().toLowerCase();
+  const submissions: ProjectAdminData["submissions"] = submissionHandle
+    ? (await getAllProjectsForAdmins())
+        .filter((p) => p.status !== "approved" && (p.submittedBy || "").toLowerCase() === submissionHandle)
+        .map((p) => ({
+          id: p.id,
+          name: p.title,
+          githubRepoUrl: p.githubUrl,
+          status: p.status as "pending" | "rejected",
+          rejectionReason: p.rejectionReason,
+        }))
+    : [];
+
   // 10. Compute Summary Metrics
   const metrics: ProjectAdminMetrics = {
     totalRepos: managedProjects.length,
@@ -481,6 +504,7 @@ export async function getProjectAdminData(
     selectedAdminGithub: isSuperAdmin && targetAdminGithub ? targetAdminGithub : activeGithub,
     allProjectAdmins,
     managedProjects,
+    submissions,
     contributors,
     pullRequests,
     metrics,
@@ -594,5 +618,144 @@ export async function syncContributorPRsAction(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to sync contributor";
     return { success: false, error: msg };
+  }
+}
+
+
+/**
+ * Lets a Project Admin (or Super Admin) register a GitHub repository as a competition project.
+ * The repo must exist and not already be tracked. Details are pulled from GitHub, and the project
+ * is tagged with the caller's GitHub handle so it appears under their managed repositories.
+ */
+export async function addProjectAsAdminAction(
+  repoInput: string,
+  descriptionInput?: string
+): Promise<{ success: boolean; project?: ProjectItem; error?: string }> {
+  try {
+    const { profile: caller, isSuperAdmin } = await requireProjectAdminSession();
+
+    const slug = extractRepoSlug((repoInput || "").trim());
+    if (!slug || !/^[\w.-]+\/[\w.-]+$/.test(slug)) {
+      return { success: false, error: "Enter a valid GitHub repository URL, e.g. https://github.com/owner/repo." };
+    }
+
+    const adminGithub = (caller.github || "").replace(/^@+/, "").trim();
+    if (!adminGithub && !isSuperAdmin) {
+      return {
+        success: false,
+        error: "Connect your GitHub account on your dashboard before adding a project.",
+      };
+    }
+
+    const existing = await getAllProjectsForAdmins();
+    const duplicate = existing.find((p) => extractRepoSlug(p.githubUrl) === slug);
+    // A rejected submission can be resubmitted by the same admin
+    const isResubmit =
+      !!duplicate &&
+      duplicate.status === "rejected" &&
+      !!adminGithub &&
+      (duplicate.submittedBy || "").toLowerCase() === adminGithub.toLowerCase();
+    if (duplicate && !isResubmit) {
+      return {
+        success: false,
+        error:
+          duplicate.status === "pending"
+            ? "This repository has already been submitted and is awaiting approval."
+            : "This repository is already registered in the competition.",
+      };
+    }
+
+    // Verify the repo exists on GitHub and pull its details
+    let ghRepo: {
+      full_name: string;
+      description: string | null;
+      language: string | null;
+      stargazers_count: number;
+      forks_count: number;
+      open_issues_count: number;
+      html_url: string;
+      private: boolean;
+      archived: boolean;
+    } | null = null;
+    try {
+      const res = await fetch(`https://api.github.com/repos/${slug}`, {
+        headers: getGitHubAuthHeaders(),
+        cache: "no-store",
+      });
+      if (res.status === 404) {
+        return { success: false, error: `Repository ${slug} was not found on GitHub (it must be public).` };
+      }
+      if (res.ok) ghRepo = await res.json();
+    } catch {
+      // GitHub unreachable / rate limited: fall back to the URL alone
+    }
+    if (ghRepo?.private) {
+      return { success: false, error: "Only public repositories can be added." };
+    }
+    if (ghRepo?.archived) {
+      return { success: false, error: "Archived repositories cannot be added." };
+    }
+
+    const [owner, repo] = ghRepo?.full_name?.split("/") ?? slug.split("/");
+    const meta = {
+      language: ghRepo?.language || "TypeScript",
+      accentColor: "#FF7518",
+      stars: String(ghRepo?.stargazers_count ?? 0),
+      forks: String(ghRepo?.forks_count ?? 0),
+      openIssues: ghRepo?.open_issues_count ?? 0,
+      ...(adminGithub ? { admin_github: adminGithub } : {}),
+      // Project admin submissions need Super Admin approval; Super Admin additions go live immediately
+      ...(isSuperAdmin ? {} : { status: "pending" }),
+    };
+    const userDesc =
+      (descriptionInput || "").trim() ||
+      ghRepo?.description ||
+      "Community open source project participating in OSC India.";
+
+    const admin = createAdminClient();
+    const description = `${userDesc}\n<!--meta:${JSON.stringify(meta)}-->`;
+    const { data, error } = isResubmit
+      ? await admin
+          .from("projects")
+          .update({
+            description: withProjectMeta(description, { status: "pending", rejection_reason: null }),
+          })
+          .eq("id", duplicate!.id)
+          .select()
+          .single()
+      : await admin
+          .from("projects")
+          .insert({
+            name: repo,
+            github_repo_url: ghRepo?.html_url || `https://github.com/${owner}/${repo}`,
+            description,
+          })
+          .select()
+          .single();
+
+    if (error) {
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+
+    await invalidateSlugCache();
+    revalidatePath("/projects");
+    revalidatePath("/admin");
+    revalidatePath("/project-admin");
+
+    const project: ProjectItem = {
+      id: String(data.id),
+      title: data.name,
+      description: userDesc,
+      githubUrl: data.github_repo_url,
+      language: meta.language,
+      accentColor: meta.accentColor,
+      stars: meta.stars,
+      forks: meta.forks,
+      openIssues: String(meta.openIssues),
+      status: isSuperAdmin ? "approved" : "pending",
+    };
+    return { success: true, project };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to add project." };
   }
 }

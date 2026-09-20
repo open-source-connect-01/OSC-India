@@ -12,7 +12,8 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "@/lib/auth/admin-auth";
-import { getProjects, getDbAllowedRepoSlugs, discoverProjectsByTopic } from "./projects";
+import { getProjects, getAllProjectsForAdmins, getDbAllowedRepoSlugs, discoverProjectsByTopic, invalidateSlugCache } from "./projects";
+import { readProjectMeta, withProjectMeta } from "@/lib/utils/project-meta";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -237,8 +238,56 @@ export async function getAdminData() {
   };
 
   const projects = await getProjects();
+  const pendingProjects = (await getAllProjectsForAdmins()).filter((p) => p.status === "pending");
 
-  return { profiles, metrics, projects };
+  return { profiles, metrics, projects, pendingProjects };
+}
+
+/**
+ * Approves or rejects a project submitted by a Project Admin.
+ * Approved projects go live (public /projects list + PR scoring); rejected ones stay hidden and
+ * the submitting admin sees the reason in their portal.
+ */
+export async function reviewProjectSubmissionAction(
+  projectId: string,
+  decision: "approve" | "reject",
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    const { data: row, error: readErr } = await admin
+      .from("projects")
+      .select("id, description")
+      .eq("id", projectId)
+      .maybeSingle();
+    if (readErr || !row) {
+      return { success: false, error: readErr?.message || "Project not found." };
+    }
+    if (readProjectMeta(row.description).status !== "pending") {
+      return { success: false, error: "This submission has already been reviewed." };
+    }
+
+    const description = withProjectMeta(
+      row.description || "",
+      decision === "approve"
+        ? { status: null, rejection_reason: null }
+        : { status: "rejected", rejection_reason: (reason || "").trim().slice(0, 300) || null }
+    );
+    const { error: updateErr } = await admin.from("projects").update({ description }).eq("id", projectId);
+    if (updateErr) {
+      return { success: false, error: `Failed to save decision: ${updateErr.message}` };
+    }
+
+    await invalidateSlugCache();
+    revalidatePath("/projects");
+    revalidatePath("/admin");
+    revalidatePath("/project-admin");
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to review submission." };
+  }
 }
 
 /**

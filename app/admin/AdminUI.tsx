@@ -5,7 +5,7 @@ import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Profile } from "@/lib/supabase/database";
-import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, deleteUserAction, adminLogoutAction, getAdminData, triggerRepoDiscoveryAction } from "@/lib/actions/admin";
+import { updateUserRole, updateUserScore, updateUserGithub, syncSingleUser, syncAllUsers, deleteUserAction, adminLogoutAction, getAdminData, triggerRepoDiscoveryAction, reviewProjectSubmissionAction } from "@/lib/actions/admin";
 import { createProjectAction, deleteProjectAction, deleteAllProjectsAction, ProjectItem, NewProjectInput } from "@/lib/actions/projects";
 
 // Icons
@@ -190,11 +190,16 @@ interface AdminUIProps {
     totalScore: number;
   };
   initialProjects?: ProjectItem[];
+  initialPendingProjects?: ProjectItem[];
 }
 
-export default function AdminUI({ initialProfiles, initialMetrics, initialProjects }: AdminUIProps) {
+export default function AdminUI({ initialProfiles, initialMetrics, initialProjects, initialPendingProjects }: AdminUIProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [projects, setProjects] = useState<ProjectItem[]>(initialProjects || []);
+  const [pendingProjects, setPendingProjects] = useState<ProjectItem[]>(initialPendingProjects || []);
+  const [reviewingProjectId, setReviewingProjectId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ProjectItem | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [activeTab, setActiveTab] = useState<"contributors" | "projects">("contributors");
   const [metrics, setMetrics] = useState(initialMetrics);
   const [search, setSearch] = useState("");
@@ -311,6 +316,31 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
       showToast(err instanceof Error ? err.message : "Failed to add project.", "error");
     } finally {
       setIsSubmittingProject(false);
+    }
+  };
+
+  // Approve / reject a project submitted by a Project Admin
+  const handleReviewProject = async (project: ProjectItem, decision: "approve" | "reject", reason?: string) => {
+    setReviewingProjectId(project.id);
+    try {
+      const res = await reviewProjectSubmissionAction(project.id, decision, reason);
+      if (!res.success) {
+        showToast(res.error || "Failed to review submission.", "error");
+        return;
+      }
+      setPendingProjects((prev) => prev.filter((p) => p.id !== project.id));
+      if (decision === "approve") {
+        setProjects((prev) => [{ ...project, status: "approved" }, ...prev]);
+        showToast(`"${project.title}" approved and added to the projects directory.`, "success");
+      } else {
+        showToast(`"${project.title}" rejected.`, "success");
+      }
+      setRejectTarget(null);
+      setRejectReason("");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to review submission.", "error");
+    } finally {
+      setReviewingProjectId(null);
     }
   };
 
@@ -548,6 +578,7 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
         setProfiles(data.profiles);
         if (data.metrics) setMetrics(data.metrics);
         if (data.projects) setProjects(data.projects);
+        if (data.pendingProjects) setPendingProjects(data.pendingProjects);
         showToast("User data reloaded successfully.", "success");
       }
     } catch (err: unknown) {
@@ -941,6 +972,11 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
               }}>
                 {projects.length}
               </span>
+              {pendingProjects.length > 0 && (
+                <span style={{ marginLeft: "6px", padding: "1px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: 700, background: "rgba(251,191,36,0.18)", color: "#fbbf24" }}>
+                  {pendingProjects.length} pending
+                </span>
+              )}
             </button>
           </div>
 
@@ -1400,6 +1436,82 @@ export default function AdminUI({ initialProfiles, initialMetrics, initialProjec
     {/* Project Directory Tab */}
     {activeTab === "projects" && (
       <div style={{ width: "100%" }}>
+        {/* Pending Project Submissions (from Project Admins) */}
+        {pendingProjects.length > 0 && (
+          <div style={{ width: "100%", marginBottom: "28px", background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: "16px", padding: "20px 22px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.06em", color: "#fbbf24" }}>PENDING APPROVAL</span>
+              <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                {pendingProjects.length} project{pendingProjects.length === 1 ? "" : "s"} submitted by Project Admins
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {pendingProjects.map((p) => (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", background: "rgba(12,12,16,0.7)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px 16px" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: "15px", fontWeight: 700, color: "white" }}>
+                      {p.title}
+                      {p.submittedBy && (
+                        <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#9ca3af" }}>by @{p.submittedBy}</span>
+                      )}
+                    </div>
+                    <a href={p.githubUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12.5px", color: "#38bdf8", textDecoration: "none" }}>
+                      {p.githubUrl.replace(/^https?:\/\/github\.com\//i, "")} ↗
+                    </a>
+                    {p.description && (
+                      <div style={{ fontSize: "12.5px", color: "#9ca3af", marginTop: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.description}</div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      disabled={reviewingProjectId === p.id}
+                      onClick={() => handleReviewProject(p, "approve")}
+                      style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: "rgba(16,185,129,0.9)", color: "white", fontSize: "13px", fontWeight: 700, cursor: reviewingProjectId === p.id ? "wait" : "pointer" }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reviewingProjectId === p.id}
+                      onClick={() => { setRejectTarget(p); setRejectReason(""); }}
+                      style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(239,68,68,0.5)", background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reject Submission Modal */}
+        {rejectTarget && (
+          <div role="dialog" aria-modal="true" aria-label="Reject project submission" onClick={() => reviewingProjectId === null && setRejectTarget(null)} style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: "440px", background: "linear-gradient(180deg, #131317 0%, #0a0a0d 100%)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px", padding: "26px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: "white" }}>Reject &ldquo;{rejectTarget.title}&rdquo;?</h3>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", lineHeight: 1.5 }}>
+                The project stays hidden. @{rejectTarget.submittedBy || "the submitter"} will see your reason in their portal and can resubmit.
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                maxLength={300}
+                placeholder="Reason (optional)"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.15)", background: "#0b0b0f", color: "white", fontSize: "14px", resize: "vertical" }}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button type="button" onClick={() => setRejectTarget(null)} disabled={reviewingProjectId !== null} style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#d1d5db", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button type="button" onClick={() => handleReviewProject(rejectTarget, "reject", rejectReason)} disabled={reviewingProjectId !== null} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: "rgba(239,68,68,0.9)", color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                  {reviewingProjectId ? "Rejecting..." : "Reject"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Project Filters */}
         <div style={{ width: "100%", display: "flex", gap: "16px", marginBottom: "28px", flexWrap: "wrap", alignItems: "center" }}>
           {/* Search Input with Icon */}
