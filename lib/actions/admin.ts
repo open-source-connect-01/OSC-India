@@ -530,7 +530,7 @@ export async function deleteUserAction(
     try {
       const { data: profile } = await admin
         .from("profiles")
-        .select("id, user_id, role, is_admin, users(email)")
+        .select("id, user_id, role, users(email)")
         .eq("user_id", targetUserId)
         .maybeSingle();
 

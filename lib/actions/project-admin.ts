@@ -105,36 +105,41 @@ const KNOWN_PR_TITLES: Record<string, string> = {
  * Checks authentication for Project Admin or Super Admin.
  */
 export async function requireProjectAdminSession() {
-  const isAdminSession = await verifyAdminSession();
-  if (isAdminSession) {
-    return {
-      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com" },
-      profile: {
-        id: "admin-session",
-        user_id: "admin-session",
-        role: "admin",
-        full_name: "Super Administrator",
-        email: process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com",
-        github: "super-admin",
-        avatar_url: null,
-      },
-      isSuperAdmin: true,
-    };
-  }
-
   const supabase = await createClient();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  const { data: authData, error: authErr } = await supabase.auth.getUser();
+  const signedInUser = authErr ? null : authData.user;
 
-  if (authErr || !user) {
+  // The password-based admin cookie only applies when nobody is signed in, or the signed-in
+  // user has no elevated role of their own. It must never override a signed-in project admin's identity.
+  const hasAdminCookie = await verifyAdminSession();
+  const adminSessionResult = () => ({
+    user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com" },
+    profile: {
+      id: "admin-session",
+      user_id: "admin-session",
+      role: "admin",
+      full_name: "Super Administrator",
+      email: process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com",
+      github: "super-admin",
+      avatar_url: null,
+    },
+    isSuperAdmin: true,
+  });
+
+  if (!signedInUser) {
+    if (hasAdminCookie) return adminSessionResult();
     throw new Error("Unauthorized. Please sign in to access the Project Admin portal.");
   }
+  const user = signedInUser;
 
   const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, user_id, full_name, email, github, role, avatar_url")
-    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
-    .maybeSingle();
+  // Prefer the row keyed by user_id; some legacy rows have id != user_id, so avoid a combined
+  // .or() lookup that can match two rows and make maybeSingle() fail.
+  const profileCols = "id, user_id, full_name, github, role, avatar_url";
+  let { data: profile } = await admin.from("profiles").select(profileCols).eq("user_id", user.id).maybeSingle();
+  if (!profile) {
+    ({ data: profile } = await admin.from("profiles").select(profileCols).eq("id", user.id).maybeSingle());
+  }
 
   const userEmail = (user.email || "").toLowerCase().trim();
   const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
@@ -142,6 +147,7 @@ export async function requireProjectAdminSession() {
   const isProjectAdmin = profile?.role === "project-admin" || isSuperAdmin;
 
   if (!isProjectAdmin) {
+    if (hasAdminCookie) return adminSessionResult();
     throw new Error("Forbidden. Project Admin privileges required.");
   }
 
@@ -167,7 +173,7 @@ export async function requireProjectAdminSession() {
       user_id: profile?.user_id || user.id,
       role: profile?.role || (isSuperAdmin ? "admin" : "project-admin"),
       full_name: resolvedName,
-      email: profile?.email || user.email,
+      email: user.email,
       github: resolvedGithub,
       avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
     },
@@ -292,7 +298,7 @@ export async function getProjectAdminData(
       const chunk = distinctUserIds.slice(i, i + 100);
       const { data: profs } = await admin
         .from("profiles")
-        .select("id, user_id, full_name, email, github, avatar_url, role, score, merged_prs")
+        .select("id, user_id, full_name, github, avatar_url, role, score, merged_prs, users(email)")
         .or(`user_id.in.(${chunk.join(",")}),id.in.(${chunk.join(",")})`);
 
       if (profs) {
@@ -399,7 +405,7 @@ export async function getProjectAdminData(
       return {
         id: uid,
         name: (prof?.full_name as string) || "Contributor",
-        email: (prof?.email as string) || null,
+        email: ((prof?.users as { email?: string } | null)?.email as string) || null,
         github: (prof?.github as string) || null,
         avatarUrl:
           (prof?.avatar_url as string) ||
