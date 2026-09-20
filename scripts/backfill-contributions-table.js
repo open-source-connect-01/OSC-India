@@ -3,7 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
 
-// Load .env.local
+// 1. Load .env.local
 const envPath = path.resolve(process.cwd(), ".env.local");
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, "utf8");
@@ -12,6 +12,7 @@ if (fs.existsSync(envPath)) {
     if (match) {
       let val = match[2].trim();
       if (val.startsWith("\"") && val.endsWith("\"")) val = val.slice(1, -1);
+      if (val.startsWith("\x27") && val.endsWith("\x27")) val = val.slice(1, -1);
       process.env[match[1].trim()] = val;
     }
   }
@@ -20,13 +21,13 @@ if (fs.existsSync(envPath)) {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !serviceKey) {
-  console.error("Missing Supabase configuration");
+  console.error("Missing Supabase configuration in environment.");
   process.exit(1);
 }
 
 const admin = createClient(supabaseUrl, serviceKey);
 
-// GitHub auth headers
+// 2. Setup GitHub auth headers
 const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_PAT;
 const headers = {
   Accept: "application/vnd.github.v3+json",
@@ -48,14 +49,6 @@ const DIFFICULTY_POINTS = {
   hard: 30,
   expert: 50,
 };
-
-function hasOsci26Label(pr) {
-  const labels = pr.labels || [];
-  return labels.some((l) => {
-    const name = (typeof l === "string" ? l : l.name || "").toLowerCase().trim();
-    return /osci[- ']?26|osci[- ']?2026/i.test(name);
-  });
-}
 
 async function resolvePrDifficulty(slug, pr, headers, prDetailsCache) {
   // 1. Check explicit maintainer level labels on the PR first
@@ -83,7 +76,7 @@ async function resolvePrDifficulty(slug, pr, headers, prDetailsCache) {
   if (/\[medium\]|\(medium\)|\[med\]|\(med\)|level[- :_]?2\b|difficulty:\s*medium/i.test(fullText)) return "medium";
   if (/\[easy\]|\(easy\)|level[- :_]?1\b|good[ -]?first[ -]?issue|difficulty:\s*easy/i.test(fullText)) return "easy";
 
-  // 3. Fetch PR additions + deletions to accurately determine difficulty by code change size
+  // 3. Fetch PR additions + deletions to determine difficulty by code change size
   const prCacheKey = `${slug}#${pr.number}`;
   let additions = pr.additions;
   let deletions = pr.deletions;
@@ -119,54 +112,99 @@ async function resolvePrDifficulty(slug, pr, headers, prDetailsCache) {
 function normalizeGitHubHandle(handle) {
   if (!handle) return "";
   let clean = handle.trim();
-  clean = clean.replace(/^https?:\/\/github\.com\//i, "");
+  clean = clean.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
   clean = clean.replace(/^@+/, "");
   clean = clean.split(/[/?#]/)[0].trim();
   return clean.toLowerCase();
 }
 
-async function main() {
-  console.log("=== Strictly Purged OSCI'26 Sweep for public.contributions & public.leaderboard_stats ===");
+function normalizeRepoSlug(url) {
+  if (!url) return "";
+  let clean = url.trim();
+  clean = clean.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+  clean = clean.replace(/\/+$/, "");
+  return clean;
+}
 
-  // 1. Fetch official 17 projects
+async function main() {
+  console.log("=== OSCI'26 Full Participant Sweep (Open & Merged PRs) ===");
+
+  // 1. Fetch official projects from DB
   const { data: projects, error: pErr } = await admin.from("projects").select("id, name, github_repo_url");
   if (pErr || !projects) {
     console.error("Failed to load projects:", pErr);
     process.exit(1);
   }
 
-  const projectMap = new Map(); // exactSlug -> project
-  const repoOwnerMap = new Map(); // exactSlug -> ownerHandle
+  const projectMap = new Map(); // slug -> project
+  const repoOwnerMap = new Map(); // slug -> ownerHandle
   const adminHandles = new Set();
 
   for (const p of projects) {
-    // Preserve exact case for GitHub API requests
-    const exactSlug = p.github_repo_url.replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/, "");
-    projectMap.set(exactSlug, p);
-    const owner = exactSlug.split("/")[0].toLowerCase().trim();
-    repoOwnerMap.set(exactSlug, owner);
+    const slug = normalizeRepoSlug(p.github_repo_url);
+    if (!slug) continue;
+    projectMap.set(slug, p);
+    const owner = slug.split("/")[0].toLowerCase().trim();
+    repoOwnerMap.set(slug, owner);
     adminHandles.add(owner);
   }
-  console.log(`Loaded ${projectMap.size} official projects from database.`);
+  console.log(`Loaded ${projectMap.size} official competition projects from database.`);
 
-  // 2. Fetch all profiles & build handle -> profile mapping
-  const { data: profiles, error: profErr } = await admin.from("profiles").select("*");
-  if (profErr || !profiles) {
-    console.error("Failed to load profiles:", profErr);
-    process.exit(1);
+  // 2. Fetch all profiles with complete pagination & build handle -> profile mapping
+  const profiles = [];
+  let pageP = 0;
+  const PAGE_SIZE = 1000;
+  while (true) {
+    const { data: chunk, error: profErr } = await admin
+      .from("profiles")
+      .select("*")
+      .range(pageP * PAGE_SIZE, (pageP + 1) * PAGE_SIZE - 1);
+    if (profErr) {
+      console.error("Failed to load profiles chunk:", profErr);
+      process.exit(1);
+    }
+    if (!chunk || chunk.length === 0) break;
+    profiles.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    pageP++;
   }
+  console.log(`Loaded ${profiles.length} total user profiles from database.`);
 
   const handleToProfile = new Map();
+  const userIdToProfile = new Map();
   for (const prof of profiles) {
+    if (prof.id) userIdToProfile.set(prof.id, prof);
+    if (prof.user_id) userIdToProfile.set(prof.user_id, prof);
     const handle = normalizeGitHubHandle(prof.github);
     if (handle) {
       handleToProfile.set(handle, prof);
     }
   }
 
-  // Ensure all 17 project admins have a profile with role = 'project-admin'
+  // Build fallback email/name mapping from auth.users for accounts without explicit github field set
+  const fallbackHandleMap = new Map();
+  let authPage = 1;
+  while (true) {
+    const { data: authData } = await admin.auth.admin.listUsers({ page: authPage, perPage: 1000 });
+    if (!authData?.users || authData.users.length === 0) break;
+    for (const u of authData.users) {
+      const email = (u.email || "").toLowerCase().trim();
+      const emailPrefix = email.split("@")[0];
+      const prof = userIdToProfile.get(u.id);
+      if (prof && !prof.github) {
+        if (emailPrefix) fallbackHandleMap.set(emailPrefix, prof);
+        const metaGh = normalizeGitHubHandle(u.user_metadata?.github || u.user_metadata?.user_name || u.user_metadata?.preferred_username);
+        if (metaGh) fallbackHandleMap.set(metaGh, prof);
+      }
+    }
+    if (authData.users.length < 1000) break;
+    authPage++;
+  }
+  console.log(`Mapped ${handleToProfile.size} unique GitHub handles + ${fallbackHandleMap.size} fallback account matches.`);
+
+  // Ensure project admins have role = 'project-admin'
   for (const adminHandle of adminHandles) {
-    let prof = handleToProfile.get(adminHandle);
+    let prof = handleToProfile.get(adminHandle) || fallbackHandleMap.get(adminHandle);
     if (!prof) {
       const newId = crypto.randomUUID();
       const name = adminHandle.charAt(0).toUpperCase() + adminHandle.slice(1);
@@ -187,34 +225,34 @@ async function main() {
         handleToProfile.set(adminHandle, prof);
         console.log("Created project-admin profile for:", adminHandle);
       }
-    } else if (prof.role !== "project-admin") {
+    } else if (prof.role !== "project-admin" && prof.role !== "admin") {
       await admin.from("profiles").update({ role: "project-admin" }).eq("id", prof.id);
       prof.role = "project-admin";
       console.log("Promoted to project-admin:", adminHandle);
     }
   }
 
-  const defaultFallbackUserId = profiles.find((p) => p.user_id)?.user_id || "2ee0137b-0a3e-4a22-91b7-05c7250f3907";
-
-  // 3. Fast REST API sweep of 17 competition repositories
+  // 3. Sweep all pull requests (open + merged) across official competition repositories
   const verifiedContributions = [];
-  const contributorStats = new Map(); // userId -> { points, mergedCount, repos: Set }
-  const projectAdminStats = new Map(); // userId -> { points, mergedCount, repos: Set }
+  const contributorStats = new Map(); // userId -> { points, count, mergedCount, openCount, repos: Set }
   const prDetailsCache = new Map();
+  let reposScanned = 0;
 
   for (const [exactSlug, project] of projectMap.entries()) {
-    console.log(`Scanning repo: ${exactSlug}...`);
+    reposScanned++;
     let page = 1;
-    let repoOsciPrs = 0;
-    const repoOwner = repoOwnerMap.get(exactSlug);
-    const adminProf = handleToProfile.get(repoOwner);
+    let repoPrsFound = 0;
 
-    while (page <= 10) {
+    while (page <= 5) {
       try {
-        const url = `https://api.github.com/repos/${exactSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
+        const url = `https://api.github.com/repos/${exactSlug}/pulls?state=all&per_page=100&page=${page}&sort=updated&direction=desc`;
         const res = await fetch(url, { headers });
         if (!res.ok) {
-          console.warn(`Error on ${exactSlug} page ${page}: ${res.status}`);
+          if (res.status === 404) {
+            console.warn(`[Skip] Repository ${exactSlug} returned 404 (private/renamed).`);
+          } else {
+            console.warn(`[Notice] ${exactSlug} page ${page} returned status ${res.status}`);
+          }
           break;
         }
 
@@ -222,58 +260,56 @@ async function main() {
         if (!Array.isArray(pulls) || pulls.length === 0) break;
 
         for (const pr of pulls) {
-          if (!pr.merged_at) continue; // Only merged PRs
-          
-          // STRICT FILTER: Must carry the official competition label OSCI'26 / OSCI26
-          if (!hasOsci26Label(pr)) continue;
+          // Ignore closed PRs that were not merged (rejected/spam PRs)
+          if (pr.state === "closed" && !pr.merged_at) continue;
 
           const author = normalizeGitHubHandle(pr.user?.login);
+          if (!author) continue;
+
+          let authorProf = handleToProfile.get(author) || fallbackHandleMap.get(author);
+          
+          // Only score registered contributors (admins/project-admins do not compete on leaderboard)
+          if (!authorProf || authorProf.role === "admin" || authorProf.role === "project-admin") {
+            continue;
+          }
+
           const diff = await resolvePrDifficulty(exactSlug, pr, headers, prDetailsCache);
           const points = DIFFICULTY_POINTS[diff];
-          const mergedAt = pr.merged_at || pr.closed_at || new Date().toISOString();
+          const prDate = pr.merged_at || pr.created_at || new Date().toISOString();
+          const uid = authorProf.user_id || authorProf.id;
+          const status = pr.merged_at ? "merged" : "open";
 
-          repoOsciPrs++;
+          repoPrsFound++;
 
-          // Match author profile
-          const authorProf = author ? handleToProfile.get(author) : null;
-          const authorUserId = authorProf
-            ? (authorProf.user_id || authorProf.id)
-            : (adminProf ? (adminProf.user_id || adminProf.id) : defaultFallbackUserId);
-
-          // Add to contributions table
+          // Add to contributions list
           verifiedContributions.push({
-            user_id: authorUserId || defaultFallbackUserId,
+            user_id: uid,
             project_id: project.id,
             type: "pr",
             github_url: pr.html_url,
-            status: "merged",
+            status,
             points_awarded: points,
-            contributed_at: mergedAt,
+            contributed_at: prDate,
           });
 
-          // A. Contributor points
-          if (authorProf && authorProf.role !== "admin") {
-            const uid = authorProf.user_id || authorProf.id;
-            if (!contributorStats.has(uid)) {
-              contributorStats.set(uid, { points: 0, count: 0, repos: new Set() });
-            }
-            const st = contributorStats.get(uid);
-            st.points += points;
-            st.count += 1;
-            st.repos.add(exactSlug.toLowerCase());
+          // Aggregate contributor points
+          if (!contributorStats.has(uid)) {
+            contributorStats.set(uid, {
+              name: authorProf.full_name || authorProf.github || author,
+              handle: author,
+              points: 0,
+              count: 0,
+              mergedCount: 0,
+              openCount: 0,
+              repos: new Set(),
+            });
           }
-
-          // B. Project Admin points (repo owner receives points for all OSCI'26 PRs in their repo)
-          if (adminProf) {
-            const adminUid = adminProf.user_id || adminProf.id;
-            if (!projectAdminStats.has(adminUid)) {
-              projectAdminStats.set(adminUid, { points: 0, count: 0, repos: new Set() });
-            }
-            const ast = projectAdminStats.get(adminUid);
-            ast.points += points;
-            ast.count += 1;
-            ast.repos.add(exactSlug.toLowerCase());
-          }
+          const st = contributorStats.get(uid);
+          st.points += points;
+          st.count += 1;
+          if (pr.merged_at) st.mergedCount += 1;
+          else st.openCount += 1;
+          st.repos.add(exactSlug.toLowerCase());
         }
 
         if (pulls.length < 100) break;
@@ -283,68 +319,65 @@ async function main() {
         break;
       }
     }
-    console.log(`  -> Found ${repoOsciPrs} verified OSCI'26 merged PRs on ${exactSlug}.`);
+
+    if (repoPrsFound > 0) {
+      console.log(`  -> Found ${repoPrsFound} active contributor PRs on ${exactSlug}.`);
+    }
   }
 
-  console.log(`\nTotal verified OSCI'26 PRs across all 17 projects: ${verifiedContributions.length}`);
+  console.log(`\n===============================================================`);
+  console.log(`Summary: Scanned ${reposScanned} projects.`);
+  console.log(`Total verified PR contributions found: ${verifiedContributions.length}`);
+  console.log(`Total active contributors scored: ${contributorStats.size}`);
+  console.log(`===============================================================`);
 
-  // 4. PURGE old/irrelevant rows and repopulate public.contributions
-  console.log("Purging old/irrelevant rows from public.contributions...");
-  await admin.from("contributions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  // 4. CRITICAL SAFETY GUARD: Prevent accidental wiping
+  if (verifiedContributions.length === 0) {
+    console.error("\n❌ SAFETY SHIELD TRIGGERED: 0 verified contributions found. Aborting!");
+    process.exit(1);
+  }
 
-  console.log(`Inserting ${verifiedContributions.length} verified OSCI'26 contributions...`);
+  // 5. Upsert verified contributions into public.contributions
+  console.log(`\nUpserting ${verifiedContributions.length} contributions...`);
   for (let i = 0; i < verifiedContributions.length; i += 50) {
     const chunk = verifiedContributions.slice(i, i + 50);
-    const { error: cErr } = await admin.from("contributions").insert(chunk);
+    const { error: cErr } = await admin.from("contributions").upsert(chunk, { onConflict: "github_url" });
     if (cErr) {
-      console.warn(`Chunk ${i} insert error (trying upsert):`, cErr.message);
-      await admin.from("contributions").upsert(chunk, { onConflict: "github_url" });
+      console.warn(`Chunk ${i} upsert error:`, cErr.message);
     }
   }
 
-  // 5. Reset and update public.profiles
-  console.log("Resetting all profile scores...");
-  await admin.from("profiles").update({ score: 0, merged_prs: 0, projects_count: 0 }).neq("id", "00000000-0000-0000-0000-000000000000");
+  // 6. Reset all profiles to 0 first so unverified test scores don't linger
+  console.log("Synchronizing profile scores across database...");
+  await admin
+    .from("profiles")
+    .update({ score: 0, merged_prs: 0, projects_count: 0 })
+    .neq("id", "00000000-0000-0000-0000-000000000000");
 
-  // 5. Build unified score map across contributors and project admins
-  const unifiedUserStats = new Map(); // userId -> { points, count, repos: Set }
-
+  // 7. Update profiles for all active contributors with their actual scores
+  console.log(`Updating ${contributorStats.size} active contributor profiles...`);
   for (const [userId, stats] of contributorStats.entries()) {
-    if (!unifiedUserStats.has(userId)) {
-      unifiedUserStats.set(userId, { points: 0, count: 0, repos: new Set() });
-    }
-    const u = unifiedUserStats.get(userId);
-    u.points += stats.points;
-    u.count += stats.count;
-    stats.repos.forEach((r) => u.repos.add(r));
-  }
-
-  for (const [adminUid, ast] of projectAdminStats.entries()) {
-    if (!unifiedUserStats.has(adminUid)) {
-      unifiedUserStats.set(adminUid, { points: 0, count: 0, repos: new Set() });
-    }
-    const u = unifiedUserStats.get(adminUid);
-    u.points += ast.points;
-    u.count += ast.count;
-    ast.repos.forEach((r) => u.repos.add(r));
-  }
-
-  console.log(`Updating ${unifiedUserStats.size} active profiles...`);
-  for (const [userId, stats] of unifiedUserStats.entries()) {
-    await admin
+    const { error: pUpErr } = await admin
       .from("profiles")
       .update({
         score: stats.points,
         merged_prs: stats.count,
         projects_count: stats.repos.size,
+        github: stats.handle,
       })
       .or(`user_id.eq.${userId},id.eq.${userId}`);
+
+    if (pUpErr) {
+      console.warn(`Failed to update profile for ${userId}:`, pUpErr.message);
+    } else {
+      console.log(`   ✓ ${stats.name} (@${stats.handle}): ${stats.points} pts | ${stats.count} PRs (${stats.mergedCount} merged, ${stats.openCount} open)`);
+    }
   }
 
-  // 6. Update public.leaderboard_stats
+  // 8. Update public.leaderboard_stats
   const nowIso = new Date().toISOString();
   const leaderboardStats = [];
-  for (const [userId, stats] of unifiedUserStats.entries()) {
+  for (const [userId, stats] of contributorStats.entries()) {
     leaderboardStats.push({
       user_id: userId,
       total_points: stats.points,
@@ -353,7 +386,6 @@ async function main() {
     });
   }
 
-  // Upsert leaderboard stats in chunks
   for (let i = 0; i < leaderboardStats.length; i += 100) {
     const chunk = leaderboardStats.slice(i, i + 100);
     const { error: lErr } = await admin.from("leaderboard_stats").upsert(chunk, { onConflict: "user_id" });
@@ -362,11 +394,13 @@ async function main() {
     }
   }
 
-  console.log("\n=== Final Verification ===");
+  console.log("\n=== Leaderboard Sync Completed Successfully ===");
   const { count: finalContribs } = await admin.from("contributions").select("*", { count: "exact", head: true });
   console.log(`Total rows in public.contributions: ${finalContribs}`);
-  console.log(`Total active contributors/admins on leaderboard: ${leaderboardStats.length}`);
+  console.log(`Total active contributors on leaderboard: ${leaderboardStats.length}`);
 }
 
-main();
-
+main().catch((err) => {
+  console.error("Fatal sync error:", err);
+  process.exit(1);
+});

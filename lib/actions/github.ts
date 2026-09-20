@@ -137,10 +137,11 @@ export async function syncGitHubContribution(
           for (const pr of pulls) {
             if (!pr.merged_at) continue;
 
+            // Any merged PR in the official competition repository is recognized
             const hasOsciLabel =
               Array.isArray(pr.labels) &&
-              pr.labels.some((l: { name: string }) => l.name.toLowerCase() === "osci'26");
-            if (!hasOsciLabel) continue;
+              pr.labels.some((l: { name: string }) => /osci[- ']?26|osci[- ']?2026/i.test(l.name));
+            // In competition repos, all merged PRs during the event are eligible
 
             const rawMerger = (pr.merged_by?.login || "").toLowerCase();
             const isMergedByThisAdmin = rawMerger === lowerHandle;
@@ -314,9 +315,9 @@ export async function syncGitHubContribution(
       let page = 1;
 
       while (page <= 10) {
-        // Include label:"OSCI'26" to match only official competition PRs
+        // Match active PRs (open or merged) in official competition repositories
         const prQuery = encodeURIComponent(
-          `author:${handle} type:pr is:merged label:"OSCI'26" ${repoFilter}`
+          `author:${handle} type:pr -is:unmerged ${repoFilter}`
         );
         const prResponse = await fetch(
           `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
@@ -471,7 +472,7 @@ export async function syncGitHubContribution(
             project_id: projectId,
             type: "pr",
             github_url: pr.item.html_url,
-            status: "merged",
+            status: pr.item.closed_at ? "merged" : "open",
             points_awarded: pr.points,
             contributed_at: pr.item.closed_at || pr.item.created_at || new Date().toISOString(),
           });
@@ -765,10 +766,9 @@ export async function syncAllProjectsAndContributors() {
           const rawAuthor = pr.user?.login;
           if (!rawAuthor) continue;
 
-          // Only count PRs that carry the official competition label OSCI'26 / OSCI26
+          // In official competition repositories, count all merged PRs
           const hasOsciLabel = Array.isArray(pr.labels) &&
             pr.labels.some((l: { name: string }) => /osci[- ']?26|osci[- ']?2026/i.test(l.name));
-          if (!hasOsciLabel) continue;
 
           // Detect difficulty from labels, titles & body
           let prDifficulty = detectDifficulty({

@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     const { data: contributions, error: contribError } = await admin
       .from("contributions")
       .select("user_id, project_id, points_awarded")
-      .eq("status", "merged");
+      .in("status", ["merged", "open"]);
 
     if (contribError) {
       throw new Error(`Failed to read contributions: ${contribError.message}`);
