@@ -253,9 +253,9 @@ export async function updateUserRole(
   const admin = createAdminClient();
 
   const isElevated = newRole === "admin" || newRole === "project-admin";
-  const profileUpdates: Partial<Profile> = {
+  // Only write columns that exist on the live profiles table (no updated_at / is_admin).
+  const profileUpdates: { role: string; score?: number; merged_prs?: number; projects_count?: number } = {
     role: newRole,
-    updated_at: new Date().toISOString(),
   };
 
   // Reset scores if promoted out of contributor
@@ -265,11 +265,26 @@ export async function updateUserRole(
     profileUpdates.projects_count = 0;
   }
 
-  // 1. Update auth.users metadata (works unconditionally)
+  // 1. Update profiles table (source of truth for the admin portal) and verify it persisted
+  const { data: updatedRows, error: dbErr } = await admin
+    .from("profiles")
+    .update(profileUpdates)
+    .eq("user_id", targetUserId)
+    .select("id");
+
+  if (dbErr) {
+    console.error("Role update failed on profiles table:", dbErr.message);
+    return { success: false, error: `Failed to save role: ${dbErr.message}` };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: "Failed to save role: user profile not found." };
+  }
+
+  // 2. Mirror to auth.users metadata (best effort; used by fallbacks)
   try {
     const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
     if (userData?.user) {
-      await admin.auth.admin.updateUserById(targetUserId, {
+      const { error: authErr } = await admin.auth.admin.updateUserById(targetUserId, {
         user_metadata: {
           ...userData.user.user_metadata,
           role: newRole,
@@ -277,16 +292,10 @@ export async function updateUserRole(
           ...(isElevated || newRole === "mentor" ? { score: 0, merged_prs: 0, projects_count: 0 } : {}),
         },
       });
+      if (authErr) console.warn("Notice: auth metadata role update:", authErr.message);
     }
   } catch (authErr) {
     console.warn("Notice: auth metadata role update:", authErr);
-  }
-
-  // 2. Update profiles table (by user_id)
-  try {
-    await admin.from("profiles").update(profileUpdates).eq("user_id", targetUserId);
-  } catch (dbErr) {
-    console.warn("Notice: profiles table role update:", dbErr);
   }
 
   revalidatePath("/admin");
