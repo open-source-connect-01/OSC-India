@@ -86,7 +86,7 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
 ]);
 
 /**
- * 28 Official Project Admin GitHub handles mapped to repository patterns.
+ * Official Project Admin GitHub handles mapped to repository patterns.
  */
 export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "parvathishetty405-max",
