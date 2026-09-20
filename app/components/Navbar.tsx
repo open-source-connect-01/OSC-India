@@ -68,7 +68,7 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
 
   const navLinks = isAuthed
     ? [
-        { label: "Dashboard", href: profile?.isProjectAdmin ? "/projectadmin" : "/dashboard" },
+        { label: "Dashboard", href: "/dashboard" },
         { label: "Leaderboard", href: "/leaderboard" },
         { label: "Projects", href: "/projects" },
         { label: "Team", href: "/team" },
@@ -161,6 +161,42 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
             <div style={{ width: "80px", height: "38px" }} /> // Invisible placeholder matching button height
           ) : profile ? (
             <>
+              {/* Notification Bell Icon */}
+              <button
+                aria-label="Notifications"
+                style={{
+                  position: "relative",
+                  background: "transparent",
+                  border: "none",
+                  padding: "8px",
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: "10px",
+                  transition: "color 0.15s ease",
+                }}
+                className="hover:text-white focus:outline-none"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "7px",
+                    right: "7px",
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: "var(--orange)",
+                    boxShadow: "0 0 6px rgba(255, 117, 24, 0.8)",
+                  }}
+                />
+              </button>
+
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 aria-expanded={dropdownOpen}
@@ -329,12 +365,12 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                     <span>Badge Studio</span>
                   </Link>
 
-                  {profile.isProjectAdmin && (
+                  {(profile.role === "project-admin" || profile.isAdmin) && (
                     <Link
-                      href="/projectadmin"
+                      href="/project-admin"
                       style={{
                         padding: "7px 10px",
-                        color: "#ff9233",
+                        color: "#d4d4d8",
                         fontSize: "13px",
                         fontWeight: 500,
                         textDecoration: "none",
@@ -344,12 +380,38 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                         gap: "9px",
                         transition: "background-color 0.12s ease, color 0.12s ease",
                       }}
-                      className="hover:bg-[rgba(255,117,24,0.1)] hover:text-[#ffaa55]"
+                      className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9, flexShrink: 0 }}>
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                        <path d="M6 6h10" />
+                        <path d="M6 10h10" />
                       </svg>
-                      <span>Project Admin Dashboard</span>
+                      <span>Project Admin</span>
+                    </Link>
+                  )}
+
+                  {profile.isAdmin && (
+                    <Link
+                      href="/admin"
+                      style={{
+                        padding: "7px 10px",
+                        color: "#d4d4d8",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        borderRadius: "6px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "9px",
+                        transition: "background-color 0.12s ease, color 0.12s ease",
+                      }}
+                      className="hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75, flexShrink: 0 }}>
+                        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                      </svg>
+                      <span>Admin Portal</span>
                     </Link>
                   )}
                   
@@ -514,13 +576,22 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                   </svg>
                   <span>Badge Studio</span>
                 </Link>
-
-                {profile.isProjectAdmin && (
-                  <Link href="/projectadmin" style={{ color: "#ff9233", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                {(profile.role === "project-admin" || profile.isAdmin) && (
+                  <Link href="/project-admin" style={{ color: "#FF8822", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                      <path d="M6 6h10" />
+                      <path d="M6 10h10" />
                     </svg>
-                    <span>Project Admin Dashboard</span>
+                    <span>Project Admin Portal</span>
+                  </Link>
+                )}
+                {profile.isAdmin && (
+                  <Link href="/admin" style={{ color: "#f87171", textDecoration: "none", fontSize: "15px", fontWeight: 500, padding: "12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+                      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                    </svg>
+                    <span>Admin Portal</span>
                   </Link>
                 )}
                 <button
