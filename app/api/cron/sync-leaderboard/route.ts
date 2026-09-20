@@ -95,14 +95,14 @@ export async function GET(request: Request) {
       updated_at: string;
     }> = [];
 
-    // Protect project-admins and admins: they must never receive leaderboard score
+    // Protect project-admins, mentors and admins: they must never receive leaderboard score
     const { data: allProfiles } = await admin
       .from("profiles")
       .select("id, user_id, role");
 
     const nonScoringUsers = new Set<string>();
     for (const p of allProfiles || []) {
-      if (p.role === "admin" || p.role === "project-admin") {
+      if (p.role === "admin" || p.role === "project-admin" || p.role === "mentor") {
         if (p.id) nonScoringUsers.add(p.id);
         if (p.user_id) nonScoringUsers.add(p.user_id);
       }

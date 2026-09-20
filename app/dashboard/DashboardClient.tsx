@@ -64,7 +64,7 @@ export default function DashboardClient({
   contributedProjects = [],
   weeklyScore = 120,
   weeklyPRs = 12,
-  rank = 1,
+  rank = null,
 }: DashboardClientProps) {
   const [techStack, setTechStack] = useState<string[]>(
     profile.tech_stack && profile.tech_stack.length > 0
@@ -821,11 +821,11 @@ export default function DashboardClient({
                   Rank
                 </div>
                 <div style={{ fontSize: "28px", fontWeight: 800, color: "#f59e0b", lineHeight: 1 }}>
-                  #{rank && rank > 0 ? rank : 1}
+                  {rank && rank > 0 ? `#${rank}` : "—"}
                 </div>
               </div>
               <div style={{ fontSize: "12px", color: "#8b929e", marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span>Leaderboard position</span>
+                <span>{rank && rank > 0 ? "Leaderboard position" : "Not on leaderboard"}</span>
                 <span style={{ color: "#f59e0b", fontWeight: 700 }}>&rarr;</span>
               </div>
             </Link>
