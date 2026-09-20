@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
+
 
 export interface ProjectData {
   id: string;
@@ -200,8 +201,23 @@ function ProjectIcon({ type, color }: { type?: string; color: string }) {
 }
 
 export default function ProjectsClient({ projects }: ProjectsClientProps) {
-  const orderedProjects = projects;
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const q = searchQuery.toLowerCase().trim();
+    return projects.filter((p) => {
+      const titleMatch = p.title?.toLowerCase().includes(q);
+      const descMatch = p.description?.toLowerCase().includes(q);
+      const langMatch = p.language?.toLowerCase().includes(q);
+      const catMatch = p.category?.toLowerCase().includes(q);
+      const tagMatch = Array.isArray(p.tags) && p.tags.some((t) => t.toLowerCase().includes(q));
+      const urlMatch = p.githubUrl?.toLowerCase().includes(q);
+      return titleMatch || descMatch || langMatch || catMatch || tagMatch || urlMatch;
+    });
+  }, [projects, searchQuery]);
+
+  const orderedProjects = filteredProjects;
 
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
@@ -210,7 +226,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
          ========================================================= */}
       <div
         style={{
-          marginBottom: "44px",
+          marginBottom: "36px",
           width: "100%",
           maxWidth: "760px",
         }}
@@ -272,6 +288,127 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
       {/* Anchor for Smooth Scroll */}
       <div id="projects-catalog" style={{ scrollMarginTop: "100px" }} />
 
+      {/* =========================================================
+          SEARCH BAR
+         ========================================================= */}
+      <div
+        style={{
+          marginBottom: "32px",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            maxWidth: "680px",
+          }}
+        >
+          {/* Search Icon */}
+          <div
+            style={{
+              position: "absolute",
+              left: "18px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#8b929e",
+              display: "flex",
+              alignItems: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+
+          {/* Search Input */}
+          <input
+            type="text"
+            placeholder="Search projects by name, description, or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "14px 44px 14px 48px",
+              borderRadius: "14px",
+              background: "#0d0e12",
+              border: "1px solid #1c1e26",
+              color: "#ffffff",
+              fontSize: "14.5px",
+              outline: "none",
+              boxSizing: "border-box",
+              transition: "all 0.2s ease",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#ff7518";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255, 117, 24, 0.15)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#1c1e26";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
+
+          {/* Clear Button */}
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              style={{
+                position: "absolute",
+                right: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.08)",
+                border: "none",
+                borderRadius: "50%",
+                width: "24px",
+                height: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#8b929e",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              className="hover:bg-[rgba(255,255,255,0.18)] hover:text-white"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Search Results Summary */}
+        {searchQuery && (
+          <div style={{ fontSize: "13px", color: "#8b929e", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>
+              Showing <strong style={{ color: "#ffffff" }}>{orderedProjects.length}</strong> of {projects.length} {orderedProjects.length === 1 ? "project" : "projects"}
+            </span>
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#ff7518",
+                cursor: "pointer",
+                fontSize: "13px",
+                padding: 0,
+                textDecoration: "underline",
+              }}
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* =========================================================
           PROJECTS CARDS GRID
@@ -282,6 +419,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
             background: "#0d0e12",
             border: "1px dashed #1c1e26",
             borderRadius: "20px",
+
             padding: "60px 24px",
             textAlign: "center",
             width: "100%",
@@ -311,9 +449,32 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
             No projects found
           </h3>
           <p style={{ fontSize: "13px", color: "#8b929e", margin: 0 }}>
-            Try adjusting your search terms or filter selections.
+            {searchQuery
+              ? `No projects matched "${searchQuery}". Try searching with another term or keyword.`
+              : "Try adjusting your search terms or filter selections."}
           </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                marginTop: "16px",
+                padding: "8px 20px",
+                borderRadius: "9999px",
+                background: "rgba(255, 117, 24, 0.15)",
+                color: "#ff7518",
+                fontSize: "13px",
+                fontWeight: 600,
+                border: "1px solid rgba(255, 117, 24, 0.3)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              className="hover:bg-[rgba(255,117,24,0.25)]"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
+
       ) : (
         <div className="projects-catalog-grid" style={{ width: "100%", marginBottom: "36px" }}>
           {orderedProjects.map((project) => {

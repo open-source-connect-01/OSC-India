@@ -44,8 +44,14 @@ export default function ProjectsLoading() {
         </div>
 
 
+        {/* Search Bar Skeleton */}
+        <div style={{ marginBottom: "32px", width: "100%", maxWidth: "680px" }} className="animate-pulse">
+          <div style={{ width: "100%", height: "48px", borderRadius: "14px", background: "rgba(255,255,255,0.06)", border: "1px solid #1c1e26" }} />
+        </div>
+
         {/* Cards Grid Skeleton (9 cards) */}
         <div className="projects-catalog-grid" style={{ width: "100%", marginBottom: "36px" }}>
+
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
