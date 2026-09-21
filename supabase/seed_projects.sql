@@ -1,5 +1,5 @@
 -- ==============================================================================
--- OSC-India: Seed 28 Active Projects
+-- OSC-India: Seed 29 Active Projects
 -- Populates the public.projects table with official tracked repositories
 -- ==============================================================================
 
@@ -9,204 +9,204 @@ VALUES
   '662dbbb3-6e77-42ef-99af-57273a1c36e1',
   'Truxify – Broker-Free Freight Marketplace',
   'https://github.com/KanishJebaMathewM/Truxify',
-  'Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.
-<!--meta:{"language":"Flutter","accentColor":"#FF7518","stars":"40","forks":"195"}-->'
-),
-(
-  '823673b1-14f7-4de1-8944-836dd8486a17',
-  'Nari shield',
-  'https://github.com/parvathishetty405-max/Nari-shield',
-  'NariShield is an AI-powered women safety solution designed to provide quick assistance during unsafe situations through SOS alerts, emergency contact notifications, location sharing, and intelligent safety assistance.
-<!--meta:{"language":"Python","accentColor":"#ec4899","stars":"0","forks":"0"}-->'
+  'An open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.
+<!--meta:{"language":"Flutter","accentColor":"#FF7518","stars":"40","forks":"195","openIssues":"1172","unassignedIssues":"655"}-->'
 ),
 (
   'ce0a4ddd-a220-4f05-bf3a-24b949761c40',
-  'Customer Segmentation and Churn Prediction',
-  'https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-',
-  'Delivers an end-to-end Machine Learning and Predictive Analytics pipeline designed to uncover hidden behavioral patterns and proactively identify customer churn risks using K-Means clustering and Random Forest classification.
-<!--meta:{"language":"Python","accentColor":"#a855f7","stars":"0","forks":"0"}-->'
-),
-(
-  '6248bf04-686e-43cf-a1bc-30823de25cc9',
-  'Smart Prompt – AI-Powered Prompt Enhancement Chrome Extension',
-  'https://github.com/AKASH290802/smart_prompt_extn',
-  'An AI-powered Chrome Extension that enhances user prompts before they are submitted to AI platforms like ChatGPT, Claude, and Gemini with intelligent optimization, persona-based engineering, and cross-platform synchronization.
-<!--meta:{"language":"JavaScript","accentColor":"#f59e0b","stars":"0","forks":"0"}-->'
-),
-(
-  '2c9c9117-4df5-4758-b970-efa0d7ac86c4',
-  'NetShield Network Monitoring',
-  'https://github.com/TanishqMahadik/NETGUARD',
-  'A network monitoring and security operations dashboard providing real-time packet/traffic analytics, alerting, and JWT-authenticated session monitoring.
-<!--meta:{"language":"Python","accentColor":"#06b6d4","stars":"0","forks":"0"}-->'
-),
-(
-  '5d374d0a-94ce-4363-94c4-be597fd9f4f0',
-  'HALO',
-  'https://github.com/TanmayJaiswal28/halo-v1-app',
-  'HALO makes connectivity adaptive, intelligent, and privacy-focused combining decentralized networks, eSIMs, and VPN technologies.
-<!--meta:{"language":"TypeScript","accentColor":"#8b5cf6","stars":"0","forks":"0"}-->'
-),
-(
-  '4dd1a235-7af8-4db5-99f9-8555fbf30457',
-  'LifeOS-AI',
-  'https://github.com/ANU5565/LifeOS-AI',
-  'An intelligent agent system that proactively queries users about pending schedule tasks, reminders, and daily commitments rather than requiring manual calendar scheduling.
-<!--meta:{"language":"Python","accentColor":"#10b981","stars":"0","forks":"0"}-->'
+  'iloveAgents',
+  'https://github.com/AditthyaSS/iloveAgents',
+  'AI agents worth falling in love with. An open-source ecosystem of specialized autonomous agents built by the community and loved by everyone.
+<!--meta:{"language":"JavaScript","accentColor":"#ec4899","stars":"117","forks":"200","openIssues":"137","unassignedIssues":"50"}-->'
 ),
 (
   '585baad7-e2ca-46aa-bc1d-12d1040abb9e',
-  'Eco vision',
-  'https://github.com/Sushmitha-2007/Eco-vision',
-  'An AI-based environmental monitoring project that uses computer vision and data analysis to identify waste, monitor environmental conditions, and promote smart waste management.
-<!--meta:{"language":"Python","accentColor":"#22c55e","stars":"0","forks":"0"}-->'
-),
-(
-  'bbd4b878-1802-46cf-81a0-6bc098e118a4',
-  'DevMomentum',
-  'https://github.com/revatikadam0607/DevMomentum',
-  'A data-driven placement-preparation planner that helps users organize daily tasks, track progress, manage study roadmaps, and monitor XP levels, streaks, and analytics.
-<!--meta:{"language":"JavaScript","accentColor":"#3b82f6","stars":"0","forks":"0"}-->'
+  'adaptq',
+  'https://github.com/l3tchupkt/adaptq',
+  'High-performance C++17 KV cache compression and quantization engine for LLM inference with Python bindings, SIMD acceleration, and multi-backend edge deployment.
+<!--meta:{"language":"C++","accentColor":"#10b981","stars":"7","forks":"23","openIssues":"63","unassignedIssues":"20"}-->'
 ),
 (
   '86052217-73a6-4f0a-80b1-3288fd3e4388',
-  'LawSaathi-RAG',
-  'https://github.com/SidakSethi-Singh/LawSathi-Rag',
-  'Benchmarks different Retrieval-Augmented Generation (RAG) architectures for Indian legal question-answering, evaluating hybrid search methods with published research and reproducible code.
-<!--meta:{"language":"Python","accentColor":"#eab308","stars":"0","forks":"0"}-->'
-),
-(
-  'b43b290e-ed2a-4d3d-9b28-0bf7d196177b',
-  'FinAssist-AI',
-  'https://github.com/kaushik6715/Team-Alpha',
-  'An intelligent conversational financial assistant and fraud detection chatbot built on top of Google Gemini AI and MERN stack.
-<!--meta:{"language":"JavaScript","accentColor":"#10b981","stars":"0","forks":"0"}-->'
+  'Bolcap',
+  'https://github.com/AdityaPainuli/clippings-vids',
+  'AI-powered viral-moment video clipping and Hinglish caption engine utilizing Whisper word-level transcription, customizable animated captions, and alpha overlay MOV exports.
+<!--meta:{"language":"Python","accentColor":"#ef4444","stars":"4","forks":"18","openIssues":"93","unassignedIssues":"40"}-->'
 ),
 (
   'cf66728e-67dd-444d-9536-bf05ccf8e581',
-  'JARVIS',
-  'https://github.com/RootDeveloperDS/J.A.R.V.I.S.',
-  'A desktop-based mini autonomous agent system designed to execute automated computer actions and desktop assistance.
-<!--meta:{"language":"Python","accentColor":"#0284c7","stars":"0","forks":"0"}-->'
+  'PrepPilot',
+  'https://github.com/Canopus-Labs/PrepPilot',
+  'An all-in-one interview preparation platform that helps candidates organize, track, practice mock interviews, and streamline their technical career preparation in one place.
+<!--meta:{"language":"JavaScript","accentColor":"#3b82f6","stars":"23","forks":"142","openIssues":"8","unassignedIssues":"8"}-->'
 ),
 (
   'a7ccbff8-f3fd-4a07-a9d4-fba5a667490d',
-  'Bank interest calculation system',
-  'https://github.com/onitshubham14/C-Practicle',
-  'A foundational software project simulating core banking calculations, loan computations, and interest rate distribution logic.
-<!--meta:{"language":"C","accentColor":"#64748b","stars":"0","forks":"0"}-->'
+  'Air Quality Intelligence Platform',
+  'https://github.com/AseemPrasad/Air-Quality-Intelligence',
+  'A local-first, open-source data engineering and analytics platform for real-time air-quality monitoring, anomaly detection, and near-term PM2.5 forecasting using sensor streams.
+<!--meta:{"language":"Python","accentColor":"#059669","stars":"4","forks":"25","openIssues":"13","unassignedIssues":"1"}-->'
+),
+(
+  '823673b1-14f7-4de1-8944-836dd8486a17',
+  'Secureflow',
+  'https://github.com/GauravKarakoti/Secureflow',
+  'AI-powered code security analysis platform integrating with GitHub pull requests to automatically detect vulnerabilities, security regressions, and provide instant remediation guidance.
+<!--meta:{"language":"TypeScript","accentColor":"#6366f1","stars":"10","forks":"79","openIssues":"8","unassignedIssues":"0"}-->'
+),
+(
+  'b43b290e-ed2a-4d3d-9b28-0bf7d196177b',
+  'AI Product Factory',
+  'https://github.com/logeshv586-code/AIproductfactory',
+  'An open-source agentic platform helping developers and non-technical founders turn ideas into implementation-ready software specs, architectures, and runnable code through specialized AI agents.
+<!--meta:{"language":"Python","accentColor":"#f43f5e","stars":"5","forks":"12","openIssues":"10","unassignedIssues":"2"}-->'
+),
+(
+  '6248bf04-686e-43cf-a1bc-30823de25cc9',
+  'Harshal World',
+  'https://github.com/harshalkurrey/Harshal-World',
+  'An interactive web portal and arcade gaming showcase built for responsive browser exploration, engaging web utilities, and open-source frontend community collaboration.
+<!--meta:{"language":"JavaScript","accentColor":"#f59e0b","stars":"1","forks":"26","openIssues":"9","unassignedIssues":"9"}-->'
+),
+(
+  '2c9c9117-4df5-4758-b970-efa0d7ac86c4',
+  'LinkID',
+  'https://github.com/vishnukothakapu/linkid',
+  'A decentralized persistent identity protocol and developer toolkit ensuring unified link routing, verifiable creator credentials, and anti-link-rot infrastructure.
+<!--meta:{"language":"TypeScript","accentColor":"#06b6d4","stars":"25","forks":"109","openIssues":"32","unassignedIssues":"10"}-->'
+),
+(
+  '5d374d0a-94ce-4363-94c4-be597fd9f4f0',
+  'DevWhisper',
+  'https://github.com/Aharshi3614/Devwhisper',
+  'Voice-first AI agent for developers. Instead of stopping to browse files or documentation, developers speak questions out loud and receive instant answers grounded in the local codebase.
+<!--meta:{"language":"Python","accentColor":"#8b5cf6","stars":"3","forks":"31","openIssues":"17","unassignedIssues":"5"}-->'
+),
+(
+  '4dd1a235-7af8-4db5-99f9-8555fbf30457',
+  'AthLead',
+  'https://github.com/Harsh-vardhan09/AthLead',
+  'AI-powered sports talent discovery and national ranking platform built for the Ministry of Youth Affairs & Sports, identifying grassroots athletes through computer vision metrics.
+<!--meta:{"language":"JavaScript","accentColor":"#10b981","stars":"23","forks":"24","openIssues":"5","unassignedIssues":"5"}-->'
+),
+(
+  'bbd4b878-1802-46cf-81a0-6bc098e118a4',
+  'Workshpere',
+  'https://github.com/SatyamPandey-07/WorkSphere',
+  'Multi-agent AI workspace discovery platform that helps remote workers locate ideal cafes and coworking environments with noise levels, Wi-Fi speeds, and community ratings.
+<!--meta:{"language":"TypeScript","accentColor":"#3b82f6","stars":"18","forks":"77","openIssues":"212","unassignedIssues":"50"}-->'
 ),
 (
   'f180dd00-fb06-43b0-bbb5-815d88dd2b8a',
-  'Ecommerce -website',
-  'https://github.com/MANIDEEP738/ecommerce-drf-react',
-  'An end-to-end full-stack e-commerce application featuring JWT authentication, category browsing, cart checkout flows under four steps, and Razorpay payment gateway integration.
-<!--meta:{"language":"Python","accentColor":"#f97316","stars":"0","forks":"0"}-->'
+  'Kiranawala',
+  'https://github.com/Jyatin/KiranaWala',
+  'Hyper-local grocery delivery and store management platform digitizing Indian neighborhood kirana shops with digital catalogs, inventory tracking, and direct customer ordering.
+<!--meta:{"language":"JavaScript","accentColor":"#f97316","stars":"0","forks":"1","openIssues":"0","unassignedIssues":"0"}-->'
 ),
 (
   '7b8854e9-adbb-498e-b2ee-1855f0409275',
-  'Jaldiwale',
-  'https://github.com/Sameer005Y/servicewale-backend',
-  'An on-demand home and local services marketplace web application modeled after Urban Company / Urban Clap.
-<!--meta:{"language":"JavaScript","accentColor":"#eab308","stars":"0","forks":"0"}-->'
+  'TraffiTech',
+  'https://github.com/10-Mohan/Trafitech',
+  'Smart traffic monitoring and urban congestion management platform leveraging computer vision and sensor analytics to optimize signal timing and reduce city road bottleneck delays.
+<!--meta:{"language":"JavaScript","accentColor":"#eab308","stars":"0","forks":"0","openIssues":"0","unassignedIssues":"0"}-->'
 ),
 (
   'd3f9d1b4-733b-4645-9059-120697002716',
-  'Agni AI',
-  'https://github.com/Ansika-Singh/Agni-AI',
-  'An interactive 3D architectural visualization and interior design platform that combines modern design principles with traditional Indian Vastu guidelines, generating 2D floor plans and 3D walkthroughs.
-<!--meta:{"language":"TypeScript","accentColor":"#f43f5e","stars":"0","forks":"0"}-->'
+  'CreatorOS',
+  'https://github.com/aashutoshkumarbhardwaj/CreatorOs',
+  'Open-source all-in-one business dashboard for digital creators, unifying bio links, direct message automation, customer relationships, revenue tracking, and content scheduling.
+<!--meta:{"language":"JavaScript","accentColor":"#f43f5e","stars":"42","forks":"92","openIssues":"72","unassignedIssues":"15"}-->'
 ),
 (
   '2b0c28a5-2b26-4aa9-8bc3-27b2145d06ee',
-  'WireForge',
-  'https://github.com/Vaishnav-Sabari-Girish/wireforge',
-  'A Braille wireframe viewer and terminal user interface (TUI) editor created in Rust using the Ratatui framework.
-<!--meta:{"language":"Rust","accentColor":"#dea584","stars":"0","forks":"0"}-->'
-),
-(
-  '8edec7ee-3f19-455b-b1b8-7b361b4980a1',
-  'FinSight - Personal Finance & Investment Tracker',
-  'https://github.com/AyushKhaitan1/FinSight',
-  'A comprehensive personal finance tracking dashboard featuring automated SIP analysis, AI forecasting, receipt optical character recognition (OCR), and investment portfolio management.
-<!--meta:{"language":"TypeScript","accentColor":"#10b981","stars":"0","forks":"0"}-->'
+  'DesktopAI',
+  'https://github.com/Harshbansal8705/DesktopAI',
+  'Voice-activated AI desktop assistant for Linux and desktop environments. Responds to custom wake words, executes terminal actions, launches apps, and provides intelligent contextual help.
+<!--meta:{"language":"Python","accentColor":"#0284c7","stars":"0","forks":"0","openIssues":"0","unassignedIssues":"0"}-->'
 ),
 (
   '4aa5798c-48ff-421f-9325-00db7cf98a50',
-  'KL-eats (food pre-ordering system)',
-  'https://github.com/Kunjalb29/kleatsv1',
-  'A campus and community-oriented food pre-ordering and discovery platform enabling students to explore menus, pre-order meals, and minimize dining wait times.
-<!--meta:{"language":"Java","accentColor":"#f59e0b","stars":"0","forks":"0"}-->'
+  'JuggadLang',
+  'https://github.com/JugaadLang/jugaadlang',
+  'A modern programming language crafted with Hindi keywords and Indian developer idioms. Write syntax the way you think, dream, and code with an interactive REPL and VS Code tooling.
+<!--meta:{"language":"Python","accentColor":"#f97316","stars":"18","forks":"39","openIssues":"31","unassignedIssues":"0"}-->'
+),
+(
+  '8edec7ee-3f19-455b-b1b8-7b361b4980a1',
+  'AI Stock Analyzer',
+  'https://github.com/SrigadaAkshayKumar/stock',
+  'Interactive financial analysis web application delivering technical charting, candlestick pattern recognition, and predictive machine learning models for equity forecasting.
+<!--meta:{"language":"Python","accentColor":"#14b8a6","stars":"37","forks":"108","openIssues":"55","unassignedIssues":"9"}-->'
 ),
 (
   'a9f9c9c8-107a-4bde-b1f8-b907b18deb8a',
-  'DNA sequence matching',
-  'https://github.com/Manyatomar21/Dnasequencematchingfrontend',
-  'A bioinformatics software application built to compare DNA sequences, perform nucleotide pattern matching (A, T, C, G), compute similarity matrices, and process NCBI biological datasets.
-<!--meta:{"language":"Java","accentColor":"#8b5cf6","stars":"0","forks":"0"}-->'
+  'PocketOps',
+  'https://github.com/IIXII-L192/PocketOps-app',
+  'Unified utility dashboard for Android hosting offline UPI QR generation, quick WhatsApp messaging, social shortcuts, and cloud developer utilities under open-source tooling.
+<!--meta:{"language":"Kotlin","accentColor":"#6366f1","stars":"1","forks":"0","openIssues":"0","unassignedIssues":"0"}-->'
 ),
 (
   '826e5c04-b796-4baf-a249-b3c42a753e68',
-  'LinkedIn Clone (Microservice Architecture)',
-  'https://github.com/Deepak-Sharma-141/linkedIn-clone',
-  'A distributed microservices professional social network system utilizing Neo4j graph databases for modeling user connection degrees and Apache Kafka for event-driven message queuing.
-<!--meta:{"language":"Java","accentColor":"#0284c7","stars":"0","forks":"0"}-->'
+  'WalletWise',
+  'https://github.com/SoumyaMishra-7/WalletWise',
+  'Holistic personal finance platform combining automated budget analytics, behavioral spending insights, and AI-driven advisory to empower students and young professionals.
+<!--meta:{"language":"JavaScript","accentColor":"#10b981","stars":"29","forks":"87","openIssues":"165","unassignedIssues":"19"}-->'
 ),
 (
   '755a6ce3-20c8-47cb-8a48-4f46790c4409',
-  'Telecom Churn prediction',
-  'https://github.com/Yash-Agarwal-4a5h/Telecom-Customer-Churn-Prediction-System',
-  'Supervised classification machine learning model pipeline to detect and predict churn probabilities among telecom subscribers using feature engineering and demographic analytics.
-<!--meta:{"language":"Python","accentColor":"#ec4899","stars":"0","forks":"0"}-->'
+  'WinAurex',
+  'https://github.com/YTxFSGAMERz/WinAurex',
+  'Comprehensive Windows performance optimization suite and telemetry debloater, delivering automated latency reductions, registry tuning, driver management, and privacy scripts.
+<!--meta:{"language":"Batchfile","accentColor":"#a855f7","stars":"7","forks":"0","openIssues":"1","unassignedIssues":"0"}-->'
 ),
 (
   '28c2c349-6f65-47ff-89ce-cb2b5cc45493',
-  'Scout',
-  'https://github.com/Tanmay-Mirgal/scout',
-  'An open-source multi-agent intelligence and research workspace that orchestrates specialized AI agents to investigate complex queries, evaluate sources, verify facts, and produce evidence-backed reports.
-<!--meta:{"language":"TypeScript","accentColor":"#6366f1","stars":"0","forks":"0"}-->'
+  'hiero-bot-py',
+  'https://github.com/AnthropicBots/hiero-bot-py',
+  'FastAPI-based GitHub maintainer automation bot streamlining repository workflows with PR health scoring, reviewer recommendations, issue triage, and live analytics dashboards.
+<!--meta:{"language":"Python","accentColor":"#06b6d4","stars":"25","forks":"16","openIssues":"24","unassignedIssues":"10"}-->'
 ),
 (
   'e720f832-7fb2-48ea-92fe-74a0916acd90',
-  'Customer Churn Prediction',
-  'https://github.com/Ratnakmri/Customer-Churn-Prediction',
-  'An end-to-end customer churn classification solution leveraging XGBoost and scikit-learn models to identify retention risks across customer cohorts.
-<!--meta:{"language":"Python","accentColor":"#14b8a6","stars":"0","forks":"0"}-->'
+  'Dockfleet',
+  'https://github.com/pratyushjha06/Dockfleet',
+  'Free and open-source, local-first Docker container orchestration tool engineered for solo developers and small teams to deploy, monitor, and scale multi-service stacks on a single VPS.
+<!--meta:{"language":"Python","accentColor":"#0284c7","stars":"14","forks":"29","openIssues":"9","unassignedIssues":"0"}-->'
 ),
 (
   '321f207c-1da3-452f-926b-e8aa5b72c225',
-  'e-commerce style wardobe',
-  'https://github.com/dikshaikify/style-wardrobee',
-  'A TypeScript-based apparel e-commerce web platform offering granular category-based filtering, men/women/kids collections, and responsive checkout interfaces.
-<!--meta:{"language":"TypeScript","accentColor":"#f43f5e","stars":"0","forks":"0"}-->'
+  'TCalc — Local-First AI Coding Context & Token Intelligence Toolkit',
+  'https://github.com/Sandesh13fr/TCalc',
+  'Local-first developer toolkit for analyzing repository token footprints, generating smart repo maps, optimizing model context windows, and integrating with Cursor, Claude Code, and MCP.
+<!--meta:{"language":"TypeScript","accentColor":"#8b5cf6","stars":"15","forks":"16","openIssues":"35","unassignedIssues":"2"}-->'
 ),
 (
   '99d92002-85b8-4d6c-a878-ea0aa9b56d1e',
-  'Rai',
-  'https://github.com/rishika-2626/Rai',
-  'An AI-powered lifestyle and productivity assistant providing contextual scheduling, intelligent suggestions, and full-stack task organization.
-<!--meta:{"language":"TypeScript","accentColor":"#a855f7","stars":"0","forks":"0"}-->'
+  'Advanced Discord Bot',
+  'https://github.com/AdvancedDiscordBot/Advanced-Discord-Bot',
+  'Feature-rich, community-focused Discord bot featuring Google Gemini AI conversation, automated moderation, interactive mini-games, dynamic XP leveling, and custom server plugins.
+<!--meta:{"language":"JavaScript","accentColor":"#5865F2","stars":"0","forks":"0","openIssues":"35","unassignedIssues":"15"}-->'
 ),
 (
   '20236d48-ae3e-4a88-8f9d-2d42158e5547',
-  'VedEngine-Pro',
-  'https://github.com/Subha12125/VedEngine-Pro',
-  'A lightweight custom web search and aggregation engine focused on fast indexed content discovery and developer-friendly querying.
-<!--meta:{"language":"JavaScript","accentColor":"#38bdf8","stars":"0","forks":"0"}-->'
+  'LixBlogs',
+  'https://github.com/elixpo/blogs.elixpo',
+  'Ultra-clean, modern publishing platform and markdown developer blogging engine built on Cloudflare edge workers, D1 databases, and Next.js for high-speed technical storytelling.
+<!--meta:{"language":"JavaScript","accentColor":"#38bdf8","stars":"10","forks":"10","openIssues":"21","unassignedIssues":"5"}-->'
 ),
 (
   'c9348e6e-7ba7-416b-897b-8cccfe94512b',
-  'PBTW — Pappu Bhai Tanker Wale',
-  'https://www.github.com/aryan1994/pbtw',
-  'A hyper-local logistics and booking platform specifically engineered to streamline, schedule, and track commercial water tanker deliveries.
-<!--meta:{"language":"TypeScript","accentColor":"#0284c7","stars":"0","forks":"0"}-->'
+  'CIVICFIX',
+  'https://github.com/Janani-bn/CivicFix',
+  'Crowdsourced civic grievance reporting portal connecting citizens with municipal authorities for tracking potholes, sanitation, water shortages, and public infrastructure repairs.
+<!--meta:{"language":"JavaScript","accentColor":"#10b981","stars":"2","forks":"5","openIssues":"9","unassignedIssues":"0"}-->'
 ),
 (
   'e3403d54-57b6-47bd-9865-bddcdff7a3be',
-  'NXTpath',
-  'https://github.com/akhilesh-kumar/NXTpath',
-  'A career roadmap and skill pathway discovery platform guiding students toward personalized technical milestones.
-<!--meta:{"language":"TypeScript","accentColor":"#10b981","stars":"0","forks":"0"}-->'
+  'OpenHire',
+  'https://github.com/DevSidd2006/openhire',
+  'Transparent, open-source technical recruitment platform that matches candidates directly with engineering teams through verified skills, portfolio benchmarks, and fair assessment.
+<!--meta:{"language":"Python","accentColor":"#f43f5e","stars":"3","forks":"3","openIssues":"0","unassignedIssues":"0"}-->'
 )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
