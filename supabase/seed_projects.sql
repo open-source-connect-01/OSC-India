@@ -6,6 +6,13 @@
 INSERT INTO public.projects (id, name, github_repo_url, description)
 VALUES
 (
+  '662dbbb3-6e77-42ef-99af-57273a1c36e1',
+  'Truxify – Broker-Free Freight Marketplace',
+  'https://github.com/KanishJebaMathewM/Truxify',
+  'Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.
+<!--meta:{"language":"Flutter","accentColor":"#FF7518","stars":"40","forks":"195"}-->'
+),
+(
   '823673b1-14f7-4de1-8944-836dd8486a17',
   'Nari shield',
   'https://github.com/parvathishetty405-max/Nari-shield',

@@ -40,6 +40,16 @@ export interface NewProjectInput {
 
 const DEFAULT_PROJECTS: ProjectItem[] = [
   {
+    id: "662dbbb3-6e77-42ef-99af-57273a1c36e1",
+    title: "Truxify – Broker-Free Freight Marketplace",
+    description: "Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.",
+    githubUrl: "https://github.com/KanishJebaMathewM/Truxify",
+    language: "Flutter",
+    accentColor: "#FF7518",
+    stars: "40",
+    forks: "195",
+  },
+  {
     id: "823673b1-14f7-4de1-8944-836dd8486a17",
     title: "Nari shield",
     description: "NariShield is an AI-powered women safety solution designed to provide quick assistance during unsafe situations through SOS alerts, emergency contact notifications, location sharing, and intelligent safety assistance.",

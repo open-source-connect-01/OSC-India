@@ -21,6 +21,28 @@ interface ProjectMeta {
 }
 
 const PROJECT_META_MAP: Record<string, ProjectMeta> = {
+  "Truxify – Broker-Free Freight Marketplace": {
+    tags: ["Flutter", "Dart", "Firebase", "Node.js", "Open Source", "Logistics"],
+    category: "Logistics & Supply Chain",
+    iconType: "truck",
+    accentColor: "#FF7518",
+    mockupDescription: "Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.",
+    stars: "40",
+    forks: "195",
+    openIssues: "15",
+    unassignedIssues: "6",
+  },
+  "Truxify": {
+    tags: ["Flutter", "Dart", "Firebase", "Node.js", "Open Source", "Logistics"],
+    category: "Logistics & Supply Chain",
+    iconType: "truck",
+    accentColor: "#FF7518",
+    mockupDescription: "Truxify is an open-source, broker-free freight marketplace connecting manufacturers directly with truck drivers for transparent pricing, live GPS tracking, and instant load bookings.",
+    stars: "40",
+    forks: "195",
+    openIssues: "15",
+    unassignedIssues: "6",
+  },
   "Nari shield": {
     tags: ["Python","JavaScript","React","Flask","Firebase","AI/ML","Women Safety"],
     category: "AI & Public Safety / CivicTech",
@@ -429,6 +451,15 @@ export default async function ProjectsPage() {
       category: meta?.category || "Developer Tools & Productivity",
       iconType: meta?.iconType || "git-fork",
     };
+  });
+
+  // Always ensure Truxify is the 1st project in the directory
+  enrichedProjects.sort((a, b) => {
+    const isTruxifyA = a.title.toLowerCase().includes("truxify") || a.githubUrl.toLowerCase().includes("truxify");
+    const isTruxifyB = b.title.toLowerCase().includes("truxify") || b.githubUrl.toLowerCase().includes("truxify");
+    if (isTruxifyA && !isTruxifyB) return -1;
+    if (!isTruxifyA && isTruxifyB) return 1;
+    return 0;
   });
 
   return (

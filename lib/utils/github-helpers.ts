@@ -21,6 +21,7 @@ export const DIFFICULTY_RANK: Record<DifficultyLevel, number> = {
  * Contributions are strictly calculated ONLY from PRs merged into these repositories.
  */
 export const OFFICIAL_COMPETITION_REPOS = [
+  "https://github.com/KanishJebaMathewM/Truxify",
   "https://github.com/parvathishetty405-max/Nari-shield",
   "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
   "https://github.com/AKASH290802/smart_prompt_extn",
@@ -55,6 +56,7 @@ export const OFFICIAL_COMPETITION_REPOS = [
  * Normalized lowercase "owner/repo" slugs for all official competition repositories.
  */
 export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
+  "kanishjebamathewm/truxify",
   "parvathishetty405-max/nari-shield",
   "abhaycs24/cbsot_sip_project-1-",
   "akash290802/smart_prompt_extn",
@@ -89,6 +91,7 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
  * Official Project Admin GitHub handles mapped to repository patterns.
  */
 export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
+  "kanishjebamathewm",
   "parvathishetty405-max",
   "abhaycs24",
   "akash290802",
