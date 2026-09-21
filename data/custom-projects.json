@@ -1,6 +1,7 @@
 [
   {
     "id": "ce0a4ddd-a220-4f05-bf3a-24b949761c40",
+    "status": "approved",
     "title": "Customer Segmentation and Churn Prediction",
     "description": "Delivers an end-to-end Machine Learning and Predictive Analytics pipeline designed to uncover hidden behavioral patterns and proactively identify customer churn risks using K-Means clustering and Random Forest classification.",
     "githubUrl": "https://github.com/abhaycs24/CBSOT_SIP_PROJECT-1-",
@@ -13,6 +14,7 @@
   },
   {
     "id": "585baad7-e2ca-46aa-bc1d-12d1040abb9e",
+    "status": "approved",
     "title": "Eco vision",
     "description": "An AI-based environmental monitoring project that uses computer vision and data analysis to identify waste, monitor environmental conditions, and promote smart waste management.",
     "githubUrl": "https://github.com/Sushmitha-2007/Eco-vision",
@@ -25,6 +27,7 @@
   },
   {
     "id": "86052217-73a6-4f0a-80b1-3288fd3e4388",
+    "status": "approved",
     "title": "LawSaathi-RAG",
     "description": "Benchmarks different Retrieval-Augmented Generation (RAG) architectures for Indian legal question-answering, evaluating hybrid search methods with published research and reproducible code.",
     "githubUrl": "https://github.com/SidakSethi-Singh/LawSathi-Rag",
@@ -37,6 +40,7 @@
   },
   {
     "id": "cf66728e-67dd-444d-9536-bf05ccf8e581",
+    "status": "approved",
     "title": "JARVIS",
     "description": "A desktop-based mini autonomous agent system designed to execute automated computer actions and desktop assistance.",
     "githubUrl": "https://github.com/RootDeveloperDS/J.A.R.V.I.S.",
@@ -49,6 +53,7 @@
   },
   {
     "id": "a7ccbff8-f3fd-4a07-a9d4-fba5a667490d",
+    "status": "approved",
     "title": "Bank interest calculation system",
     "description": "A foundational software project simulating core banking calculations, loan computations, and interest rate distribution logic.",
     "githubUrl": "https://github.com/onitshubham14/C-Practicle",
@@ -61,6 +66,7 @@
   },
   {
     "id": "823673b1-14f7-4de1-8944-836dd8486a17",
+    "status": "approved",
     "title": "Nari shield",
     "description": "NariShield is an AI-powered women safety solution designed to provide quick assistance during unsafe situations through SOS alerts, emergency contact notifications, location sharing, and intelligent safety assistance.",
     "githubUrl": "https://github.com/parvathishetty405-max/Nari-shield",
@@ -73,6 +79,7 @@
   },
   {
     "id": "b43b290e-ed2a-4d3d-9b28-0bf7d196177b",
+    "status": "approved",
     "title": "FinAssist-AI",
     "description": "An intelligent conversational financial assistant and fraud detection chatbot built on top of Google Gemini AI and MERN stack.",
     "githubUrl": "https://github.com/kaushik6715/Team-Alpha",
@@ -85,6 +92,7 @@
   },
   {
     "id": "6248bf04-686e-43cf-a1bc-30823de25cc9",
+    "status": "approved",
     "title": "Smart Prompt – AI-Powered Prompt Enhancement Chrome Extension",
     "description": "An AI-powered Chrome Extension that enhances user prompts before they are submitted to AI platforms like ChatGPT, Claude, and Gemini with intelligent optimization, persona-based engineering, and cross-platform synchronization.",
     "githubUrl": "https://github.com/AKASH290802/smart_prompt_extn",
@@ -97,6 +105,7 @@
   },
   {
     "id": "2c9c9117-4df5-4758-b970-efa0d7ac86c4",
+    "status": "approved",
     "title": "NetShield Network Monitoring",
     "description": "A network monitoring and security operations dashboard providing real-time packet/traffic analytics, alerting, and JWT-authenticated session monitoring.",
     "githubUrl": "https://github.com/TanishqMahadik/NETGUARD",
@@ -109,6 +118,7 @@
   },
   {
     "id": "5d374d0a-94ce-4363-94c4-be597fd9f4f0",
+    "status": "approved",
     "title": "HALO",
     "description": "HALO makes connectivity adaptive, intelligent, and privacy-focused combining decentralized networks, eSIMs, and VPN technologies.",
     "githubUrl": "https://github.com/TanmayJaiswal28/halo-v1-app",
@@ -121,6 +131,7 @@
   },
   {
     "id": "4dd1a235-7af8-4db5-99f9-8555fbf30457",
+    "status": "approved",
     "title": "LifeOS-AI",
     "description": "An intelligent agent system that proactively queries users about pending schedule tasks, reminders, and daily commitments rather than requiring manual calendar scheduling.",
     "githubUrl": "https://github.com/ANU5565/LifeOS-AI",
@@ -133,6 +144,7 @@
   },
   {
     "id": "bbd4b878-1802-46cf-81a0-6bc098e118a4",
+    "status": "approved",
     "title": "DevMomentum",
     "description": "A data-driven placement-preparation planner that helps users organize daily tasks, track progress, manage study roadmaps, and monitor XP levels, streaks, and analytics.",
     "githubUrl": "https://github.com/revatikadam0607/DevMomentum",
@@ -145,6 +157,7 @@
   },
   {
     "id": "f180dd00-fb06-43b0-bbb5-815d88dd2b8a",
+    "status": "approved",
     "title": "Ecommerce -website",
     "description": "An end-to-end full-stack e-commerce application featuring JWT authentication, category browsing, cart checkout flows under four steps, and Razorpay payment gateway integration.",
     "githubUrl": "https://github.com/MANIDEEP738/ecommerce-drf-react",
@@ -157,6 +170,7 @@
   },
   {
     "id": "7b8854e9-adbb-498e-b2ee-1855f0409275",
+    "status": "approved",
     "title": "Jaldiwale",
     "description": "An on-demand home and local services marketplace web application modeled after Urban Company / Urban Clap.",
     "githubUrl": "https://github.com/Sameer005Y/servicewale-backend",
@@ -169,6 +183,7 @@
   },
   {
     "id": "d3f9d1b4-733b-4645-9059-120697002716",
+    "status": "approved",
     "title": "Agni AI",
     "description": "An interactive 3D architectural visualization and interior design platform that combines modern design principles with traditional Indian Vastu guidelines, generating 2D floor plans and 3D walkthroughs.",
     "githubUrl": "https://github.com/Ansika-Singh/Agni-AI",
@@ -181,6 +196,7 @@
   },
   {
     "id": "2b0c28a5-2b26-4aa9-8bc3-27b2145d06ee",
+    "status": "approved",
     "title": "WireForge",
     "description": "A Braille wireframe viewer and terminal user interface (TUI) editor created in Rust using the Ratatui framework.",
     "githubUrl": "https://github.com/Vaishnav-Sabari-Girish/wireforge",
@@ -193,6 +209,7 @@
   },
   {
     "id": "4aa5798c-48ff-421f-9325-00db7cf98a50",
+    "status": "approved",
     "title": "KL-eats (food pre-ordering system)",
     "description": "A campus and community-oriented food pre-ordering and discovery platform enabling students to explore menus, pre-order meals, and minimize dining wait times.",
     "githubUrl": "https://github.com/Kunjalb29/kleatsv1",
@@ -205,6 +222,7 @@
   },
   {
     "id": "8edec7ee-3f19-455b-b1b8-7b361b4980a1",
+    "status": "approved",
     "title": "FinSight - Personal Finance & Investment Tracker",
     "description": "A comprehensive personal finance tracking dashboard featuring automated SIP analysis, AI forecasting, receipt optical character recognition (OCR), and investment portfolio management.",
     "githubUrl": "https://github.com/AyushKhaitan1/FinSight",
@@ -217,6 +235,7 @@
   },
   {
     "id": "a9f9c9c8-107a-4bde-b1f8-b907b18deb8a",
+    "status": "approved",
     "title": "DNA sequence matching",
     "description": "A bioinformatics software application built to compare DNA sequences, perform nucleotide pattern matching (A, T, C, G), compute similarity matrices, and process NCBI biological datasets.",
     "githubUrl": "https://github.com/Manyatomar21/Dnasequencematchingfrontend",
@@ -229,6 +248,7 @@
   },
   {
     "id": "826e5c04-b796-4baf-a249-b3c42a753e68",
+    "status": "approved",
     "title": "LinkedIn Clone (Microservice Architecture)",
     "description": "A distributed microservices professional social network system utilizing Neo4j graph databases for modeling user connection degrees and Apache Kafka for event-driven message queuing.",
     "githubUrl": "https://github.com/Deepak-Sharma-141/linkedIn-clone",
@@ -241,6 +261,7 @@
   },
   {
     "id": "755a6ce3-20c8-47cb-8a48-4f46790c4409",
+    "status": "approved",
     "title": "Telecom Churn prediction",
     "description": "Supervised classification machine learning model pipeline to detect and predict churn probabilities among telecom subscribers using feature engineering and demographic analytics.",
     "githubUrl": "https://github.com/Yash-Agarwal-4a5h/Telecom-Customer-Churn-Prediction-System",
@@ -253,6 +274,7 @@
   },
   {
     "id": "28c2c349-6f65-47ff-89ce-cb2b5cc45493",
+    "status": "approved",
     "title": "Scout",
     "description": "An open-source multi-agent intelligence and research workspace that orchestrates specialized AI agents to investigate complex queries, evaluate sources, verify facts, and produce evidence-backed reports.",
     "githubUrl": "https://github.com/Tanmay-Mirgal/scout",
@@ -265,6 +287,7 @@
   },
   {
     "id": "e720f832-7fb2-48ea-92fe-74a0916acd90",
+    "status": "approved",
     "title": "Customer Churn Prediction",
     "description": "An end-to-end customer churn classification solution leveraging XGBoost and scikit-learn models to identify retention risks across customer cohorts.",
     "githubUrl": "https://github.com/Ratnakmri/Customer-Churn-Prediction",
@@ -277,6 +300,7 @@
   },
   {
     "id": "321f207c-1da3-452f-926b-e8aa5b72c225",
+    "status": "approved",
     "title": "e-commerce style wardobe",
     "description": "A TypeScript-based apparel e-commerce web platform offering granular category-based filtering, men/women/kids collections, and responsive checkout interfaces.",
     "githubUrl": "https://github.com/dikshaikify/style-wardrobee",
@@ -289,6 +313,7 @@
   },
   {
     "id": "99d92002-85b8-4d6c-a878-ea0aa9b56d1e",
+    "status": "approved",
     "title": "Rai",
     "description": "An AI-powered lifestyle and productivity assistant providing contextual scheduling, intelligent suggestions, and full-stack task organization.",
     "githubUrl": "https://github.com/rishika-2626/Rai",
@@ -301,6 +326,7 @@
   },
   {
     "id": "20236d48-ae3e-4a88-8f9d-2d42158e5547",
+    "status": "approved",
     "title": "VedEngine-Pro",
     "description": "A lightweight custom web search and aggregation engine focused on fast indexed content discovery and developer-friendly querying.",
     "githubUrl": "https://github.com/Subha12125/VedEngine-Pro",
@@ -313,6 +339,7 @@
   },
   {
     "id": "c9348e6e-7ba7-416b-897b-8cccfe94512b",
+    "status": "approved",
     "title": "PBTW — Pappu Bhai Tanker Wale",
     "description": "A hyper-local logistics and booking platform specifically engineered to streamline, schedule, and track commercial water tanker deliveries.",
     "githubUrl": "https://www.github.com/aryan1994/pbtw",
@@ -325,6 +352,7 @@
   },
   {
     "id": "e3403d54-57b6-47bd-9865-bddcdff7a3be",
+    "status": "approved",
     "title": "NXTpath",
     "description": "A career roadmap and skill pathway discovery platform guiding students toward personalized technical milestones.",
     "githubUrl": "https://github.com/akhilesh-kumar/NXTpath",
