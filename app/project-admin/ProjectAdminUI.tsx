@@ -11,6 +11,7 @@ import {
   ProjectAdminPR,
   awardContributorPointsAction,
   syncContributorPRsAction,
+  addProjectAsAdminAction,
 } from "@/lib/actions/project-admin";
 
 interface ProjectAdminUIProps {
@@ -135,6 +136,12 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
 
   // Syncing state per user
   const [syncingUserIds, setSyncingUserIds] = useState<Record<string, boolean>>({});
+
+  // Add Project Modal State
+  const [addProjectOpen, setAddProjectOpen] = useState(false);
+  const [addProjectUrl, setAddProjectUrl] = useState("");
+  const [addProjectDesc, setAddProjectDesc] = useState("");
+  const [addProjectLoading, setAddProjectLoading] = useState(false);
 
   // Toast notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -270,6 +277,40 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
     });
   };
 
+  // Handle Add Project
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addProjectUrl.trim()) {
+      showToast("Enter the GitHub repository URL.", "error");
+      return;
+    }
+    setAddProjectLoading(true);
+    try {
+      const res = await addProjectAsAdminAction(addProjectUrl, addProjectDesc);
+      if (!res.success) {
+        showToast(res.error || "Failed to add project.", "error");
+        return;
+      }
+      const { getProjectAdminData } = await import("@/lib/actions/project-admin");
+      const target = data.currentUser.isSuperAdmin ? data.selectedAdminGithub ?? undefined : undefined;
+      setData(await getProjectAdminData(target));
+      setAddProjectOpen(false);
+      setAddProjectUrl("");
+      setAddProjectDesc("");
+      setActiveTab("repos");
+      showToast(
+        res.project?.status === "pending"
+          ? `"${res.project.title}" submitted for Super Admin approval.`
+          : `Project "${res.project?.title}" added to the competition!`,
+        "success"
+      );
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to add project.", "error");
+    } finally {
+      setAddProjectLoading(false);
+    }
+  };
+
   // Handle Switch Admin (Super Admin view)
   const handleSwitchAdmin = (adminGithub: string) => {
     startTransition(async () => {
@@ -334,6 +375,124 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
           gap: "28px",
         }}
       >
+        {/* Add Project Modal */}
+        {addProjectOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Add project"
+            onClick={() => !addProjectLoading && setAddProjectOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9998,
+              background: "rgba(0, 0, 0, 0.7)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+            }}
+          >
+            <form
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={handleAddProject}
+              style={{
+                width: "100%",
+                maxWidth: "480px",
+                background: "linear-gradient(180deg, #131317 0%, #0a0a0d 100%)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "20px",
+                padding: "28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "white", margin: 0 }}>Add a Project</h3>
+              <p style={{ fontSize: "13px", color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
+                Submit a public GitHub repository for the competition. A Super Admin reviews every submission;
+                once approved it is listed under your managed repositories and merged PRs start counting toward
+                contributor scores.
+              </p>
+              <label style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 600 }}>
+                GitHub repository URL
+                <input
+                  autoFocus
+                  value={addProjectUrl}
+                  onChange={(e) => setAddProjectUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo"
+                  style={{
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    background: "#0b0b0f",
+                    color: "white",
+                    fontSize: "14px",
+                  }}
+                />
+              </label>
+              <label style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 600 }}>
+                Description (optional, defaults to the GitHub description)
+                <textarea
+                  value={addProjectDesc}
+                  onChange={(e) => setAddProjectDesc(e.target.value)}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    background: "#0b0b0f",
+                    color: "white",
+                    fontSize: "14px",
+                    resize: "vertical",
+                  }}
+                />
+              </label>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
+                <button
+                  type="button"
+                  onClick={() => setAddProjectOpen(false)}
+                  disabled={addProjectLoading}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    background: "transparent",
+                    color: "#d1d5db",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addProjectLoading}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: "10px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                    color: "white",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: addProjectLoading ? "wait" : "pointer",
+                    opacity: addProjectLoading ? 0.7 : 1,
+                  }}
+                >
+                  {addProjectLoading ? "Submitting..." : data.currentUser.isSuperAdmin ? "Add Project" : "Submit for Approval"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Toast Banner */}
         {toast && (
           <div
@@ -499,6 +658,26 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
                 <ExternalLinkIcon className="w-3.5 h-3.5" />
               </Link>
             )}
+
+            <button
+              type="button"
+              onClick={() => setAddProjectOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "linear-gradient(135deg, #FF7518 0%, #FF5500 100%)",
+                border: "none",
+                color: "white",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <span>+ Add Project</span>
+            </button>
 
             <Link
               href="/dashboard"
@@ -1548,6 +1727,70 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
         {/* TAB 3: MY REPOSITORIES */}
         {activeTab === "repos" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
+            {data.submissions.length > 0 && (
+              <div
+                style={{
+                  background: "rgba(251, 191, 36, 0.05)",
+                  border: "1px solid rgba(251, 191, 36, 0.3)",
+                  borderRadius: "16px",
+                  padding: "18px 20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.06em", color: "#fbbf24" }}>
+                  YOUR SUBMISSIONS
+                </span>
+                {data.submissions.map((sub) => (
+                  <div
+                    key={sub.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                      background: "rgba(12, 12, 16, 0.7)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "12px",
+                      padding: "12px 14px",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "white" }}>{sub.name}</div>
+                      <div style={{ fontSize: "12px", color: "#9ca3af" }}>
+                        {sub.githubRepoUrl.replace(/^https?:\/\/github\.com\//i, "")}
+                      </div>
+                      {sub.status === "rejected" && sub.rejectionReason && (
+                        <div style={{ fontSize: "12px", color: "#f87171", marginTop: "4px" }}>
+                          Reason: {sub.rejectionReason}
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        padding: "4px 12px",
+                        borderRadius: "14px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                        background: sub.status === "pending" ? "rgba(251, 191, 36, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                        color: sub.status === "pending" ? "#fbbf24" : "#f87171",
+                      }}
+                    >
+                      {sub.status === "pending" ? "Awaiting approval" : "Rejected"}
+                    </span>
+                  </div>
+                ))}
+                {data.submissions.some((x) => x.status === "rejected") && (
+                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                    Rejected projects can be resubmitted with + Add Project.
+                  </span>
+                )}
+              </div>
+            )}
             {data.managedProjects.length === 0 ? (
               <div
                 style={{
@@ -1569,7 +1812,7 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
                     @{data.currentUser.github || "not-configured"}
                   </strong>
                   ). If your repository belongs to an organization or has not yet been added to the competition,
-                  contact the Super Admin to register it.
+                  use the <strong style={{ color: "#FF8822" }}>+ Add Project</strong> button to submit it for Super Admin approval.
                 </p>
                 <Link
                   href="/projects"

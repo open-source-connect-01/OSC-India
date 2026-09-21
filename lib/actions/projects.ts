@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAdminSession } from "@/lib/auth/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 import { extractRepoSlug, OFFICIAL_COMPETITION_REPO_SLUGS, getGitHubAuthHeaders } from "@/lib/utils/github-helpers";
+import { ProjectStatus, readProjectMeta } from "@/lib/utils/project-meta";
 
 export interface ProjectItem {
   id: string;
@@ -20,6 +21,11 @@ export interface ProjectItem {
   openIssues?: string;
   unassignedIssues?: string;
   created_at?: string;
+  /** Approval state; projects without a status are approved. */
+  status?: ProjectStatus;
+  /** GitHub handle of the project admin who submitted / manages this project. */
+  submittedBy?: string;
+  rejectionReason?: string;
 }
 
 export interface NewProjectInput {
@@ -342,7 +348,8 @@ function writeLocalCustomProjects(projects: ProjectItem[]): void {
 }
 
 /**
- * Validates admin permissions for project modifications.
+ * Validates Super Admin permissions for project modifications.
+ * Project Admins may only submit projects for approval (see addProjectAsAdminAction).
  */
 async function checkAdminAuth(): Promise<boolean> {
   const isAdminSession = await verifyAdminSession();
@@ -353,6 +360,9 @@ async function checkAdminAuth(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
+    const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
+    if ((user.email || "").toLowerCase().trim() === rootAdminEmail) return true;
+
     const admin = createAdminClient();
     const { data: profile } = await admin
       .from("profiles")
@@ -360,7 +370,7 @@ async function checkAdminAuth(): Promise<boolean> {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    return Boolean(profile && (profile.role === "admin" || profile.role === "project-admin"));
+    return profile?.role === "admin";
   } catch {
     return false;
   }
@@ -416,8 +426,15 @@ function parseProjectFromDb(row: DbProjectRow): ProjectItem {
     }
   }
 
+  const rawMeta = readProjectMeta(row.description);
+  const status: ProjectStatus =
+    rawMeta.status === "pending" || rawMeta.status === "rejected" ? rawMeta.status : "approved";
+
   return {
     id: String(row.id),
+    status,
+    submittedBy: typeof rawMeta.admin_github === "string" ? rawMeta.admin_github : undefined,
+    rejectionReason: typeof rawMeta.rejection_reason === "string" ? rawMeta.rejection_reason : undefined,
     title: row.name || row.title || "Project",
     description: cleanDesc,
     githubUrl: row.github_repo_url || row.github_url || row.githubUrl || "#",
@@ -445,7 +462,8 @@ export async function getProjects(): Promise<ProjectItem[]> {
     // When the database query succeeds (error is null and data is an array):
     // Even if data is empty ([]), that is the database reality (e.g. all projects were deleted).
     if (!error && Array.isArray(data)) {
-      const projects = data.map(parseProjectFromDb);
+      // Only approved projects are public / count for scoring; pending & rejected stay hidden
+      const projects = data.map(parseProjectFromDb).filter((p) => p.status === "approved");
       // Synchronize local cache to mirror database state exactly
       writeLocalCustomProjects(projects);
       return projects;
@@ -465,6 +483,29 @@ export async function getProjects(): Promise<ProjectItem[]> {
   }
 
   return DEFAULT_PROJECTS;
+}
+
+/**
+ * Returns every project including pending and rejected submissions.
+ * Restricted to admins / project admins (who only see submissions through their own portal filters).
+ */
+export async function getAllProjectsForAdmins(): Promise<ProjectItem[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let allowed = await verifyAdminSession();
+  if (!allowed && user) {
+    const { data: profile } = await createAdminClient()
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    allowed = profile?.role === "admin" || profile?.role === "project-admin";
+  }
+  if (!allowed) return [];
+
+  const { data, error } = await createAdminClient().from("projects").select("*");
+  if (error || !Array.isArray(data)) return [];
+  return data.map(parseProjectFromDb);
 }
 
 // Module-level cache for repo slugs (10-minute TTL to prevent repeated DB reads during high sync volume)
@@ -683,9 +724,14 @@ export async function discoverProjectsByTopic(
         const currentMeta = parseProjectFromDb(existing);
         if (currentMeta.stars !== stars || currentMeta.forks !== forks) {
           try {
+            // Preserve approval status / submitter so a refresh never approves a pending project
+            const preserved = readProjectMeta(existing.description);
+            const mergedMeta = { ...metaPayload, ...(preserved.status ? { status: preserved.status } : {}),
+              ...(preserved.admin_github ? { admin_github: preserved.admin_github } : {}),
+              ...(preserved.rejection_reason ? { rejection_reason: preserved.rejection_reason } : {}) };
             await admin
               .from("projects")
-              .update({ description: dbDescription, updated_at: new Date().toISOString() })
+              .update({ description: `${rawDesc.trim()}\n<!--meta:${JSON.stringify(mergedMeta)}-->` })
               .eq("id", existing.id);
             updatedCount++;
           } catch {

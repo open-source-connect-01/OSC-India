@@ -34,17 +34,24 @@ export async function POST(request: Request) {
 
     const githubAvatar = `https://avatars.githubusercontent.com/${github}`;
     if (existingProfile) {
-      const updates: Record<string, unknown> = { github, updated_at: new Date().toISOString() };
+      const updates: Record<string, unknown> = { github };
       if (!existingProfile.avatar_url) {
         updates.avatar_url =
           user.user_metadata?.avatar_url ||
           user.user_metadata?.picture ||
           githubAvatar;
       }
-      await admin
+      const { error: updateErr } = await admin
         .from("profiles")
         .update(updates)
         .eq("user_id", user.id);
+      if (updateErr) {
+        const taken = updateErr.code === "23505";
+        return NextResponse.json(
+          { error: taken ? "That GitHub username is already linked to another account." : updateErr.message },
+          { status: taken ? 409 : 500 }
+        );
+      }
     } else {
       await admin.from("profiles").upsert(
         {
@@ -58,7 +65,6 @@ export async function POST(request: Request) {
           projects_count: 0,
           badges_created: 0,
           tech_stack: [],
-          updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
       );

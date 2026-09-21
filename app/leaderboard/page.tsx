@@ -53,6 +53,7 @@ export default async function LeaderboardPage(props: {
       .select("*, users(name, email, image)", { count: "exact" })
       .neq("role", "admin")
       .neq("role", "project-admin")
+      .neq("role", "mentor")
       .order("score", { ascending: false })
       .order("merged_prs", { ascending: false })
       .order("projects_count", { ascending: false })

@@ -12,7 +12,8 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "@/lib/auth/admin-auth";
-import { getProjects, getDbAllowedRepoSlugs, discoverProjectsByTopic } from "./projects";
+import { getProjects, getAllProjectsForAdmins, getDbAllowedRepoSlugs, discoverProjectsByTopic, invalidateSlugCache } from "./projects";
+import { readProjectMeta, withProjectMeta } from "@/lib/utils/project-meta";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -237,8 +238,56 @@ export async function getAdminData() {
   };
 
   const projects = await getProjects();
+  const pendingProjects = (await getAllProjectsForAdmins()).filter((p) => p.status === "pending");
 
-  return { profiles, metrics, projects };
+  return { profiles, metrics, projects, pendingProjects };
+}
+
+/**
+ * Approves or rejects a project submitted by a Project Admin.
+ * Approved projects go live (public /projects list + PR scoring); rejected ones stay hidden and
+ * the submitting admin sees the reason in their portal.
+ */
+export async function reviewProjectSubmissionAction(
+  projectId: string,
+  decision: "approve" | "reject",
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    const { data: row, error: readErr } = await admin
+      .from("projects")
+      .select("id, description")
+      .eq("id", projectId)
+      .maybeSingle();
+    if (readErr || !row) {
+      return { success: false, error: readErr?.message || "Project not found." };
+    }
+    if (readProjectMeta(row.description).status !== "pending") {
+      return { success: false, error: "This submission has already been reviewed." };
+    }
+
+    const description = withProjectMeta(
+      row.description || "",
+      decision === "approve"
+        ? { status: null, rejection_reason: null }
+        : { status: "rejected", rejection_reason: (reason || "").trim().slice(0, 300) || null }
+    );
+    const { error: updateErr } = await admin.from("projects").update({ description }).eq("id", projectId);
+    if (updateErr) {
+      return { success: false, error: `Failed to save decision: ${updateErr.message}` };
+    }
+
+    await invalidateSlugCache();
+    revalidatePath("/projects");
+    revalidatePath("/admin");
+    revalidatePath("/project-admin");
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to review submission." };
+  }
 }
 
 /**
@@ -253,9 +302,9 @@ export async function updateUserRole(
   const admin = createAdminClient();
 
   const isElevated = newRole === "admin" || newRole === "project-admin";
-  const profileUpdates: Partial<Profile> = {
+  // Only write columns that exist on the live profiles table (no updated_at / is_admin).
+  const profileUpdates: { role: string; score?: number; merged_prs?: number; projects_count?: number } = {
     role: newRole,
-    updated_at: new Date().toISOString(),
   };
 
   // Reset scores if promoted out of contributor
@@ -265,11 +314,26 @@ export async function updateUserRole(
     profileUpdates.projects_count = 0;
   }
 
-  // 1. Update auth.users metadata (works unconditionally)
+  // 1. Update profiles table (source of truth for the admin portal) and verify it persisted
+  const { data: updatedRows, error: dbErr } = await admin
+    .from("profiles")
+    .update(profileUpdates)
+    .eq("user_id", targetUserId)
+    .select("id");
+
+  if (dbErr) {
+    console.error("Role update failed on profiles table:", dbErr.message);
+    return { success: false, error: `Failed to save role: ${dbErr.message}` };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: "Failed to save role: user profile not found." };
+  }
+
+  // 2. Mirror to auth.users metadata (best effort; used by fallbacks)
   try {
     const { data: userData } = await admin.auth.admin.getUserById(targetUserId);
     if (userData?.user) {
-      await admin.auth.admin.updateUserById(targetUserId, {
+      const { error: authErr } = await admin.auth.admin.updateUserById(targetUserId, {
         user_metadata: {
           ...userData.user.user_metadata,
           role: newRole,
@@ -277,16 +341,10 @@ export async function updateUserRole(
           ...(isElevated || newRole === "mentor" ? { score: 0, merged_prs: 0, projects_count: 0 } : {}),
         },
       });
+      if (authErr) console.warn("Notice: auth metadata role update:", authErr.message);
     }
   } catch (authErr) {
     console.warn("Notice: auth metadata role update:", authErr);
-  }
-
-  // 2. Update profiles table (by user_id)
-  try {
-    await admin.from("profiles").update(profileUpdates).eq("user_id", targetUserId);
-  } catch (dbErr) {
-    console.warn("Notice: profiles table role update:", dbErr);
   }
 
   revalidatePath("/admin");
@@ -521,7 +579,7 @@ export async function deleteUserAction(
     try {
       const { data: profile } = await admin
         .from("profiles")
-        .select("id, user_id, role, is_admin, users(email)")
+        .select("id, user_id, role, users(email)")
         .eq("user_id", targetUserId)
         .maybeSingle();
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { projectStatusOf } from "@/lib/utils/project-meta";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { createClient } from "@/lib/supabase/server";
@@ -202,7 +203,8 @@ export default async function DashboardPage(props: {
   const { data: dbProjects } = await admin
     .from("projects")
     .select("id, name, github_repo_url, description");
-  const allProjects = dbProjects || [];
+  // Pending / rejected project submissions are not part of the competition yet
+  const allProjects = (dbProjects || []).filter((p) => projectStatusOf(p.description) === "approved");
 
   const { data: allContributionsRaw } = await admin
     .from("contributions")
@@ -405,19 +407,25 @@ export default async function DashboardPage(props: {
     : (contributedProjects.length || Number(profile?.projects_count || 0));
 
   // 10. Calculate user's leaderboard rank
-  let userRank = 1;
+  // Only contributors are ranked; admins, project admins and mentors are not on the leaderboard
+  let userRank: number | null = null;
   try {
+    if (rawRole !== "contributor") throw new Error("not-ranked");
     const { count, error } = await admin
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .neq("role", "admin")
+      .neq("role", "project-admin")
+      .neq("role", "mentor")
       .or(`score.gt.${totalPoints},and(score.eq.${totalPoints},merged_prs.gt.${mergedPRs})`);
 
     if (!error && count !== null) {
       userRank = count + 1;
     }
   } catch (err) {
-    console.warn("Notice: Rank computation error:", err);
+    if (!(err instanceof Error && err.message === "not-ranked")) {
+      console.warn("Notice: Rank computation error:", err);
+    }
   }
 
   // Viewer profile for Navbar

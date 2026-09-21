@@ -628,7 +628,7 @@ export async function syncAllProjectsAndContributors() {
   // Pre-load profiles to get exact roles and github handles from DB
   const { data: dbProfiles } = await admin
     .from("profiles")
-    .select("id, user_id, role, github, is_admin, email");
+    .select("id, user_id, role, github");
   const profileMap = new Map<string, { id: string; user_id?: string; role?: string; github?: string; is_admin?: boolean; email?: string }>();
   for (const prof of dbProfiles || []) {
     if (prof.user_id) profileMap.set(prof.user_id, prof);
@@ -899,11 +899,10 @@ export async function syncAllProjectsAndContributors() {
     if (effectiveId && !candidateUsersMap.has(effectiveId)) {
       candidateUsersMap.set(effectiveId, {
         id: effectiveId,
-        email: prof.email || undefined,
         user_metadata: {
           github: prof.github || undefined,
           role: prof.role || "contributor",
-          is_admin: prof.is_admin || false,
+          is_admin: prof.role === "admin",
         },
       });
     }

@@ -29,6 +29,7 @@ export default async function AdminPage() {
       initialProfiles={adminData.profiles}
       initialMetrics={adminData.metrics}
       initialProjects={adminData.projects}
+      initialPendingProjects={adminData.pendingProjects}
     />
   );
 }

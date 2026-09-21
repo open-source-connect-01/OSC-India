@@ -63,7 +63,7 @@ export async function POST() {
     try {
       await admin
         .from("profiles")
-        .update({ badges_created: newCount, updated_at: new Date().toISOString() })
+        .update({ badges_created: newCount })
         .eq("user_id", user.id);
     } catch (dbErr) {
       console.warn("Notice: saving badges_created to profiles table:", dbErr);
