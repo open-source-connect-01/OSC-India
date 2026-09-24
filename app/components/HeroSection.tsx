@@ -1,46 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function HeroSection() {
-  // Countdown timer calculation
-  const [timeLeft, setTimeLeft] = useState({
-    hours: "00",
-    minutes: "00",
-    seconds: "00",
-  });
-
-  useEffect(() => {
-    const targetDate = new Date("2026-09-01T09:00:00+05:30").getTime();
-
-    const updateTimer = () => {
-      const now = new Date().getTime();
-      const difference = targetDate - now;
-
-      if (difference > 0) {
-        const totalHours = Math.floor(difference / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        setTimeLeft({
-          hours: String(totalHours).padStart(2, "0").slice(-2),
-          minutes: String(minutes).padStart(2, "0"),
-          seconds: String(seconds).padStart(2, "0"),
-        });
-      } else {
-        setTimeLeft({
-          hours: "00",
-          minutes: "00",
-          seconds: "00",
-        });
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <section
@@ -147,34 +108,6 @@ export default function HeroSection() {
             >
               Register Now
             </Link>
-
-            {/* Countdown Box */}
-            <div
-              className="hero-countdown-box"
-              style={{
-                background: "rgba(8, 8, 8, 0.9)",
-                border: "1.5px solid #FF6500",
-                borderRadius: "10px",
-                padding: "11px 22px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 0 15px rgba(255, 101, 0, 0.15)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  fontSize: "17px",
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  letterSpacing: "1.5px",
-                }}
-              >
-                {timeLeft.hours} : {timeLeft.minutes} : {timeLeft.seconds}
-              </span>
-            </div>
           </div>
 
           {/* Date Label */}
