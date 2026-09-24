@@ -41,9 +41,9 @@ export const metadata: Metadata = {
       "India's premier open-source community connecting contributors, mentors, and innovative projects across the nation.",
     images: [
       {
-        url: "/og-image.png",
-        width: 1024,
-        height: 537,
+        url: "/og.png",
+        width: 1200,
+        height: 630,
         alt: "Open Source Connect India — Connecting The World Through Open Source",
         type: "image/png",
       },
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     title: "Open Source Connect India | OSCI",
     description:
       "India's premier open-source community connecting contributors, mentors, and innovative projects across the nation.",
-    images: ["/og-image.png"],
+    images: ["/og.png"],
   },
 
   // Favicons and App Icons for all browsers (Chrome, Brave, Safari, Firefox, Edge, Android, iOS)
