@@ -487,10 +487,11 @@ export default function Navbar({ initialProfile }: NavbarProps = {}) {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
+                whiteSpace: "nowrap",
                 transition: "all 0.2s ease",
               }}
             >
-              Sign
+              Sign In
             </Link>
           )}
 

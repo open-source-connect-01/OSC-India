@@ -264,15 +264,6 @@ input:autofill {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
-  .hero-countdown-box {
-    padding: 10px 18px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-  .hero-countdown-box span {
-    font-size: 15.5px !important;
-    letter-spacing: 1.5px !important;
-  }
   .hero-date-box {
     display: flex !important;
     justify-content: flex-start !important;
@@ -491,15 +482,6 @@ input:autofill {
     font-weight: 700 !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-  }
-  .hero-countdown-box {
-    padding: 9px 14px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-  .hero-countdown-box span {
-    font-size: 14px !important;
-    letter-spacing: 1px !important;
   }
   .hero-date-box {
     display: flex !important;
