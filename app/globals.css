@@ -1232,3 +1232,60 @@ input:autofill {
   }
 }
 
+.project-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 12px;
+  column-gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #161822;
+  margin-top: auto;
+}
+.project-card-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  row-gap: 8px;
+  column-gap: 14px;
+  font-size: 12.5px;
+  color: #8b929e;
+  font-weight: 500;
+}
+.project-card-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.project-card-link {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-left: auto;
+}
+@media (max-width: 480px) {
+  .project-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .project-card-stats {
+    justify-content: space-between;
+    column-gap: 10px;
+  }
+  .project-card-link {
+    margin-left: 0;
+    margin-top: 6px;
+    justify-content: center;
+  }
+}
+
