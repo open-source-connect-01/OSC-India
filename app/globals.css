@@ -1166,6 +1166,54 @@ input:autofill {
 }
 
 /* ===========================
+   LEADERBOARD CONTRIBUTOR ROWS
+   =========================== */
+@media (max-width: 640px) {
+  .leaderboard-main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .leaderboard-list-header {
+    padding: 0 4px 8px 4px !important;
+  }
+  .leaderboard-list-header span:last-child {
+    font-size: 10px !important;
+  }
+  .leaderboard-list {
+    gap: 16px !important;
+  }
+  .leaderboard-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+  }
+  .leaderboard-row-info {
+    min-width: 0 !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+  .leaderboard-row-info > div:first-child {
+    width: 24px !important;
+    font-size: 14px !important;
+  }
+  .leaderboard-row-stats {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 0 !important;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+  }
+  .leaderboard-stat {
+    text-align: left !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ===========================
    PROJECTS CATALOG GRID
    =========================== */
 .projects-catalog-grid {
@@ -1181,6 +1229,63 @@ input:autofill {
 @media (max-width: 680px) {
   .projects-catalog-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+.project-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 12px;
+  column-gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #161822;
+  margin-top: auto;
+}
+.project-card-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  row-gap: 8px;
+  column-gap: 14px;
+  font-size: 12.5px;
+  color: #8b929e;
+  font-weight: 500;
+}
+.project-card-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.project-card-link {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-left: auto;
+}
+@media (max-width: 480px) {
+  .project-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .project-card-stats {
+    justify-content: space-between;
+    column-gap: 10px;
+  }
+  .project-card-link {
+    margin-left: 0;
+    margin-top: 6px;
+    justify-content: center;
   }
 }
 

@@ -611,28 +611,10 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                 </div>
 
                 {/* Footer Row: Stars, Forks & View Project */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingTop: "14px",
-                    borderTop: "1px solid #161822",
-                    marginTop: "auto",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                      fontSize: "12.5px",
-                      color: "#8b929e",
-                      fontWeight: 500,
-                    }}
-                  >
+                <div className="project-card-footer">
+                  <div className="project-card-stats">
                     {/* Stars */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }} title="Stars">
+                    <div className="project-card-stat" title="Stars">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                       </svg>
@@ -640,7 +622,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                     </div>
 
                     {/* Forks */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }} title="Forks">
+                    <div className="project-card-stat" title="Forks">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="18" r="3" />
                         <circle cx="6" cy="6" r="3" />
@@ -652,7 +634,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                     </div>
 
                     {/* Open Issues */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }} title="Open Issues">
+                    <div className="project-card-stat" title="Open Issues">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10" />
                         <circle cx="12" cy="12" r="3" />
@@ -661,7 +643,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                     </div>
 
                     {/* Unassigned Issues */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }} title="Unassigned Issues">
+                    <div className="project-card-stat" title="Unassigned Issues">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
@@ -676,16 +658,8 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      fontSize: "12.5px",
-                      fontWeight: 600,
-                      color: accent,
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                    className="hover:underline"
+                    className="project-card-link hover:underline"
+                    style={{ color: accent }}
                   >
                     <span>View Project</span>
                     <span>→</span>

@@ -144,7 +144,7 @@ export default function LeaderboardUI({
       <Navbar initialProfile={initialProfile} />
       <div style={{ height: "96px", width: "100%", flexShrink: 0 }} aria-hidden="true" />
 
-      <main className="flex-grow flex flex-col items-center px-6" style={{ margin: "0 auto", maxWidth: "1080px", width: "100%", paddingBottom: "96px", paddingTop: "24px" }}>
+      <main className="leaderboard-main flex-grow flex flex-col items-center px-6" style={{ margin: "0 auto", maxWidth: "1080px", width: "100%", paddingBottom: "96px", paddingTop: "24px" }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "48px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {/* Realtime Live Pulse */}
@@ -312,8 +312,8 @@ export default function LeaderboardUI({
         )}
 
         {/* List Section (Ranks 4 to 50 or Search Results) */}
-        <div style={{ width: "100%", maxWidth: "860px", display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px 8px 12px", color: "#9ca3af", fontSize: "12px", fontWeight: 600 }}>
+        <div className="leaderboard-list" style={{ width: "100%", maxWidth: "860px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="leaderboard-list-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px 8px 12px", color: "#9ca3af", fontSize: "12px", fontWeight: 600 }}>
             <span>
               {isSearching
                 ? `SEARCH RESULTS (${totalCount || users.length})`
@@ -357,11 +357,11 @@ export default function LeaderboardUI({
                     gap: "16px",
                     transition: "all 0.2s ease",
                   }}
-                  className="group-hover:border-[rgba(255,117,24,0.4)] group-hover:bg-[rgba(255,255,255,0.04)] cursor-pointer"
+                  className="leaderboard-row group-hover:border-[rgba(255,117,24,0.4)] group-hover:bg-[rgba(255,255,255,0.04)] cursor-pointer"
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: "220px" }}>
+                  <div className="leaderboard-row-info" style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: "220px" }}>
                     {/* Rank */}
-                    <div style={{ color: "var(--orange)", fontSize: "16px", fontWeight: 800, width: "36px" }}>
+                    <div style={{ color: "var(--orange)", fontSize: "16px", fontWeight: 800, width: "36px", flexShrink: 0 }}>
                       #{user.rank}
                     </div>
 
@@ -375,19 +375,19 @@ export default function LeaderboardUI({
                     </div>
 
                     {/* Name & Username */}
-                    <div>
-                      <div style={{ fontSize: "15px", fontWeight: 700 }} className="group-hover:text-[var(--orange)] transition-colors">{user.name}</div>
-                      <div style={{ color: "#9ca3af", fontSize: "12px" }}>{user.username}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: "15px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="group-hover:text-[var(--orange)] transition-colors">{user.name}</div>
+                      <div style={{ color: "#9ca3af", fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.username}</div>
                     </div>
                   </div>
 
                   {/* Score & PRs */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-                    <div style={{ textAlign: "right" }}>
+                  <div className="leaderboard-row-stats" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+                    <div className="leaderboard-stat" style={{ textAlign: "right" }}>
                       <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--orange)" }}>{user.points}</div>
                       <div style={{ color: "#9ca3af", fontSize: "10px" }}>Points</div>
                     </div>
-                    <div style={{ textAlign: "right", minWidth: "70px" }}>
+                    <div className="leaderboard-stat" style={{ textAlign: "right", minWidth: "70px" }}>
                       <div style={{ fontSize: "14px", fontWeight: 700 }}>{user.prs} PRs</div>
                       <div style={{ color: "#9ca3af", fontSize: "10px" }}>{user.projects} Repos</div>
                     </div>
