@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 
 export default function ProjectsSection() {
   const projects = [
@@ -102,12 +101,6 @@ export default function ProjectsSection() {
           {/* Projects Cards Container */}
           <div
             className="projects-cards-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            style={{
-              opacity: 0.35,
-              pointerEvents: "none",
-              userSelect: "none",
-              filter: "blur(1px)",
-            }}
           >
             {projects.map((project, i) => (
               <div
@@ -288,169 +281,6 @@ export default function ProjectsSection() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Subtle Blur & Dim Overlay */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
-              background: "rgba(10, 10, 10, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "16px",
-              zIndex: 10,
-              borderRadius: "16px",
-            }}
-          >
-            {/* Center Announcement Box */}
-            <div
-              className="coming-soon-card"
-              style={{
-                background: "rgba(13, 13, 15, 0.96)",
-                border: "1px solid rgba(255, 96, 0, 0.25)",
-                borderRadius: "16px",
-                padding: "48px 36px",
-                maxWidth: "560px",
-                width: "100%",
-                textAlign: "center",
-                boxShadow:
-                  "0 24px 80px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 96, 0, 0.12)",
-                backdropFilter: "blur(16px)",
-                position: "relative",
-              }}
-            >
-              {/* Sharp Top-Left L-Bracket */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-2px",
-                  left: "-2px",
-                  width: "16px",
-                  height: "16px",
-                  borderTop: "3px solid #FF6000",
-                  borderLeft: "3px solid #FF6000",
-                  pointerEvents: "none",
-                  borderTopLeftRadius: "6px",
-                }}
-              />
-
-              {/* Sharp Bottom-Right L-Bracket */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "-2px",
-                  right: "-2px",
-                  width: "16px",
-                  height: "16px",
-                  borderBottom: "3px solid #FF6000",
-                  borderRight: "3px solid #FF6000",
-                  pointerEvents: "none",
-                  borderBottomRightRadius: "6px",
-                }}
-              />
-
-              {/* Pulsing Tag */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  background: "rgba(255, 96, 0, 0.08)",
-                  border: "1px solid rgba(255, 96, 0, 0.35)",
-                  padding: "8px 22px",
-                  borderRadius: "6px",
-                  marginBottom: "24px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#FF6000",
-                    boxShadow: "0 0 10px #FF6000",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 800,
-                    color: "#FF6000",
-                    letterSpacing: "2px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  COMING SOON
-                </span>
-              </div>
-
-              {/* Title */}
-              <h3
-                style={{
-                  fontSize: "clamp(22px, 3.8vw, 30px)",
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  marginBottom: "16px",
-                  letterSpacing: "-0.5px",
-                  lineHeight: 1.25,
-                }}
-              >
-                Projects Showcase Launching Soon
-              </h3>
-
-              {/* Subtext */}
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: "#9ca3af",
-                  lineHeight: 1.65,
-                  maxWidth: "480px",
-                  margin: "0 auto 32px",
-                }}
-              >
-                We are currently onboarding and curating high-impact open source repositories, civic tech tools, and AI initiatives across India.
-              </p>
-
-              {/* Action Button */}
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Link
-                  href="https://discord.gg"
-                  target="_blank"
-                  style={{
-                    background: "#FF6000",
-                    color: "#ffffff",
-                    padding: "14px 32px",
-                    borderRadius: "10px",
-                    textDecoration: "none",
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    boxShadow: "0 6px 25px rgba(255, 96, 0, 0.45)",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "#e65600";
-                    (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "#FF6000";
-                    (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                  </svg>
-                  Get Notified on Launch
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
       </div>
