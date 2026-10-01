@@ -577,7 +577,7 @@ export default async function DashboardPage(props: {
                 marginBottom: "4px",
               }}
             >
-              Good to see you,
+              {isOwnProfile ? "Good to see you," : "Viewing profile of"}
             </div>
             <h1
               style={{
@@ -592,11 +592,13 @@ export default async function DashboardPage(props: {
                 lineHeight: 1.15,
               }}
             >
-              <span>{firstName}!</span>
-              <span>👋</span>
+              <span>{isOwnProfile ? `${firstName}!` : firstName}</span>
+              {isOwnProfile && <span>👋</span>}
             </h1>
             <p style={{ fontSize: "14px", color: "#8b929e", margin: 0 }}>
-              Small contributions make a big impact. Keep going!
+              {isOwnProfile
+                ? "Small contributions make a big impact. Keep going!"
+                : `Explore ${firstName}'s open source journey with OSC India.`}
             </p>
           </div>
 
