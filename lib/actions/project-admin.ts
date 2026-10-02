@@ -253,13 +253,18 @@ export async function getProjectAdminData(
       if (activeGithub && (urlLower.includes(`/${activeGithub}/`) || urlLower.endsWith(`/${activeGithub}`))) {
         return true;
       }
-      // Check description metadata for explicit admin_github
+      // Check description metadata for explicit admin_github or admin_email
       const desc = p.description || "";
       const metaMatch = desc.match(/<!--meta:(.*?)-->/);
       if (metaMatch) {
         try {
           const meta = JSON.parse(metaMatch[1]);
           if (meta.admin_github && meta.admin_github.toLowerCase() === activeGithub) {
+            return true;
+          }
+          // Match by admin_email — links the project to Bhuvansh's email directly
+          const callerEmail = (caller.email || "").toLowerCase().trim();
+          if (meta.admin_email && callerEmail && meta.admin_email.toLowerCase() === callerEmail) {
             return true;
           }
         } catch {}
