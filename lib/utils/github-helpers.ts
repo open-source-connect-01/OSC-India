@@ -114,6 +114,7 @@ export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "soumyamishra-7",
   "ytxfsgamerz",
   "anthropicbots",
+  "bhuvansh855",
   "pratyushjha06",
   "sandesh13fr",
   "advanceddiscordbot",
