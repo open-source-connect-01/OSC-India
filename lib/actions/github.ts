@@ -858,7 +858,6 @@ export async function syncAllProjectsAndContributors() {
   const nowIso = new Date().toISOString();
   const adminEmails = new Set([
     (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase(),
-    "bhuvanshkataria@gmail.com",
   ]);
 
   interface ContribRow {

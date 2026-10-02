@@ -13,11 +13,11 @@ SET is_admin = TRUE,
     projects_count = 0
 WHERE email = 'sayanghosh1887@gmail.com';
 
--- Bhuvansh Kataria – admin (not a contributor)
+-- Bhuvansh Kataria – project admin for hiero-bot-py (not a contributor)
 UPDATE public.profiles
-SET is_admin = TRUE,
-    role = 'admin',
+SET is_admin = FALSE,
+    role = 'project-admin',
     score = 0,
     merged_prs = 0,
-    projects_count = 0
+    projects_count = 1
 WHERE email = 'bhuvanshkataria@gmail.com';

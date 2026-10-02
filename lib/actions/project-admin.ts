@@ -152,8 +152,13 @@ export async function requireProjectAdminSession() {
 
   const userEmail = (user.email || "").toLowerCase().trim();
   const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
+  // Emails explicitly designated as project admins — recognised regardless of DB role
+  const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
   const isSuperAdmin = profile?.role === "admin" || userEmail === rootAdminEmail;
-  const isProjectAdmin = profile?.role === "project-admin" || isSuperAdmin;
+  const isProjectAdmin =
+    profile?.role === "project-admin" ||
+    isSuperAdmin ||
+    KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail);
 
   if (!isProjectAdmin) {
     if (hasAdminCookie) return adminSessionResult();

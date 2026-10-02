@@ -216,8 +216,13 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
 
     const role = profile?.role || user.user_metadata?.role || "contributor";
     const cleanGh = (github || "").replace(/^@+/, "").trim().toLowerCase();
+    // Emails designated as project admins — override contributor role on the client
+    const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
+    const userEmailLower = (user.email || "").toLowerCase();
     const isProjectAdmin = Boolean(
-      role === "project-admin" || (cleanGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(cleanGh))
+      role === "project-admin" ||
+      (cleanGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(cleanGh)) ||
+      KNOWN_PROJECT_ADMIN_EMAILS.has(userEmailLower)
     );
     // Project admins are organizers and never site admins
     const isAdmin = !isProjectAdmin && role === "admin";
