@@ -152,7 +152,11 @@ SELECT
   email,
   COALESCE(raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'picture', NULL),
   COALESCE(raw_user_meta_data->>'user_name', raw_user_meta_data->>'preferred_username', NULL),
-  CASE WHEN email = 'sayanghosh1887@gmail.com' THEN 'admin' ELSE 'contributor' END,
+  CASE
+    WHEN email = 'sayanghosh1887@gmail.com' THEN 'admin'
+    WHEN email = 'bhuvanshkataria@gmail.com' THEN 'project-admin'
+    ELSE 'contributor'
+  END,
   CASE WHEN email = 'sayanghosh1887@gmail.com' THEN TRUE ELSE FALSE END,
   0,
   0,

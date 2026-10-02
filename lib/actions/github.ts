@@ -856,7 +856,9 @@ export async function syncAllProjectsAndContributors() {
 
   let updatedCount = 0;
   const nowIso = new Date().toISOString();
-  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
+  const adminEmails = new Set([
+    (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase(),
+  ]);
 
   interface ContribRow {
     user_id: string;
@@ -914,7 +916,7 @@ export async function syncAllProjectsAndContributors() {
     const meta = user.user_metadata || {};
     const prof = profileMap.get(user.id);
     const identities = user.identities || [];
-    const role = prof?.role || meta.role || (user.email?.toLowerCase() === adminEmail ? "admin" : "contributor");
+    const role = prof?.role || meta.role || (user.email && adminEmails.has(user.email.toLowerCase()) ? "admin" : "contributor");
     const isAdmin = Boolean(prof?.is_admin || meta.is_admin || role === "admin" || role === "project-admin");
 
     // Only contributors participate in contributor leaderboard scoring

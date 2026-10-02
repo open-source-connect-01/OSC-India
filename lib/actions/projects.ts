@@ -26,6 +26,10 @@ export interface ProjectItem {
   /** GitHub handle of the project admin who submitted / manages this project. */
   submittedBy?: string;
   rejectionReason?: string;
+  /** GitHub org/user handle explicitly linked as this project's admin. */
+  admin_github?: string;
+  /** Email of the admin linked to this project for seamless dashboard syncing. */
+  admin_email?: string;
 }
 
 export interface NewProjectInput {
@@ -313,7 +317,9 @@ const DEFAULT_PROJECTS: ProjectItem[] = [
     "stars": "25",
     "forks": "16",
     "openIssues": "24",
-    "unassignedIssues": "10"
+    "unassignedIssues": "10",
+    "admin_github": "anthropicbots",
+    "admin_email": "bhuvanshkataria@gmail.com"
   },
   {
     "id": "e720f832-7fb2-48ea-92fe-74a0916acd90",

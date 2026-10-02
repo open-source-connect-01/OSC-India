@@ -94,13 +94,21 @@ export async function syncUserProfile(user: User) {
   const mergedAvatar = avatarUrl || existingProfile?.avatar_url || null;
   const mergedFullName = existingProfile?.full_name || fullName;
 
+  // Emails that are known project admins — never provisioned as contributor
+  const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
+  const resolvedRole = existingProfile?.role && existingProfile.role !== "contributor"
+    ? existingProfile.role
+    : KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail)
+      ? "project-admin"
+      : existingProfile?.role || "contributor";
+
   const profileRow: Partial<Profile> = {
     id: user.id,
     user_id: user.id,
     full_name: mergedFullName,
     avatar_url: mergedAvatar,
     github: mergedGithub,
-    role: existingProfile?.role || "contributor",
+    role: resolvedRole,
     score: existingProfile?.score ?? 0,
     merged_prs: existingProfile?.merged_prs ?? 0,
     projects_count: existingProfile?.projects_count ?? 0,

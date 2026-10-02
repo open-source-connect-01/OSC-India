@@ -164,7 +164,7 @@ VALUES
   'hiero-bot-py',
   'https://github.com/AnthropicBots/hiero-bot-py',
   'FastAPI-based GitHub maintainer automation bot streamlining repository workflows with PR health scoring, reviewer recommendations, issue triage, and live analytics dashboards.
-<!--meta:{"language":"Python","accentColor":"#06b6d4","stars":"25","forks":"16","openIssues":"24","unassignedIssues":"10"}-->'
+<!--meta:{"language":"Python","accentColor":"#06b6d4","stars":"25","forks":"16","openIssues":"24","unassignedIssues":"10","admin_github":"anthropicbots","admin_email":"bhuvanshkataria@gmail.com"}-->'
 ),
 (
   'e720f832-7fb2-48ea-92fe-74a0916acd90',
