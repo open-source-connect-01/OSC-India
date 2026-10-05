@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
+import { OFFICIAL_PROJECT_ADMIN_HANDLES, isOfficialProjectAdminEmail } from "@/lib/utils/github-helpers";
 
 export interface ClientProfilePayload {
   id: string;
@@ -231,17 +231,16 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       identityAvatar ||
       (github ? `https://avatars.githubusercontent.com/${github}` : null);
 
-    const role = profile?.role || user.user_metadata?.role || "contributor";
+    const rawRole = profile?.role || user.user_metadata?.role || "contributor";
     const cleanGh = (github || "").replace(/^@+/, "").trim().toLowerCase();
-    // Emails designated as project admins — override contributor role on the client
-    const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
-    const userEmailLower = (user.email || "").toLowerCase();
+    const userEmailLower = (user.email || "").toLowerCase().trim();
     const isProjectAdmin = Boolean(
-      role === "project-admin" ||
+      rawRole === "project-admin" ||
       (cleanGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(cleanGh)) ||
-      KNOWN_PROJECT_ADMIN_EMAILS.has(userEmailLower)
+      isOfficialProjectAdminEmail(userEmailLower)
     );
     // Project admins are organizers and never site admins
+    const role = isProjectAdmin ? "project-admin" : rawRole;
     const isAdmin = !isProjectAdmin && role === "admin";
 
     return {

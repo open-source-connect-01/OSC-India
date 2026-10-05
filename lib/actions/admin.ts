@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/admin-auth";
 import { getProjects, getAllProjectsForAdmins, getDbAllowedRepoSlugs, discoverProjectsByTopic, invalidateSlugCache } from "./projects";
 import { readProjectMeta, withProjectMeta } from "@/lib/utils/project-meta";
+import { isOfficialProjectAdminEmail, isOfficialProjectAdminHandle } from "@/lib/utils/github-helpers";
 
 /**
  * Validates that the current user has super admin privileges.
@@ -94,8 +95,11 @@ async function requireAdminOrProjectAdmin() {
     .or(`user_id.eq.${user.id},id.eq.${user.id}`)
     .maybeSingle();
 
-  const hasAccess = profile?.role === "admin" || profile?.role === "project-admin" || profile?.is_admin === true;
-  if (profErr || !profile || !hasAccess) {
+  const userEmail = (user.email || user.user_metadata?.email || "").toLowerCase().trim();
+  const userGh = (user.user_metadata?.user_name || user.user_metadata?.preferred_username || user.user_metadata?.github || "").replace(/^@+/, "").toLowerCase().trim();
+  const isProjAdmin = isOfficialProjectAdminEmail(userEmail) || isOfficialProjectAdminHandle(userGh);
+  const hasAccess = profile?.role === "admin" || profile?.role === "project-admin" || profile?.is_admin === true || isProjAdmin;
+  if ((profErr && !isProjAdmin) || (!profile && !isProjAdmin) || !hasAccess) {
     throw new Error("Forbidden. Admin privileges required.");
   }
 
@@ -208,7 +212,12 @@ export async function getAdminData() {
       }
 
       const isOwner = email === adminEmail;
-      const role = isOwner ? "admin" : (((p.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
+      const isProjAdmin = isOfficialProjectAdminEmail(email) || isOfficialProjectAdminHandle(github);
+      const role = isOwner
+        ? "admin"
+        : isProjAdmin
+        ? "project-admin"
+        : (((p.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
       const isAdmin = Boolean(isOwner || role === "admin" || p.is_admin);
 
       seenIds.add(String(p.id));
@@ -252,7 +261,12 @@ export async function getAdminData() {
 
     const meta = u.user_metadata || {};
     const isOwner = uEmail === adminEmail;
-    const role = isOwner ? "admin" : (((meta.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
+    const isProjAdmin = isOfficialProjectAdminEmail(uEmail) || isOfficialProjectAdminHandle(uGh);
+    const role = isOwner
+      ? "admin"
+      : isProjAdmin
+      ? "project-admin"
+      : (((meta.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
     const isAdmin = Boolean(isOwner || role === "admin" || meta.is_admin);
     const fullName = meta.full_name || meta.name || (uEmail ? uEmail.split("@")[0] : "Contributor");
     const avatarUrl = meta.avatar_url || meta.picture || (uGh ? `https://avatars.githubusercontent.com/${uGh}` : null);

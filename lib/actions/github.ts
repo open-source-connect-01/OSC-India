@@ -12,6 +12,7 @@ import {
   DIFFICULTY_RANK,
   DifficultyLevel,
   getGitHubAuthHeaders,
+  isOfficialProjectAdminEmail,
 } from "@/lib/utils/github-helpers";
 
 interface GitHubIssueItem {
@@ -916,8 +917,23 @@ export async function syncAllProjectsAndContributors() {
     const meta = user.user_metadata || {};
     const prof = profileMap.get(user.id);
     const identities = user.identities || [];
-    const role = prof?.role || meta.role || (user.email && adminEmails.has(user.email.toLowerCase()) ? "admin" : "contributor");
-    const isAdmin = Boolean(prof?.is_admin || meta.is_admin || role === "admin" || role === "project-admin");
+    const userEmail = (user.email || prof?.email || "").toLowerCase().trim();
+    const isProjAdminEmail = isOfficialProjectAdminEmail(userEmail);
+    const role =
+      prof?.role ||
+      meta.role ||
+      (isProjAdminEmail
+        ? "project-admin"
+        : user.email && adminEmails.has(user.email.toLowerCase())
+        ? "admin"
+        : "contributor");
+    const isAdmin = Boolean(
+      prof?.is_admin ||
+      meta.is_admin ||
+      role === "admin" ||
+      role === "project-admin" ||
+      isProjAdminEmail
+    );
 
     // Only contributors participate in contributor leaderboard scoring
     if (role !== "contributor" || isAdmin) {

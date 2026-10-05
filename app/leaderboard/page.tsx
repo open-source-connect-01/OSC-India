@@ -2,7 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeaderboardUI from "./LeaderboardUI";
 import { redirect } from "next/navigation";
-import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
+import {
+  OFFICIAL_PROJECT_ADMIN_HANDLES,
+  isOfficialProjectAdminEmail,
+  isOfficialProjectAdminHandle,
+} from "@/lib/utils/github-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +71,13 @@ export default async function LeaderboardPage(props: {
     totalCount = count || 0;
 
     if (!error && dbRows && dbRows.length > 0) {
-      paginatedContributors = dbRows.map((p: Record<string, unknown>, idx: number) => {
+      const validRows = dbRows.filter((p: Record<string, unknown>) => {
+        const email = ((p.email as string) || "").toLowerCase().trim();
+        const github = ((p.github as string) || "").replace(/^@+/, "").trim();
+        return !isOfficialProjectAdminEmail(email) && !isOfficialProjectAdminHandle(github);
+      });
+
+      paginatedContributors = validRows.map((p: Record<string, unknown>, idx: number) => {
         const email = ((p.email as string) || "").toLowerCase().trim();
         const github = ((p.github as string) || "").replace(/^@+/, "").trim();
 
@@ -117,7 +127,10 @@ export default async function LeaderboardPage(props: {
 
       const userGh = (currentProfile?.github || user.user_metadata?.github || user.user_metadata?.user_name || "").replace(/^@+/, "").trim().toLowerCase();
       const userRole = currentProfile?.role || user.user_metadata?.role || "contributor";
-      const isProjAdmin = userRole === "project-admin" || (userGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(userGh));
+      const isProjAdmin =
+        userRole === "project-admin" ||
+        isOfficialProjectAdminEmail(user.email) ||
+        isOfficialProjectAdminHandle(userGh);
       profilePayload = {
         id: user.id,
         name: currentProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Contributor",

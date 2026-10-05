@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
 import { syncGitHubContribution } from "@/lib/actions/github";
 import type { Profile } from "@/lib/supabase/database";
+import { isOfficialProjectAdminEmail, isOfficialProjectAdminHandle } from "@/lib/utils/github-helpers";
 
 function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -95,18 +96,20 @@ export async function syncUserProfile(user: User) {
   // Root Super Admin and Project Admin role resolution
   const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
   const isRootAdmin = Boolean(userEmail && userEmail === adminEmail);
-  const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
+  const isProjAdmin = isOfficialProjectAdminEmail(userEmail) || isOfficialProjectAdminHandle(mergedGithub);
 
   let resolvedRole: "contributor" | "mentor" | "project-admin" | "admin" = "contributor";
   if (isRootAdmin) {
     resolvedRole = "admin";
+  } else if (isProjAdmin) {
+    resolvedRole = "project-admin";
   } else if (existingProfile?.role && existingProfile.role !== "contributor") {
     resolvedRole = existingProfile.role;
-  } else if (KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail)) {
-    resolvedRole = "project-admin";
   } else {
     resolvedRole = (existingProfile?.role as "contributor" | "mentor" | "project-admin" | "admin") || "contributor";
   }
+
+  const isElevated = resolvedRole === "admin" || resolvedRole === "project-admin";
 
   const profileRow: Partial<Profile> = {
     id: user.id,
@@ -117,8 +120,8 @@ export async function syncUserProfile(user: User) {
     github: mergedGithub,
     role: resolvedRole,
     is_admin: resolvedRole === "admin",
-    score: existingProfile?.score ?? 0,
-    merged_prs: existingProfile?.merged_prs ?? 0,
+    score: isElevated ? 0 : (existingProfile?.score ?? 0),
+    merged_prs: isElevated ? 0 : (existingProfile?.merged_prs ?? 0),
     projects_count: existingProfile?.projects_count ?? 0,
     badges_created: existingProfile?.badges_created ?? 0,
     tech_stack: existingProfile?.tech_stack || [],
