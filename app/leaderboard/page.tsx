@@ -50,7 +50,7 @@ export default async function LeaderboardPage(props: {
   try {
     let query = admin
       .from("profiles")
-      .select("*, users(name, email, image)", { count: "exact" })
+      .select("*", { count: "exact" })
       .neq("role", "admin")
       .neq("role", "project-admin")
       .neq("role", "mentor")
@@ -68,23 +68,24 @@ export default async function LeaderboardPage(props: {
 
     if (!error && dbRows && dbRows.length > 0) {
       paginatedContributors = dbRows.map((p: Record<string, unknown>, idx: number) => {
-        const u = (p.users as Record<string, string | null>) || {};
-        const email = (u.email || (p.email as string) || "").toLowerCase().trim();
+        const email = ((p.email as string) || "").toLowerCase().trim();
         const github = ((p.github as string) || "").replace(/^@+/, "").trim();
 
         return {
           id: String(p.user_id || p.id),
           rank: from + idx + 1,
-          name: (p.full_name as string) || u.name || "Contributor",
+          name: (p.full_name as string) || (email ? email.split("@")[0] : "Contributor"),
           username: github ? `@${github}` : email ? `@${email.split("@")[0]}` : "@contributor",
           points: Number(p.score ?? 0),
           prs: Number(p.merged_prs ?? 0),
           projects: Number(p.projects_count ?? 0),
-          avatar: (p.avatar_url as string) || u.image || "",
+          avatar: (p.avatar_url as string) || (github ? `https://avatars.githubusercontent.com/${github}` : ""),
           country: (p.country as string) || "IN",
           isFirst: from + idx === 0,
         };
       });
+    } else if (error) {
+      console.warn("Leaderboard profiles query error:", error.message);
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Database fetch error";

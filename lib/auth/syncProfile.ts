@@ -39,7 +39,7 @@ export async function syncUserProfile(user: User) {
     user.user_metadata?.picture ||
     null;
 
-  // 1. Always ensure public.users record exists
+  // 1. Optional public.users record (best effort)
   try {
     await admin.from("users").upsert(
       {
@@ -51,32 +51,20 @@ export async function syncUserProfile(user: User) {
       },
       { onConflict: "id" }
     );
-  } catch (uErr: unknown) {
-    console.warn("Notice: public.users provisioning warning:", uErr instanceof Error ? uErr.message : "Unknown error");
+  } catch {
+    // Non-blocking if public.users table is not used
   }
 
-  // 2. Search existing profile by user_id first
+  // 2. Search existing profile by user_id or id first
   let existingProfile: Profile | null = null;
-  const { data: byUserId } = await admin
+  const { data: byId } = await admin
     .from("profiles")
     .select("*")
-    .eq("user_id", user.id)
+    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
     .maybeSingle();
 
-  if (byUserId) {
-    existingProfile = byUserId as Profile;
-  }
-
-  // 2.5 Fallback: search by id (PK) if user_id not populated
-  if (!existingProfile) {
-    const { data: byId } = await admin
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (byId) {
-      existingProfile = byId as Profile;
-    }
+  if (byId) {
+    existingProfile = byId as Profile;
   }
 
   // 3. Fallback: search by GitHub handle if still not found
@@ -90,35 +78,85 @@ export async function syncUserProfile(user: User) {
     if (byGithub) existingProfile = byGithub as Profile;
   }
 
+  // 4. Fallback: search by email if still not found
+  if (!existingProfile && userEmail) {
+    const { data: byEmail } = await admin
+      .from("profiles")
+      .select("*")
+      .ilike("email", userEmail)
+      .maybeSingle();
+    if (byEmail) existingProfile = byEmail as Profile;
+  }
+
   const mergedGithub = incomingGithub ? incomingGithub.replace(/^@+/, "").trim().toLowerCase() : existingProfile?.github || null;
   const mergedAvatar = avatarUrl || existingProfile?.avatar_url || null;
-  const mergedFullName = existingProfile?.full_name || fullName;
+  const mergedFullName = existingProfile?.full_name && existingProfile.full_name !== "Contributor" ? existingProfile.full_name : fullName;
 
-  // Emails that are known project admins — never provisioned as contributor
+  // Root Super Admin and Project Admin role resolution
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
+  const isRootAdmin = Boolean(userEmail && userEmail === adminEmail);
   const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
-  const resolvedRole = existingProfile?.role && existingProfile.role !== "contributor"
-    ? existingProfile.role
-    : KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail)
-      ? "project-admin"
-      : existingProfile?.role || "contributor";
+
+  let resolvedRole: "contributor" | "mentor" | "project-admin" | "admin" = "contributor";
+  if (isRootAdmin) {
+    resolvedRole = "admin";
+  } else if (existingProfile?.role && existingProfile.role !== "contributor") {
+    resolvedRole = existingProfile.role;
+  } else if (KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail)) {
+    resolvedRole = "project-admin";
+  } else {
+    resolvedRole = (existingProfile?.role as "contributor" | "mentor" | "project-admin" | "admin") || "contributor";
+  }
 
   const profileRow: Partial<Profile> = {
     id: user.id,
     user_id: user.id,
+    email: userEmail || existingProfile?.email || null,
     full_name: mergedFullName,
     avatar_url: mergedAvatar,
     github: mergedGithub,
     role: resolvedRole,
+    is_admin: resolvedRole === "admin",
     score: existingProfile?.score ?? 0,
     merged_prs: existingProfile?.merged_prs ?? 0,
     projects_count: existingProfile?.projects_count ?? 0,
     badges_created: existingProfile?.badges_created ?? 0,
+    tech_stack: existingProfile?.tech_stack || [],
+    updated_at: new Date().toISOString(),
   };
 
-  try {
-    await admin.from("profiles").upsert(profileRow, { onConflict: "user_id" });
-  } catch (pErr: unknown) {
-    console.warn("Notice: public.profiles upsert warning:", pErr instanceof Error ? pErr.message : "Unknown error");
+  // If existingProfile was found under a legacy or seed id, clear old unique fields and migrate
+  if (existingProfile && existingProfile.id !== user.id) {
+    try {
+      await admin
+        .from("profiles")
+        .update({ github: null, email: null })
+        .eq("id", existingProfile.id);
+
+      await admin
+        .from("contributions")
+        .update({ user_id: user.id })
+        .eq("user_id", existingProfile.id);
+    } catch (e) {
+      console.warn("Notice: legacy profile transfer warning:", e);
+    }
+  }
+
+  // Upsert the authoritative profile row keyed by user.id (PK)
+  const { error: upsertErr } = await admin
+    .from("profiles")
+    .upsert(profileRow, { onConflict: "id" });
+
+  if (upsertErr) {
+    console.error("public.profiles upsert error:", upsertErr.message);
+    // Fallback: try update directly
+    const { error: updateErr } = await admin
+      .from("profiles")
+      .update(profileRow)
+      .or(`id.eq.${user.id},user_id.eq.${user.id}`);
+    if (updateErr) {
+      console.error("public.profiles update fallback error:", updateErr.message);
+    }
   }
 
   // Also synchronize auth metadata so auth.users reflects the unified profile
@@ -129,6 +167,8 @@ export async function syncUserProfile(user: User) {
         github: mergedGithub,
         full_name: mergedFullName,
         avatar_url: mergedAvatar,
+        role: resolvedRole,
+        is_admin: resolvedRole === "admin",
       },
     });
   } catch {

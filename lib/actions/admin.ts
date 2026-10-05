@@ -20,10 +20,11 @@ import { readProjectMeta, withProjectMeta } from "@/lib/utils/project-meta";
  * Supports dedicated admin email/password session or Supabase admin user.
  */
 async function requireSuperAdmin() {
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
   const isAdminSession = await verifyAdminSession();
   if (isAdminSession) {
     return {
-      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      user: { id: "admin-session", email: adminEmail },
       profile: { id: "admin-session", role: "admin", is_admin: true },
     };
   }
@@ -35,14 +36,22 @@ async function requireSuperAdmin() {
     throw new Error("Unauthorized. Admin authentication required.");
   }
 
+  const isRootAdmin = Boolean(user.email && user.email.toLowerCase().trim() === adminEmail);
+  if (isRootAdmin) {
+    return {
+      user,
+      profile: { id: user.id, user_id: user.id, role: "admin", is_admin: true },
+    };
+  }
+
   const admin = createAdminClient();
   const { data: profile, error: profErr } = await admin
     .from("profiles")
-    .select("id, user_id, role")
-    .eq("user_id", user.id)
+    .select("id, user_id, role, is_admin")
+    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
     .maybeSingle();
 
-  const isSuper = profile?.role === "admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
+  const isSuper = profile?.role === "admin" || profile?.is_admin === true;
   if (profErr || !profile || !isSuper) {
     throw new Error("Forbidden. Super Admin privileges required.");
   }
@@ -54,10 +63,11 @@ async function requireSuperAdmin() {
  * Validates that the current user has either Admin or Project Admin privileges.
  */
 async function requireAdminOrProjectAdmin() {
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
   const isAdminSession = await verifyAdminSession();
   if (isAdminSession) {
     return {
-      user: { id: "admin-session", email: process.env.ADMIN_PORTAL_EMAIL || "admin@osc-india.org" },
+      user: { id: "admin-session", email: adminEmail },
       profile: { id: "admin-session", role: "admin", is_admin: true },
     };
   }
@@ -69,14 +79,22 @@ async function requireAdminOrProjectAdmin() {
     throw new Error("Unauthorized. Elevated privileges required.");
   }
 
+  const isRootAdmin = Boolean(user.email && user.email.toLowerCase().trim() === adminEmail);
+  if (isRootAdmin) {
+    return {
+      user,
+      profile: { id: user.id, user_id: user.id, role: "admin", is_admin: true },
+    };
+  }
+
   const admin = createAdminClient();
   const { data: profile, error: profErr } = await admin
     .from("profiles")
-    .select("id, user_id, role")
-    .eq("user_id", user.id)
+    .select("id, user_id, role, is_admin")
+    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
     .maybeSingle();
 
-  const hasAccess = profile?.role === "admin" || (user.email && user.email.toLowerCase() === (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase());
+  const hasAccess = profile?.role === "admin" || profile?.role === "project-admin" || profile?.is_admin === true;
   if (profErr || !profile || !hasAccess) {
     throw new Error("Forbidden. Admin privileges required.");
   }
@@ -86,133 +104,191 @@ async function requireAdminOrProjectAdmin() {
 
 /**
  * Fetches all user profiles and aggregates for the Super Admin Dashboard.
- * Merges public.profiles table with auth.users to ensure email, github,
- * scores, and roles are never missing even if DB schema migration is pending.
+ * Queries public.profiles cleanly and enriches with auth.users data to ensure
+ * email, github, scores, and roles are never missing.
  */
 export async function getAdminData() {
   await requireSuperAdmin();
   const admin = createAdminClient();
-  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase();
+  const adminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
 
   let unifiedProfiles: Profile[] = [];
 
-  // 1. Fetch directly from public.profiles joined with public.users (blazing fast Postgres query)
-  try {
-    interface DbProfileRow {
-      id?: string;
-      user_id?: string;
-      email?: string | null;
-      full_name?: string | null;
-      avatar_url?: string | null;
-      github?: string | null;
-      role?: string | null;
-      score?: number | null;
-      merged_prs?: number | null;
-      projects_count?: number | null;
-      badges_created?: number | null;
-      tech_stack?: string[] | null;
-      created_at?: string | null;
-      updated_at?: string | null;
-      users?: {
-        name?: string | null;
-        email?: string | null;
-        image?: string | null;
-        created_at?: string | null;
-      } | null;
-    }
+  // 1. Fetch directly from public.profiles table
+  const { data: dbRows, error: dbErr } = await admin
+    .from("profiles")
+    .select("*")
+    .order("score", { ascending: false });
 
-    const { data: dbRows, error } = await admin
-      .from("profiles")
-      .select("*, users(name, email, image, created_at)")
-      .order("score", { ascending: false });
-
-    if (!error && dbRows && dbRows.length > 0) {
-      unifiedProfiles = (dbRows as DbProfileRow[]).map((p) => {
-        const u = p.users || {};
-        const email = (u.email || p.email || "").toLowerCase().trim();
-        const isOwner = email === adminEmail;
-        const role = isOwner ? "admin" : (p.role || "contributor");
-        const isAdmin = Boolean(isOwner || role === "admin");
-
-        return {
-          id: p.user_id || p.id,
-          email: email,
-          full_name: p.full_name || u.name || "Contributor",
-          avatar_url: p.avatar_url || u.image || null,
-          github: p.github || null,
-          role: role,
-          is_admin: isAdmin,
-          score: Number(p.score ?? 0),
-          merged_prs: Number(p.merged_prs ?? 0),
-          projects_count: Number(p.projects_count ?? 0),
-          badges_created: Number(p.badges_created ?? 0),
-          tech_stack: p.tech_stack || [],
-          created_at: u.created_at || p.created_at || new Date().toISOString(),
-          updated_at: p.updated_at || new Date().toISOString(),
-        } as Profile;
-      });
-    }
-  } catch (err) {
-    console.warn("Notice: reading profiles table in admin portal:", err);
+  if (dbErr) {
+    console.error("Notice: reading profiles table in admin portal:", dbErr.message);
   }
 
-  // 2. Fallback only if public.profiles returned nothing
-  if (unifiedProfiles.length === 0) {
-    try {
-      interface AuthUserItem {
-        id: string;
-        email?: string;
-        user_metadata?: {
-          github?: string;
-          email?: string;
-          role?: string;
-          is_admin?: boolean;
-          full_name?: string;
-          name?: string;
-          avatar_url?: string;
-          picture?: string;
-          user_name?: string;
-          preferred_username?: string;
-          score?: number;
-          merged_prs?: number;
-          projects_count?: number;
-          badges_created?: number;
-          tech_stack?: string[];
-        };
-        created_at?: string;
-        updated_at?: string;
-      }
+  // 2. Fetch auth.users from Supabase Auth to enrich profiles and catch newly registered users
+  interface AuthUserItem {
+    id: string;
+    email?: string;
+    user_metadata?: {
+      github?: string;
+      email?: string;
+      role?: string;
+      is_admin?: boolean;
+      full_name?: string;
+      name?: string;
+      avatar_url?: string;
+      picture?: string;
+      user_name?: string;
+      preferred_username?: string;
+      score?: number;
+      merged_prs?: number;
+      projects_count?: number;
+      badges_created?: number;
+      tech_stack?: string[];
+    };
+    created_at?: string;
+    updated_at?: string;
+  }
 
-      const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
-      if (!error && data?.users) {
-        unifiedProfiles = (data.users as unknown as AuthUserItem[]).map((u) => {
-          const meta = u.user_metadata || {};
-          const email = (u.email || meta.email || "").toLowerCase().trim();
-          const isOwner = email === adminEmail;
-          const role = isOwner ? "admin" : (meta.role || "contributor");
-          const isAdmin = Boolean(isOwner || role === "admin" || meta.is_admin);
-
-          return {
-            id: u.id,
-            email: email,
-            full_name: meta.full_name || meta.name || email.split("@")[0] || "Contributor",
-            avatar_url: meta.avatar_url || meta.picture || null,
-            github: meta.github || meta.user_name || meta.preferred_username || null,
-            role: role,
-            is_admin: isAdmin,
-            score: Number(meta.score ?? 0),
-            merged_prs: Number(meta.merged_prs ?? 0),
-            projects_count: Number(meta.projects_count ?? 0),
-            badges_created: Number(meta.badges_created ?? 0),
-            tech_stack: meta.tech_stack || [],
-            created_at: u.created_at || new Date().toISOString(),
-            updated_at: u.updated_at || new Date().toISOString(),
-          } as Profile;
-        });
-      }
-    } catch (err) {
-      console.warn("Notice: reading auth.users in admin portal fallback:", err);
+  let authUsers: AuthUserItem[] = [];
+  try {
+    const { data: authData, error: authErr } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (!authErr && authData?.users) {
+      authUsers = authData.users as unknown as AuthUserItem[];
+    } else if (authErr) {
+      console.warn("Notice: reading auth.users in admin portal:", authErr.message);
     }
+  } catch (err) {
+    console.warn("Notice: reading auth.users in admin portal:", err);
+  }
+
+  const authUsersById = new Map<string, AuthUserItem>();
+  const authUsersByEmail = new Map<string, AuthUserItem>();
+  const authUsersByGithub = new Map<string, AuthUserItem>();
+
+  for (const u of authUsers) {
+    if (u.id) authUsersById.set(u.id, u);
+    const uEmail = (u.email || u.user_metadata?.email || "").toLowerCase().trim();
+    if (uEmail) authUsersByEmail.set(uEmail, u);
+    const uGh = (u.user_metadata?.user_name || u.user_metadata?.preferred_username || u.user_metadata?.github || "").replace(/^@+/, "").toLowerCase().trim();
+    if (uGh) authUsersByGithub.set(uGh, u);
+  }
+
+  const seenIds = new Set<string>();
+  const seenEmails = new Set<string>();
+  const seenGithubs = new Set<string>();
+
+  // Ingest records from public.profiles
+  if (dbRows && dbRows.length > 0) {
+    for (const p of dbRows as Record<string, unknown>[]) {
+      const pId = String(p.user_id || p.id);
+      let email = ((p.email as string) || "").toLowerCase().trim();
+      let github = ((p.github as string) || "").replace(/^@+/, "").toLowerCase().trim();
+      let fullName = ((p.full_name as string) || "").trim();
+      let avatarUrl = (p.avatar_url as string) || null;
+
+      // Enrich from auth.users if missing
+      const matchingAuth =
+        (p.user_id ? authUsersById.get(String(p.user_id)) : null) ||
+        (p.id ? authUsersById.get(String(p.id)) : null) ||
+        (email ? authUsersByEmail.get(email) : null) ||
+        (github ? authUsersByGithub.get(github) : null);
+
+      if (matchingAuth) {
+        if (!email && matchingAuth.email) email = matchingAuth.email.toLowerCase().trim();
+        const meta = matchingAuth.user_metadata || {};
+        if (!fullName || fullName === "Contributor") {
+          fullName = meta.full_name || meta.name || (email ? email.split("@")[0] : "Contributor");
+        }
+        if (!avatarUrl) {
+          avatarUrl = meta.avatar_url || meta.picture || null;
+        }
+        if (!github) {
+          github = (meta.user_name || meta.preferred_username || meta.github || "").replace(/^@+/, "").toLowerCase().trim();
+        }
+      }
+
+      const isOwner = email === adminEmail;
+      const role = isOwner ? "admin" : (((p.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
+      const isAdmin = Boolean(isOwner || role === "admin" || p.is_admin);
+
+      seenIds.add(String(p.id));
+      if (p.user_id) seenIds.add(String(p.user_id));
+      if (email) seenEmails.add(email);
+      if (github) seenGithubs.add(github);
+
+      unifiedProfiles.push({
+        id: pId,
+        user_id: p.user_id ? String(p.user_id) : pId,
+        email: email || null,
+        full_name: fullName || (email ? email.split("@")[0] : "Contributor"),
+        avatar_url: avatarUrl || (github ? `https://avatars.githubusercontent.com/${github}` : null),
+        github: github || null,
+        linkedin: (p.linkedin as string) || null,
+        phone: (p.phone as string) || null,
+        country: (p.country as string) || null,
+        country_code: (p.country_code as string) || "+91",
+        nexfellow_id: (p.nexfellow_id as string) || null,
+        role,
+        is_admin: isAdmin,
+        score: Number(p.score ?? 0),
+        merged_prs: Number(p.merged_prs ?? 0),
+        projects_count: Number(p.projects_count ?? 0),
+        badges_created: Number(p.badges_created ?? 0),
+        tech_stack: Array.isArray(p.tech_stack) ? p.tech_stack : [],
+        created_at: (p.created_at as string) || new Date().toISOString(),
+        updated_at: (p.updated_at as string) || new Date().toISOString(),
+      });
+    }
+  }
+
+  // Also include any auth.users who signed in but didn't have a profile in public.profiles yet!
+  for (const u of authUsers) {
+    const uEmail = (u.email || u.user_metadata?.email || "").toLowerCase().trim();
+    const uGh = (u.user_metadata?.user_name || u.user_metadata?.preferred_username || u.user_metadata?.github || "").replace(/^@+/, "").toLowerCase().trim();
+
+    if (seenIds.has(u.id) || (uEmail && seenEmails.has(uEmail)) || (uGh && seenGithubs.has(uGh))) {
+      continue;
+    }
+
+    const meta = u.user_metadata || {};
+    const isOwner = uEmail === adminEmail;
+    const role = isOwner ? "admin" : (((meta.role as string) || "contributor") as "contributor" | "mentor" | "project-admin" | "admin");
+    const isAdmin = Boolean(isOwner || role === "admin" || meta.is_admin);
+    const fullName = meta.full_name || meta.name || (uEmail ? uEmail.split("@")[0] : "Contributor");
+    const avatarUrl = meta.avatar_url || meta.picture || (uGh ? `https://avatars.githubusercontent.com/${uGh}` : null);
+
+    const newProf: Profile = {
+      id: u.id,
+      user_id: u.id,
+      email: uEmail || null,
+      full_name: fullName,
+      avatar_url: avatarUrl,
+      github: uGh || null,
+      linkedin: null,
+      phone: null,
+      country: null,
+      country_code: "+91",
+      nexfellow_id: null,
+      role,
+      is_admin: isAdmin,
+      score: Number(meta.score ?? 0),
+      merged_prs: Number(meta.merged_prs ?? 0),
+      projects_count: Number(meta.projects_count ?? 0),
+      badges_created: Number(meta.badges_created ?? 0),
+      tech_stack: meta.tech_stack || [],
+      created_at: u.created_at || new Date().toISOString(),
+      updated_at: u.updated_at || new Date().toISOString(),
+    };
+
+    seenIds.add(u.id);
+    if (uEmail) seenEmails.add(uEmail);
+    if (uGh) seenGithubs.add(uGh);
+    unifiedProfiles.push(newProf);
+
+    // Auto-create in public.profiles so it persists permanently in the database
+    void admin.from("profiles").upsert(newProf, { onConflict: "id" }).then(({ error }) => {
+      if (error) console.warn("Notice: auto-provisioning auth user in profiles:", error.message);
+    });
   }
 
   const profiles = unifiedProfiles;
@@ -318,7 +394,7 @@ export async function updateUserRole(
   const { data: updatedRows, error: dbErr } = await admin
     .from("profiles")
     .update(profileUpdates)
-    .eq("user_id", targetUserId)
+    .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`)
     .select("id");
 
   if (dbErr) {
@@ -383,8 +459,8 @@ export async function updateUserScore(targetUserId: string, pointDelta: number, 
 
   const { data: target } = await admin
     .from("profiles")
-    .select("user_id, role, score")
-    .eq("user_id", targetUserId)
+    .select("user_id, id, role, score")
+    .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`)
     .maybeSingle();
 
   if (target) {
@@ -414,14 +490,14 @@ export async function updateUserScore(targetUserId: string, pointDelta: number, 
     console.warn("Notice: auth metadata score update:", authErr);
   }
 
-  // 2. Update profiles table (by user_id)
+  // 2. Update profiles table (by user_id or id)
   try {
     await admin
       .from("profiles")
       .update({
         score: newScore,
       })
-      .eq("user_id", targetUserId);
+      .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`);
   } catch (dbErr) {
     console.warn("Notice: profiles table score update:", dbErr);
   }
@@ -458,14 +534,14 @@ export async function updateUserGithub(
     console.warn("Notice: auth metadata github update:", authErr);
   }
 
-  // 2. Update profiles table (by user_id)
+  // 2. Update profiles table (by user_id or id)
   try {
     await admin
       .from("profiles")
       .update({
         github: cleanGithub,
       })
-      .eq("user_id", targetUserId);
+      .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`);
   } catch (dbErr) {
     console.warn("Notice: profiles table github update:", dbErr);
   }
@@ -579,13 +655,12 @@ export async function deleteUserAction(
     try {
       const { data: profile } = await admin
         .from("profiles")
-        .select("id, user_id, role, users(email)")
-        .eq("user_id", targetUserId)
+        .select("id, user_id, role, email")
+        .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`)
         .maybeSingle();
 
-      const userRecord = profile?.users as { email?: string } | null | undefined;
-      if (userRecord?.email) {
-        targetEmail = userRecord.email;
+      if (profile?.email) {
+        targetEmail = profile.email;
       }
     } catch (e) {
       console.warn("Notice: reading target profile before deletion:", e);
@@ -621,7 +696,7 @@ export async function deleteUserAction(
 
     // 4. Delete user from public.profiles and public.users
     try {
-      await admin.from("profiles").delete().eq("user_id", targetUserId);
+      await admin.from("profiles").delete().or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`);
       await admin.from("users").delete().eq("id", targetUserId);
     } catch (dbErr) {
       console.warn("Notice: deleting from profiles/users by user_id:", dbErr);

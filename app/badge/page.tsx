@@ -42,11 +42,11 @@ export default async function BadgePage() {
     null;
 
   try {
-    // 1. Search by user_id
+    // 1. Search by user_id or id
     const { data: byUserId } = await admin
       .from("profiles")
       .select("id, user_id, full_name, avatar_url, role, badges_created, github")
-      .eq("user_id", user.id)
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
 
     profile = byUserId as BadgeProfile | null;

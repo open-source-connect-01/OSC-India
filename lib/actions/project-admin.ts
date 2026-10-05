@@ -337,7 +337,7 @@ export async function getProjectAdminData(
       const chunk = distinctUserIds.slice(i, i + 100);
       const { data: profs } = await admin
         .from("profiles")
-        .select("id, user_id, full_name, github, avatar_url, role, score, merged_prs, users(email)")
+        .select("id, user_id, full_name, email, github, avatar_url, role, score, merged_prs")
         .or(`user_id.in.(${chunk.join(",")}),id.in.(${chunk.join(",")})`);
 
       if (profs) {

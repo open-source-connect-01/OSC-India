@@ -24,7 +24,7 @@ export async function POST() {
       const { data: profile } = await admin
         .from("profiles")
         .select("badges_created")
-        .eq("user_id", user.id)
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`)
         .maybeSingle();
 
       if (profile && profile.badges_created !== undefined && profile.badges_created !== null) {
@@ -64,7 +64,7 @@ export async function POST() {
       await admin
         .from("profiles")
         .update({ badges_created: newCount })
-        .eq("user_id", user.id);
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`);
     } catch (dbErr) {
       console.warn("Notice: saving badges_created to profiles table:", dbErr);
     }
