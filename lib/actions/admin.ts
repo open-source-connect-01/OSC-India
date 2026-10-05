@@ -103,7 +103,15 @@ async function requireAdminOrProjectAdmin() {
     throw new Error("Forbidden. Admin privileges required.");
   }
 
-  return { user, profile };
+  return {
+    user,
+    profile: profile || {
+      id: user.id,
+      user_id: user.id,
+      role: isProjAdmin ? "project-admin" : "admin",
+      is_admin: false,
+    },
+  };
 }
 
 /**
@@ -453,7 +461,7 @@ export async function updateUserScore(targetUserId: string, pointDelta: number, 
   const admin = createAdminClient();
 
   // Rule 1: Anti-Tampering / No Self-Scoring
-  if (requester.id === targetUserId && requester.id !== "admin-session") {
+  if (requester?.id === targetUserId && requester?.id !== "admin-session") {
     return { success: false, error: "Self-scoring is strictly prohibited." };
   }
 
