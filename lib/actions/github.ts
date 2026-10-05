@@ -13,6 +13,9 @@ import {
   DifficultyLevel,
   getGitHubAuthHeaders,
   isOfficialProjectAdminEmail,
+  isOfficialProjectAdminHandle,
+  OFFICIAL_PROJECT_ADMIN_REGISTRATIONS,
+  PROJECT_ADMIN_REPO_MAP_BY_EMAIL,
 } from "@/lib/utils/github-helpers";
 
 interface GitHubIssueItem {
@@ -53,9 +56,11 @@ export async function syncGitHubContribution(
 
   const { data: userProfile } = await admin
     .from("profiles")
-    .select("id, user_id, role, github")
+    .select("id, user_id, role, github, email")
     .eq("user_id", userId)
     .maybeSingle();
+
+  const profileEmail = (userProfile?.email || "").toLowerCase().trim();
 
   if (userProfile?.role) {
     userRole = userProfile.role;
@@ -63,7 +68,7 @@ export async function syncGitHubContribution(
   } else {
     const { data: byId } = await admin
       .from("profiles")
-      .select("id, user_id, role, github")
+      .select("id, user_id, role, github, email")
       .eq("id", userId)
       .maybeSingle();
     if (byId?.role) {
@@ -80,6 +85,11 @@ export async function syncGitHubContribution(
         // fallback
       }
     }
+  }
+
+  // Explicit project-admin validation by email or GitHub handle
+  if (!isAdmin && (userRole === "project-admin" || isOfficialProjectAdminEmail(profileEmail) || isOfficialProjectAdminHandle(handle))) {
+    userRole = "project-admin";
   }
 
   // Super admins and mentors do not participate in leaderboard scoring
@@ -105,10 +115,21 @@ export async function syncGitHubContribution(
   if (userRole === "project-admin") {
     try {
       const lowerHandle = handle.toLowerCase();
-      // Identify repositories owned/managed by this project admin
-      const adminRepoSlugs = Array.from(allowedSlugs).filter((slug) =>
-        slug.split("/")[0].toLowerCase() === lowerHandle
+      const reg = OFFICIAL_PROJECT_ADMIN_REGISTRATIONS.find(
+        (r) =>
+          r.github.toLowerCase() === lowerHandle ||
+          (profileEmail && r.email.toLowerCase() === profileEmail)
       );
+      const registeredSlugs = reg ? reg.repos : [];
+
+      // Identify repositories owned/managed by this project admin
+      const adminRepoSlugs = Array.from(allowedSlugs).filter((slug) => {
+        const slugLower = slug.toLowerCase();
+        return (
+          slugLower.split("/")[0] === lowerHandle ||
+          registeredSlugs.includes(slugLower)
+        );
+      });
 
       // If no direct repo owner match, include all allowed repos to check for PRs merged by this admin
       const targetRepos = adminRepoSlugs.length > 0 ? adminRepoSlugs : Array.from(allowedSlugs);
@@ -125,7 +146,10 @@ export async function syncGitHubContribution(
       const linkedIssuesCache = new Map<string, GitHubIssueItem | null>();
 
       for (const repoSlug of targetRepos) {
-        const isOwner = repoSlug.split("/")[0].toLowerCase() === lowerHandle;
+        const slugLower = repoSlug.toLowerCase();
+        const isOwner =
+          slugLower.split("/")[0] === lowerHandle ||
+          registeredSlugs.includes(slugLower);
         let page = 1;
         while (page <= 5) {
           const url = `https://api.github.com/repos/${repoSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
@@ -1041,9 +1065,11 @@ export async function syncAllProjectsAndContributors() {
     const meta = user.user_metadata || {};
     const prof = profileMap.get(user.id);
     const identities = user.identities || [];
-    const role = prof?.role || meta.role || "contributor";
+    const userEmail = (user.email || prof?.email || "").toLowerCase().trim();
+    const isProjAdminEmail = isOfficialProjectAdminEmail(userEmail);
+    const role = prof?.role || meta.role || (isProjAdminEmail ? "project-admin" : "contributor");
     // Only process project-admins
-    if (role !== "project-admin") continue;
+    if (role !== "project-admin" && !isProjAdminEmail) continue;
 
     // Collect all GitHub handles belonging to this admin
     const userHandles = new Set<string>();
@@ -1059,22 +1085,26 @@ export async function syncAllProjectsAndContributors() {
     }
 
     // Aggregate all PRs this admin gets credit for:
-    // 1. All PRs in repositories owned by this admin
+    // 1. All PRs in repositories owned/managed by this admin (including registered repos)
     // 2. All PRs merged by this admin in any competition repo
     const mergedByAdmin = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
-    for (const handle of userHandles) {
-      // Repos owned by this admin
-      for (const [slug, prs] of repoPrMap.entries()) {
-        const repoOwner = slug.split("/")[0];
-        if (repoOwner === handle) {
-          for (const p of prs) {
-            const key = `${p.repoSlug}#${p.prNumber}`;
-            if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, p);
-          }
+    const registeredRepos = (userEmail && PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail]) || [];
+
+    // Check all competition repo PRs
+    for (const [slug, prs] of repoPrMap.entries()) {
+      const slugLower = slug.toLowerCase();
+      const repoOwner = slugLower.split("/")[0];
+      const isOwner = userHandles.has(repoOwner) || registeredRepos.some((r) => r.toLowerCase() === slugLower);
+      if (isOwner) {
+        for (const p of prs) {
+          const key = `${p.repoSlug}#${p.prNumber}`;
+          if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, p);
         }
       }
+    }
 
-      // PRs explicitly merged by this admin
+    // Also check PRs explicitly merged by this admin's handles
+    for (const handle of userHandles) {
       for (const m of mergerMap.get(handle) || []) {
         const key = `${m.repoSlug}#${m.prNumber}`;
         if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, m);
