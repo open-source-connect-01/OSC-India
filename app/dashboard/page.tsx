@@ -8,6 +8,12 @@ import { redirect } from "next/navigation";
 import { syncUserProfile } from "@/lib/auth/syncProfile";
 import Link from "next/link";
 import DashboardClient, { PRContribution, DayContribution, ProjectSummary } from "./DashboardClient";
+import {
+  isOfficialProjectAdminEmail,
+  isOfficialProjectAdminHandle,
+  PROJECT_ADMIN_REPO_MAP_BY_EMAIL,
+  extractRepoSlug,
+} from "@/lib/utils/github-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -191,7 +197,15 @@ export default async function DashboardPage(props: {
     (profile?.role as string) ||
     (isOwnProfile ? (currentUser?.user_metadata?.role as string) : "") ||
     "contributor";
-  const isProjectAdmin = rawRole === "project-admin";
+  const userEmail = (
+    (profile?.email as string) ||
+    (isOwnProfile ? (currentUser?.email as string) : "") ||
+    ""
+  ).toLowerCase().trim();
+  const isProjectAdmin =
+    rawRole === "project-admin" ||
+    isOfficialProjectAdminEmail(userEmail) ||
+    isOfficialProjectAdminHandle(githubUsername);
 
   const badgesCreated = Number(profile?.badges_created || 0);
   const techStack =
@@ -217,9 +231,12 @@ export default async function DashboardPage(props: {
   let relevantPRs: typeof allContributions = [];
 
   if (isProjectAdmin) {
+    const adminRepoList = userEmail ? (PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail] || []) : [];
     const matchedProjects = allProjects.filter((p) => {
       if (!p.github_repo_url) return false;
       const urlLower = p.github_repo_url.toLowerCase();
+      const slug = extractRepoSlug(p.github_repo_url)?.toLowerCase();
+      if (slug && adminRepoList.some((r) => r.toLowerCase() === slug)) return true;
       return (
         Boolean(githubUsername) &&
         (urlLower.includes(`/${githubUsername.toLowerCase()}/`) ||
@@ -429,14 +446,23 @@ export default async function DashboardPage(props: {
   }
 
   // Viewer profile for Navbar
+  const viewerEmail = (currentUser?.email || "").toLowerCase().trim();
+  const viewerGh = ((currentUser?.user_metadata?.user_name as string) || "").replace(/^@+/, "").toLowerCase().trim();
+  const viewerRawRole = isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor");
+  const viewerIsProjectAdmin =
+    viewerRawRole === "project-admin" ||
+    isOfficialProjectAdminEmail(viewerEmail) ||
+    isOfficialProjectAdminHandle(viewerGh);
+  const viewerRole = viewerIsProjectAdmin ? "project-admin" : viewerRawRole;
+
   const viewerProfilePayload = {
     id: currentUser ? currentUser.id : targetUserId,
     name: (currentUser?.user_metadata?.full_name as string) || (currentUser?.user_metadata?.name as string) || fullName,
     email: currentUser?.email || (githubUsername ? `${githubUsername}@osc-india.org` : ""),
     avatar: (currentUser?.user_metadata?.avatar_url as string) || (currentUser?.user_metadata?.picture as string) || avatar,
-    role: isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor"),
-    isAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "admin",
-    isProjectAdmin: (isOwnProfile ? rawRole : ((currentUser?.user_metadata?.role as string) || "contributor")) === "project-admin",
+    role: viewerRole,
+    isAdmin: !viewerIsProjectAdmin && viewerRole === "admin",
+    isProjectAdmin: viewerIsProjectAdmin,
     github: isOwnProfile ? githubUsername : ((currentUser?.user_metadata?.user_name as string) || ""),
   };
 

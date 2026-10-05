@@ -88,6 +88,207 @@ export const OFFICIAL_COMPETITION_REPO_SLUGS = new Set([
 ]);
 
 /**
+ * Official Project Admin Registrations from the official registration sheet.
+ */
+export interface ProjectAdminRegistration {
+  email: string;
+  name: string;
+  github: string;
+  repos: string[];
+}
+
+export const OFFICIAL_PROJECT_ADMIN_REGISTRATIONS: ProjectAdminRegistration[] = [
+  {
+    email: "kanishjebamathew.m@gmail.com",
+    name: "Kanish Jeba Mathew M",
+    github: "kanishjebamathewm",
+    repos: ["kanishjebamathewm/truxify"],
+  },
+  {
+    email: "aditthyassdeepa@gmail.com",
+    name: "Aditthya SS Varma",
+    github: "aditthyass",
+    repos: ["aditthyass/iloveagents", "aditthyass/taba"],
+  },
+  {
+    email: "dfpkt96@gmail.com",
+    name: "Lakshmikanthan k",
+    github: "l3tchupkt",
+    repos: ["l3tchupkt/adaptq", "l3tchupkt/bugpilot"],
+  },
+  {
+    email: "adityapainuli2004@gmail.com",
+    name: "Aditya Painuli",
+    github: "adityapainuli",
+    repos: ["adityapainuli/clippings-vids", "adityapainuli/retra"],
+  },
+  {
+    email: "karanunique36@gmail.com",
+    name: "Karan Manickam",
+    github: "canopus-labs",
+    repos: ["canopus-labs/preppilot", "canopus-labs/canopus-org"],
+  },
+  {
+    email: "aseemprasad0520@gmail.com",
+    name: "Aseem Prasad",
+    github: "aseemprasad",
+    repos: ["aseemprasad/air-quality-intelligence"],
+  },
+  {
+    email: "karakotigaurav12@gmail.com",
+    name: "Gaurav Karakoti",
+    github: "gauravkarakoti",
+    repos: ["gauravkarakoti/secureflow", "gauravkarakoti/temporal-modelling"],
+  },
+  {
+    email: "logesh@psgbiz.com",
+    name: "Logesh V",
+    github: "logeshv586-code",
+    repos: ["logeshv586-code/aiproductfactory", "logeshv586-code/aitradra"],
+  },
+  {
+    email: "rahulkurrey321@gmail.com",
+    name: "Harshal",
+    github: "harshalkurrey",
+    repos: ["harshalkurrey/harshal-world", "harshalkurrey/campuscare"],
+  },
+  {
+    email: "kothakapuvishnukiran@gmail.com",
+    name: "Kothakapu Vishnu Kiran",
+    github: "vishnukothakapu",
+    repos: ["vishnukothakapu/linkid"],
+  },
+  {
+    email: "aharshisinha2020@gmail.com",
+    name: "Aharshi Sinha",
+    github: "aharshi3614",
+    repos: ["aharshi3614/devwhisper"],
+  },
+  {
+    email: "harsh.vardhanp0901@gmail.com",
+    name: "harsh vardhan",
+    github: "harsh-vardhan09",
+    repos: ["harsh-vardhan09/athlead", "harsh-vardhan09/otp-autofiller-extension"],
+  },
+  {
+    email: "pandeysatyam1802@gmail.com",
+    name: "Satyam Pandey",
+    github: "satyampandey-07",
+    repos: ["satyampandey-07/worksphere", "satyampandey-07/study-buddy-ai"],
+  },
+  {
+    email: "singhjyatin@gmail.com",
+    name: "Jyatin Kumar Singh",
+    github: "jyatin",
+    repos: ["jyatin/kiranawala", "jyatin/askpdf"],
+  },
+  {
+    email: "mohan191024@gmail.com",
+    name: "Mohan Kumbar",
+    github: "10-mohan",
+    repos: ["10-mohan/trafitech", "10-mohan/eventscope"],
+  },
+  {
+    email: "ashutoshkumarbhardwaj7@gmail.com",
+    name: "Aashutosh kumar bhardwaj",
+    github: "aashutoshkumarbhardwaj",
+    repos: ["aashutoshkumarbhardwaj/creatoros"],
+  },
+  {
+    email: "harshbansal8705@gmail.com",
+    name: "Harsh Bansal",
+    github: "harshbansal8705",
+    repos: ["harshbansal8705/desktopai", "harshbansal8705/frost-app"],
+  },
+  {
+    email: "sumangalkaran44@gmail.com",
+    name: "Sumangal karan",
+    github: "jugaadlang",
+    repos: ["jugaadlang/jugaadlang"],
+  },
+  {
+    email: "srigadaakshay@gmail.com",
+    name: "Akshay Kumar",
+    github: "srigadaakshaykumar",
+    repos: ["srigadaakshaykumar/stock"],
+  },
+  {
+    email: "192aakarsh@gmail.com",
+    name: "Aakarsh Singhal",
+    github: "iixii-l192",
+    repos: ["iixii-l192/pocketops-app"],
+  },
+  {
+    email: "soumyamishra788@gmail.com",
+    name: "Soumya Mishra",
+    github: "soumyamishra-7",
+    repos: ["soumyamishra-7/walletwise", "soumyamishra-7/nirogai"],
+  },
+  {
+    email: "f98561965@gmail.com",
+    name: "Farhan Shaikh",
+    github: "ytxfsgamerz",
+    repos: ["ytxfsgamerz/winaurex"],
+  },
+  {
+    email: "bhuvanshkataria@gmail.com",
+    name: "Bhuvansh",
+    github: "anthropicbots",
+    repos: ["anthropicbots/hiero-bot-py", "anthropicbots/issuescout"],
+  },
+  {
+    email: "pratyushjha06@gmail.com",
+    name: "Pratyush Jha",
+    github: "pratyushjha06",
+    repos: ["pratyushjha06/dockfleet"],
+  },
+  {
+    email: "sandeshdawkhar13@gmail.com",
+    name: "Sandesh Prakash Dawkhar",
+    github: "sandesh13fr",
+    repos: ["sandesh13fr/tcalc"],
+  },
+  {
+    email: "gollabharath2007@gmail.com",
+    name: "Golla Bharath",
+    github: "advanceddiscordbot",
+    repos: ["advanceddiscordbot/advanced-discord-bot"],
+  },
+  {
+    email: "vivektalent200@gmail.com",
+    name: "Vivek Yadav",
+    github: "elixpo",
+    repos: ["elixpo/blogs.elixpo"],
+  },
+  {
+    email: "bnjanani258@gmail.com",
+    name: "Janani B N",
+    github: "janani-bn",
+    repos: ["janani-bn/temp_civic"],
+  },
+  {
+    email: "kushwahasiddhartha31@gmail.com",
+    name: "Siddhartha Kushwaha",
+    github: "devsidd2006",
+    repos: ["devsidd2006/openhire"],
+  },
+];
+
+/**
+ * Set of all 29 official Project Admin email addresses (lowercase).
+ */
+export const OFFICIAL_PROJECT_ADMIN_EMAILS = new Set<string>(
+  OFFICIAL_PROJECT_ADMIN_REGISTRATIONS.map((r) => r.email.toLowerCase())
+);
+
+/**
+ * Mapping from project admin email (lowercase) to their managed repo slugs.
+ */
+export const PROJECT_ADMIN_REPO_MAP_BY_EMAIL: Record<string, string[]> = Object.fromEntries(
+  OFFICIAL_PROJECT_ADMIN_REGISTRATIONS.map((r) => [r.email.toLowerCase(), r.repos])
+);
+
+/**
  * Official Project Admin GitHub handles mapped to repository patterns.
  */
 export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
@@ -96,6 +297,7 @@ export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "l3tchupkt",
   "adityapainuli",
   "canopus-labs",
+  "karanunix",
   "aseemprasad",
   "gauravkarakoti",
   "logeshv586-code",
@@ -122,6 +324,23 @@ export const OFFICIAL_PROJECT_ADMIN_HANDLES = new Set([
   "janani-bn",
   "devsidd2006",
 ]);
+
+/**
+ * Validates whether an email belongs to an official project admin.
+ */
+export function isOfficialProjectAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return OFFICIAL_PROJECT_ADMIN_EMAILS.has(email.trim().toLowerCase());
+}
+
+/**
+ * Validates whether a GitHub handle belongs to an official project admin.
+ */
+export function isOfficialProjectAdminHandle(handle?: string | null): boolean {
+  if (!handle) return false;
+  const clean = handle.replace(/^@+/, "").trim().toLowerCase();
+  return OFFICIAL_PROJECT_ADMIN_HANDLES.has(clean);
+}
 
 /**
  * Validates whether a given repo slug or URL is an official competition repository.

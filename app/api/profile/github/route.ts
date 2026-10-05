@@ -25,11 +25,11 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    // 1. Check for existing profile by user_id
+    // 1. Check for existing profile by user_id or id
     const { data: existingProfile } = await admin
       .from("profiles")
       .select("id, user_id, github, avatar_url")
-      .eq("user_id", user.id)
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
 
     const githubAvatar = `https://avatars.githubusercontent.com/${github}`;
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       const { error: updateErr } = await admin
         .from("profiles")
         .update(updates)
-        .eq("user_id", user.id);
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`);
       if (updateErr) {
         const taken = updateErr.code === "23505";
         return NextResponse.json(
@@ -55,7 +55,9 @@ export async function POST(request: Request) {
     } else {
       await admin.from("profiles").upsert(
         {
+          id: user.id,
           user_id: user.id,
+          email: user.email || null,
           github,
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Contributor",
           avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || githubAvatar,
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
           badges_created: 0,
           tech_stack: [],
         },
-        { onConflict: "user_id" }
+        { onConflict: "id" }
       );
     }
 

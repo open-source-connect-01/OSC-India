@@ -6,7 +6,14 @@ import { verifyAdminSession } from "@/lib/auth/admin-auth";
 import { getProjects, getAllProjectsForAdmins, invalidateSlugCache, ProjectItem } from "./projects";
 import { withProjectMeta } from "@/lib/utils/project-meta";
 import { syncSingleUser, updateUserScore } from "./admin";
-import { extractRepoSlug, getGitHubAuthHeaders } from "@/lib/utils/github-helpers";
+import {
+  extractRepoSlug,
+  getGitHubAuthHeaders,
+  isOfficialProjectAdminEmail,
+  isOfficialProjectAdminHandle,
+  OFFICIAL_PROJECT_ADMIN_REGISTRATIONS,
+  PROJECT_ADMIN_REPO_MAP_BY_EMAIL,
+} from "@/lib/utils/github-helpers";
 import { revalidatePath } from "next/cache";
 
 export interface ProjectAdminProject {
@@ -122,7 +129,8 @@ function matchesAdminRepo(
 ): boolean {
   const slug = extractRepoSlug(project.githubUrl);
   if (!slug) return false;
-  const owner = slug.split("/")[0]?.toLowerCase();
+  const slugLower = slug.toLowerCase();
+  const owner = slugLower.split("/")[0];
   if (owner && owner === activeGithub) return true;
 
   const urlLower = (project.githubUrl || "").toLowerCase();
@@ -130,13 +138,19 @@ function matchesAdminRepo(
     return true;
   }
 
-  // AnthropicBots / hiero-bot-py is maintained by Bhuvansh Kataria (@bhuvansh855)
+  // Check email-based registered repositories
   const normalizedEmail = (callerEmail || "").toLowerCase().trim();
+  const registeredRepos = normalizedEmail ? PROJECT_ADMIN_REPO_MAP_BY_EMAIL[normalizedEmail] : undefined;
+  if (registeredRepos && registeredRepos.some((r) => r.toLowerCase() === slugLower)) {
+    return true;
+  }
+
+  // AnthropicBots / hiero-bot-py is maintained by Bhuvansh Kataria (@bhuvansh855)
   const isBhuvansh =
     activeGithub === "bhuvansh855" ||
     activeGithub === "anthropicbots" ||
     normalizedEmail === "bhuvanshkataria@gmail.com";
-  if (isBhuvansh && slug.toLowerCase() === "anthropicbots/hiero-bot-py") {
+  if (isBhuvansh && slugLower === "anthropicbots/hiero-bot-py") {
     return true;
   }
 
@@ -199,19 +213,6 @@ export async function requireProjectAdminSession() {
 
   const userEmail = (user.email || "").toLowerCase().trim();
   const rootAdminEmail = (process.env.ADMIN_PORTAL_EMAIL || "sayanghosh1887@gmail.com").toLowerCase().trim();
-  // Emails explicitly designated as project admins — recognised regardless of DB role
-  const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
-  const isSuperAdmin = profile?.role === "admin" || userEmail === rootAdminEmail;
-  const isProjectAdmin =
-    profile?.role === "project-admin" ||
-    isSuperAdmin ||
-    KNOWN_PROJECT_ADMIN_EMAILS.has(userEmail);
-
-  if (!isProjectAdmin) {
-    if (hasAdminCookie) return adminSessionResult();
-    throw new Error("Forbidden. Project Admin privileges required.");
-  }
-
   const resolvedGithub = (
     profile?.github ||
     user.user_metadata?.user_name ||
@@ -219,6 +220,26 @@ export async function requireProjectAdminSession() {
     user.user_metadata?.github ||
     ""
   ).replace(/^@+/, "").trim();
+
+  const isSuperAdmin = profile?.role === "admin" || userEmail === rootAdminEmail;
+  const isProjectAdmin =
+    profile?.role === "project-admin" ||
+    isSuperAdmin ||
+    isOfficialProjectAdminEmail(userEmail) ||
+    isOfficialProjectAdminHandle(resolvedGithub);
+
+  if (!isProjectAdmin) {
+    if (hasAdminCookie) return adminSessionResult();
+    throw new Error("Forbidden. Project Admin privileges required.");
+  }
+
+  // Auto-heal DB profile role if it was marked as contributor or outdated
+  if (!isSuperAdmin && profile?.role !== "project-admin" && isProjectAdmin) {
+    void admin
+      .from("profiles")
+      .update({ role: "project-admin", score: 0, merged_prs: 0 })
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`);
+  }
 
   const resolvedName =
     profile?.full_name ||
@@ -263,16 +284,19 @@ export async function getProjectAdminData(
   if (isSuperAdmin) {
     const { data: paProfiles } = await admin
       .from("profiles")
-      .select("id, user_id, full_name, github, avatar_url, role")
+      .select("id, user_id, full_name, github, avatar_url, role, email")
       .eq("role", "project-admin");
+
+    const seenGh = new Set<string>();
+    const seenEmails = new Set<string>();
 
     if (paProfiles && paProfiles.length > 0) {
       allProjectAdmins = paProfiles.map((pa) => {
         const gh = (pa.github || "").toLowerCase();
-        const matchingRepos = allProjectsRaw.filter((p) => {
-          const slug = extractRepoSlug(p.githubUrl) || "";
-          return slug.split("/")[0]?.toLowerCase() === gh;
-        });
+        const em = (pa.email || "").toLowerCase();
+        if (gh) seenGh.add(gh);
+        if (em) seenEmails.add(em);
+        const matchingRepos = allProjectsRaw.filter((p) => matchesAdminRepo(p, gh, em));
         return {
           id: pa.user_id || pa.id,
           name: pa.full_name || "Project Admin",
@@ -282,20 +306,39 @@ export async function getProjectAdminData(
         };
       });
     }
+
+    // Include registered official project admins who may not be in DB yet
+    for (const reg of OFFICIAL_PROJECT_ADMIN_REGISTRATIONS) {
+      const gh = reg.github.toLowerCase();
+      const em = reg.email.toLowerCase();
+      if (!seenEmails.has(em) && !seenGh.has(gh)) {
+        const matchingRepos = allProjectsRaw.filter((p) => matchesAdminRepo(p, gh, em));
+        allProjectAdmins.push({
+          id: `reg-${em}`,
+          name: reg.name,
+          github: reg.github,
+          avatarUrl: `https://avatars.githubusercontent.com/${reg.github}`,
+          repoCount: matchingRepos.length,
+        });
+      }
+    }
   }
 
-  // 3. Determine active GitHub handle to filter repositories
+  // 3. Determine active GitHub handle and email to filter repositories
   // If Super Admin provided targetAdminGithub, use that; otherwise use caller's github handle
   let activeGithub = (caller.github || "").trim().toLowerCase();
+  let activeEmail = caller.email;
   if (isSuperAdmin && targetAdminGithub && targetAdminGithub !== "all") {
     activeGithub = targetAdminGithub.trim().toLowerCase();
+    const reg = OFFICIAL_PROJECT_ADMIN_REGISTRATIONS.find((r) => r.github.toLowerCase() === activeGithub);
+    if (reg) activeEmail = reg.email;
   }
   // 4. Find managed projects
   let matchedProjects: ProjectItem[] = [];
   if (isSuperAdmin && (!targetAdminGithub || targetAdminGithub === "all")) {
     matchedProjects = allProjectsRaw;
   } else {
-    matchedProjects = allProjectsRaw.filter((p) => matchesAdminRepo(p, activeGithub, caller.email));
+    matchedProjects = allProjectsRaw.filter((p) => matchesAdminRepo(p, activeGithub, activeEmail));
   }
 
   const matchedProjectIds = new Set(matchedProjects.map((p) => p.id));
@@ -337,7 +380,7 @@ export async function getProjectAdminData(
       const chunk = distinctUserIds.slice(i, i + 100);
       const { data: profs } = await admin
         .from("profiles")
-        .select("id, user_id, full_name, github, avatar_url, role, score, merged_prs, users(email)")
+        .select("id, user_id, full_name, email, github, avatar_url, role, score, merged_prs")
         .or(`user_id.in.(${chunk.join(",")}),id.in.(${chunk.join(",")})`);
 
       if (profs) {

@@ -26,14 +26,14 @@ export async function POST(request: Request) {
     let { error } = await admin
       .from("profiles")
       .update({ tech_stack: languages, updated_at: new Date().toISOString() })
-      .eq("user_id", user.id);
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`);
 
     // If updated_at column does not exist in schema, retry without it
     if (error && (error.message?.includes("updated_at") || error.code === "42703")) {
       const retry = await admin
         .from("profiles")
         .update({ tech_stack: languages })
-        .eq("user_id", user.id);
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`);
       error = retry.error;
     }
 

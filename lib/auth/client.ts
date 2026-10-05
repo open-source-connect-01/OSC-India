@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { OFFICIAL_PROJECT_ADMIN_HANDLES } from "@/lib/utils/github-helpers";
+import { OFFICIAL_PROJECT_ADMIN_HANDLES, isOfficialProjectAdminEmail } from "@/lib/utils/github-helpers";
 
 export interface ClientProfilePayload {
   id: string;
@@ -173,11 +173,28 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return null;
 
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from("profiles")
       .select("id, user_id, full_name, avatar_url, role, github")
-      .eq("user_id", user.id)
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
+
+    if (!profile) {
+      const incomingGh =
+        user.user_metadata?.user_name ||
+        user.user_metadata?.preferred_username ||
+        user.user_metadata?.github ||
+        null;
+      if (incomingGh) {
+        const cleanGh = incomingGh.replace(/^@+/, "").trim().toLowerCase();
+        const { data: byGh } = await supabase
+          .from("profiles")
+          .select("id, user_id, full_name, avatar_url, role, github")
+          .ilike("github", cleanGh)
+          .maybeSingle();
+        if (byGh) profile = byGh;
+      }
+    }
 
     const fullName =
       profile?.full_name ||
@@ -214,17 +231,16 @@ export async function getClientProfile(): Promise<ClientProfilePayload | null> {
       identityAvatar ||
       (github ? `https://avatars.githubusercontent.com/${github}` : null);
 
-    const role = profile?.role || user.user_metadata?.role || "contributor";
+    const rawRole = profile?.role || user.user_metadata?.role || "contributor";
     const cleanGh = (github || "").replace(/^@+/, "").trim().toLowerCase();
-    // Emails designated as project admins — override contributor role on the client
-    const KNOWN_PROJECT_ADMIN_EMAILS = new Set(["bhuvanshkataria@gmail.com"]);
-    const userEmailLower = (user.email || "").toLowerCase();
+    const userEmailLower = (user.email || "").toLowerCase().trim();
     const isProjectAdmin = Boolean(
-      role === "project-admin" ||
+      rawRole === "project-admin" ||
       (cleanGh && OFFICIAL_PROJECT_ADMIN_HANDLES.has(cleanGh)) ||
-      KNOWN_PROJECT_ADMIN_EMAILS.has(userEmailLower)
+      isOfficialProjectAdminEmail(userEmailLower)
     );
     // Project admins are organizers and never site admins
+    const role = isProjectAdmin ? "project-admin" : rawRole;
     const isAdmin = !isProjectAdmin && role === "admin";
 
     return {

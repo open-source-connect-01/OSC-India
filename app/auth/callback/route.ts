@@ -58,7 +58,7 @@ export async function GET(request: Request) {
             const { data: linkingProfile } = await admin
               .from("profiles")
               .select("*")
-              .eq("user_id", linkingUserId)
+              .or(`user_id.eq.${linkingUserId},id.eq.${linkingUserId}`)
               .maybeSingle();
 
             // 2. Clear any stale profile row holding this github handle
@@ -67,7 +67,9 @@ export async function GET(request: Request) {
               .update({ github: null })
               .eq("github", incomingGithub)
               .neq("user_id", linkingUserId)
-              .neq("user_id", user.id);
+              .neq("id", linkingUserId)
+              .neq("user_id", user.id)
+              .neq("id", user.id);
 
             const githubAvatar = user.user_metadata?.avatar_url || `https://avatars.githubusercontent.com/${incomingGithub}`;
 
@@ -78,14 +80,16 @@ export async function GET(request: Request) {
                 github: incomingGithub,
                 avatar_url: githubAvatar,
               })
-              .eq("user_id", linkingUserId);
+              .or(`user_id.eq.${linkingUserId},id.eq.${linkingUserId}`);
 
             // 4. If current session user.id is different, ensure user.id profile is unified
             if (user.id !== linkingUserId) {
               await admin
                 .from("profiles")
                 .upsert({
+                  id: user.id,
                   user_id: user.id,
+                  email: user.email || linkingProfile?.email || null,
                   full_name: linkingProfile?.full_name || user.user_metadata?.full_name || incomingGithub,
                   avatar_url: githubAvatar,
                   github: incomingGithub,
@@ -95,7 +99,7 @@ export async function GET(request: Request) {
                   projects_count: linkingProfile?.projects_count || 0,
                   badges_created: linkingProfile?.badges_created || 0,
                   tech_stack: linkingProfile?.tech_stack || [],
-                }, { onConflict: "user_id" });
+                }, { onConflict: "id" });
             }
 
             // 5. Immediately trigger GitHub contribution sync
