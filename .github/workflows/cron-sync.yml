@@ -21,6 +21,6 @@ jobs:
       - name: Trigger Full Contributor Sync (if 6-hour interval)
         run: |
           HOUR=$(date -u +'%H')
-          if [ $((HOUR % 6)) -eq 0 ] && [ -n "${{ secrets.APP_URL }}" ]; then
+          if [ $((10#$HOUR % 6)) -eq 0 ] && [ -n "${{ secrets.APP_URL }}" ]; then
             curl -s -X GET "${{ secrets.APP_URL }}/api/cron/sync-contributors?secret=${{ secrets.CRON_SECRET }}" || true
           fi
