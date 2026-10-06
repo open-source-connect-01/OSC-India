@@ -346,15 +346,62 @@ export async function getProjectAdminData(
     matchedProjects.map((p) => extractRepoSlug(p.githubUrl)?.toLowerCase()).filter(Boolean) as string[]
   );
 
-  // 5. Fetch all contributions linked to these projects or matching repo slugs
-  const { data: allContributionsRaw } = await admin
-    .from("contributions")
-    .select("id, type, github_url, status, points_awarded, contributed_at, project_id, user_id")
-    .order("contributed_at", { ascending: false });
+  // 5. Fetch all contributions linked to these projects with pagination to bypass PostgREST's 1000-row limit
+  const matchedProjIdArray = Array.from(matchedProjectIds);
+  const PAGE_SIZE = 1000;
+  let allContributions: Array<{
+    id: string;
+    type: string;
+    github_url: string;
+    status: string;
+    points_awarded: number;
+    contributed_at: string;
+    project_id: string;
+    user_id: string;
+  }> = [];
 
-  const allContributions = allContributionsRaw || [];
+  if (matchedProjIdArray.length > 0 && !(isSuperAdmin && (!targetAdminGithub || targetAdminGithub === "all"))) {
+    // Scoped query by project_id in chunks of 50 to stay well within Supabase IN limits
+    for (let i = 0; i < matchedProjIdArray.length; i += 50) {
+      const projChunk = matchedProjIdArray.slice(i, i + 50);
+      let from = 0;
+      while (true) {
+        const { data, error } = await admin
+          .from("contributions")
+          .select("id, type, github_url, status, points_awarded, contributed_at, project_id, user_id")
+          .in("project_id", projChunk)
+          .order("contributed_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error || !data || data.length === 0) break;
+        allContributions.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+    }
+  } else {
+    // Super admin viewing all projects: paginate across all records without truncation
+    let from = 0;
+    while (true) {
+      const { data, error } = await admin
+        .from("contributions")
+        .select("id, type, github_url, status, points_awarded, contributed_at, project_id, user_id")
+        .order("contributed_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error || !data || data.length === 0) break;
+      allContributions.push(...data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+  }
 
   const relevantContributions = allContributions.filter((c) => {
+    // Exclude admin's own merge marker records
+    if (c.type === "pr_merge") return false;
+    // Exclude unmerged PRs from verified merged PR submissions
+    if (c.status !== "merged") return false;
+
     if (c.project_id && matchedProjectIds.has(c.project_id)) return true;
     if (c.github_url) {
       const slug = extractRepoSlug(c.github_url)?.toLowerCase();
@@ -392,8 +439,17 @@ export async function getProjectAdminData(
     }
   }
 
+  // Filter out the project admin themselves from the contributor list so they are not shown as a participant
+  const contributorPrContributions = relevantContributions.filter((c) => {
+    const prof = contributorProfilesMap.get(c.user_id);
+    const role = (prof?.role as string) || "";
+    if (role === "admin" || role === "project-admin") return false;
+    if (c.user_id === caller.id || c.user_id === caller.user_id) return false;
+    return true;
+  });
+
   // 7. Assemble Pull Requests
-  const pullRequests: ProjectAdminPR[] = relevantContributions.map((c) => {
+  const pullRequests: ProjectAdminPR[] = contributorPrContributions.map((c) => {
     const matchedProj = matchedProjects.find(
       (p) =>
         p.id === c.project_id ||
@@ -512,7 +568,7 @@ export async function getProjectAdminData(
     const slug = extractRepoSlug(p.githubUrl)?.toLowerCase();
     const short = p.title.split("–")[0].trim().toLowerCase();
 
-    const repoPRs = relevantContributions.filter((c) => {
+    const repoPRs = contributorPrContributions.filter((c) => {
       if (c.project_id === p.id) return true;
       if (c.github_url) {
         const cSlug = extractRepoSlug(c.github_url)?.toLowerCase();
