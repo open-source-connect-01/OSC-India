@@ -70,6 +70,8 @@ export interface ProjectAdminMetrics {
   totalContributors: number;
   totalPRs: number;
   totalPointsAwarded: number;
+  /** Number of PRs this project-admin personally reviewed and merged across their repos. */
+  adminMergedPRs: number;
 }
 
 export interface ProjectAdminData {
@@ -397,8 +399,9 @@ export async function getProjectAdminData(
   }
 
   const relevantContributions = allContributions.filter((c) => {
-    // Exclude admin's own merge marker records
-    if (c.type === "pr_merge") return false;
+    // Exclude admin merge-marker rows: they have github_url prefixed with 'merged:'
+    // (type='pr_merge' is unused; admin records are stored with type='pr' but a 'merged:' URL prefix)
+    if ((c.github_url || "").startsWith("merged:")) return false;
     // Exclude unmerged PRs from verified merged PR submissions
     if (c.status !== "merged") return false;
 
@@ -614,11 +617,19 @@ export async function getProjectAdminData(
     : [];
 
   // 10. Compute Summary Metrics
+  // Count PRs the admin personally merged: rows with github_url='merged:...' belonging to the admin
+  const callerUserId = caller.user_id || caller.id;
+  const adminMergeRows = allContributions.filter(
+    (c) => (c.github_url || "").startsWith("merged:") && c.user_id === callerUserId
+  );
+  const adminMergedPRs = adminMergeRows.length;
+
   const metrics: ProjectAdminMetrics = {
     totalRepos: managedProjects.length,
     totalContributors: contributors.length,
     totalPRs: pullRequests.length,
     totalPointsAwarded: pullRequests.reduce((sum, pr) => sum + pr.points, 0),
+    adminMergedPRs,
   };
 
   return {

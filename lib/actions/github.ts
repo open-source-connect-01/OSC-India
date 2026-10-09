@@ -171,13 +171,16 @@ export async function syncGitHubContribution(
             const rawMerger = (pr.merged_by?.login || "").toLowerCase();
             const isMergedByThisAdmin = rawMerger === lowerHandle;
 
-            // Project admin gets points if they own the repo OR if they merged the PR
-            if (isOwner || isMergedByThisAdmin) {
+            // Project admin gets credit only for PRs they personally merged.
+            // We do NOT count "all PRs in repos they own" because those are contributor
+            // contributions — counting them would inflate the admin's merged_prs with work they
+            // did not perform themselves.
+            if (isMergedByThisAdmin) {
               const key = `${repoSlug}#${pr.number}`;
               if (!seenPrKeys.has(key)) {
                 seenPrKeys.add(key);
 
-                // Detect difficulty (Easy: 10, Medium: 20, Hard: 30, Expert: 50)
+          // Detect difficulty (Easy: 10, Medium: 20, Hard: 30, Expert: 50)
                 let prDifficulty = detectDifficulty({
                   title: pr.title,
                   body: pr.body,
@@ -254,7 +257,7 @@ export async function syncGitHubContribution(
           contributionsToUpsert.push({
             user_id: userId,
             project_id: projectId,
-            type: "pr_merge",
+            type: "pr",
             github_url: `merged:${pr.htmlUrl}`,
             status: "merged",
             points_awarded: 0, // admins earn no points
@@ -340,9 +343,10 @@ export async function syncGitHubContribution(
       let page = 1;
 
       while (page <= 10) {
-        // Match active PRs (open or merged) in official competition repositories
+        // Only fetch truly merged PRs — 'is:merged' is the correct GitHub Search qualifier.
+        // '-is:unmerged' incorrectly also matches open PRs (anything that is "not unmerged").
         const prQuery = encodeURIComponent(
-          `author:${handle} type:pr -is:unmerged ${repoFilter}`
+          `author:${handle} type:pr is:merged ${repoFilter}`
         );
         const prResponse = await fetch(
           `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
@@ -497,7 +501,8 @@ export async function syncGitHubContribution(
             project_id: projectId,
             type: "pr",
             github_url: pr.item.html_url,
-            status: pr.item.closed_at ? "merged" : "open",
+            // Always 'merged' — the search query ('is:merged') only returns merged PRs
+            status: "merged",
             points_awarded: pr.points,
             contributed_at: pr.item.closed_at || pr.item.created_at || new Date().toISOString(),
           });
@@ -1084,26 +1089,14 @@ export async function syncAllProjectsAndContributors() {
       }
     }
 
-    // Aggregate all PRs this admin gets credit for:
-    // 1. All PRs in repositories owned/managed by this admin (including registered repos)
-    // 2. All PRs merged by this admin in any competition repo
+    // Aggregate PRs this admin gets credit for:
+    // ONLY PRs they explicitly merged (tracked in mergerMap) across any competition repo.
+    // We intentionally do NOT include "all PRs in repos they own" — those are contributor
+    // contributions and must not be double-counted as admin merge activity.
+    // The admin's merged_prs reflects their personal review+merge work, not ownership.
     const mergedByAdmin = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
-    const registeredRepos = (userEmail && PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail]) || [];
 
-    // Check all competition repo PRs
-    for (const [slug, prs] of repoPrMap.entries()) {
-      const slugLower = slug.toLowerCase();
-      const repoOwner = slugLower.split("/")[0];
-      const isOwner = userHandles.has(repoOwner) || registeredRepos.some((r) => r.toLowerCase() === slugLower);
-      if (isOwner) {
-        for (const p of prs) {
-          const key = `${p.repoSlug}#${p.prNumber}`;
-          if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, p);
-        }
-      }
-    }
-
-    // Also check PRs explicitly merged by this admin's handles
+    // PRs explicitly merged by this admin's GitHub handle(s)
     for (const handle of userHandles) {
       for (const m of mergerMap.get(handle) || []) {
         const key = `${m.repoSlug}#${m.prNumber}`;
@@ -1128,7 +1121,7 @@ export async function syncAllProjectsAndContributors() {
         allContribRows.push({
           user_id: targetAdminUserId,
           project_id: projId,
-          type: "pr_merge",
+          type: "pr",
           // Unique key: prefix URL so it doesn't collide with the contributor's "pr" row
           github_url: `merged:${m.htmlUrl}`,
           status: "merged",
@@ -1188,12 +1181,30 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  if (allContribRows.length > 0) {
-    await chunkedBatchUpsert("contributions", allContribRows, "github_url", 500);
+  // Deduplicate allContribRows by github_url to prevent Postgres "ON CONFLICT DO UPDATE cannot affect row a second time"
+  const dedupedContribMap = new Map<string, ContribRow>();
+  for (const row of allContribRows) {
+    if (row.github_url) {
+      dedupedContribMap.set(row.github_url, row);
+    }
+  }
+  const dedupedContribRows = Array.from(dedupedContribMap.values());
+
+  if (dedupedContribRows.length > 0) {
+    await chunkedBatchUpsert("contributions", dedupedContribRows, "github_url", 500);
   }
 
-  if (allLeaderboardStats.length > 0) {
-    await chunkedBatchUpsert("leaderboard_stats", allLeaderboardStats, "user_id", 500);
+  // Deduplicate allLeaderboardStats by user_id
+  const dedupedStatsMap = new Map<string, LeaderboardStatRow>();
+  for (const stat of allLeaderboardStats) {
+    if (stat.user_id) {
+      dedupedStatsMap.set(stat.user_id, stat);
+    }
+  }
+  const dedupedLeaderboardStats = Array.from(dedupedStatsMap.values());
+
+  if (dedupedLeaderboardStats.length > 0) {
+    await chunkedBatchUpsert("leaderboard_stats", dedupedLeaderboardStats, "user_id", 500);
   }
 
   // Directly update profiles in public.profiles by id / user_id
@@ -1230,9 +1241,13 @@ export async function syncAllProjectsAndContributors() {
     );
   }
 
-  revalidatePath("/leaderboard");
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  try {
+    revalidatePath("/leaderboard");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+  } catch {
+    // Non-fatal when invoked outside a Next.js request context (e.g. background job / CLI)
+  }
 
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
 

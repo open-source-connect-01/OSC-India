@@ -823,7 +823,12 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
             <div style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
               {data.metrics.totalPRs}
             </div>
-            <span style={{ fontSize: "12px", color: "#6b7280" }}>Verified OSCI'26 submissions</span>
+            <span style={{ fontSize: "12px", color: "#6b7280" }}>
+              Contributor submissions
+              {data.metrics.adminMergedPRs > 0 && (
+                <> &middot; <span style={{ color: "#10b981" }}>{data.metrics.adminMergedPRs} merged by you</span></>
+              )}
+            </span>
           </div>
 
           {/* Stat 4: Points Distributed */}
