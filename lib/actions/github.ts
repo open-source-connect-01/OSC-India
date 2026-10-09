@@ -254,7 +254,7 @@ export async function syncGitHubContribution(
           contributionsToUpsert.push({
             user_id: userId,
             project_id: projectId,
-            type: "pr_merge",
+            type: "pr",
             github_url: `merged:${pr.htmlUrl}`,
             status: "merged",
             points_awarded: 0, // admins earn no points
@@ -1128,7 +1128,7 @@ export async function syncAllProjectsAndContributors() {
         allContribRows.push({
           user_id: targetAdminUserId,
           project_id: projId,
-          type: "pr_merge",
+          type: "pr",
           // Unique key: prefix URL so it doesn't collide with the contributor's "pr" row
           github_url: `merged:${m.htmlUrl}`,
           status: "merged",
@@ -1188,12 +1188,30 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  if (allContribRows.length > 0) {
-    await chunkedBatchUpsert("contributions", allContribRows, "github_url", 500);
+  // Deduplicate allContribRows by github_url to prevent Postgres "ON CONFLICT DO UPDATE cannot affect row a second time"
+  const dedupedContribMap = new Map<string, ContribRow>();
+  for (const row of allContribRows) {
+    if (row.github_url) {
+      dedupedContribMap.set(row.github_url, row);
+    }
+  }
+  const dedupedContribRows = Array.from(dedupedContribMap.values());
+
+  if (dedupedContribRows.length > 0) {
+    await chunkedBatchUpsert("contributions", dedupedContribRows, "github_url", 500);
   }
 
-  if (allLeaderboardStats.length > 0) {
-    await chunkedBatchUpsert("leaderboard_stats", allLeaderboardStats, "user_id", 500);
+  // Deduplicate allLeaderboardStats by user_id
+  const dedupedStatsMap = new Map<string, LeaderboardStatRow>();
+  for (const stat of allLeaderboardStats) {
+    if (stat.user_id) {
+      dedupedStatsMap.set(stat.user_id, stat);
+    }
+  }
+  const dedupedLeaderboardStats = Array.from(dedupedStatsMap.values());
+
+  if (dedupedLeaderboardStats.length > 0) {
+    await chunkedBatchUpsert("leaderboard_stats", dedupedLeaderboardStats, "user_id", 500);
   }
 
   // Directly update profiles in public.profiles by id / user_id
@@ -1230,9 +1248,13 @@ export async function syncAllProjectsAndContributors() {
     );
   }
 
-  revalidatePath("/leaderboard");
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  try {
+    revalidatePath("/leaderboard");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+  } catch {
+    // Non-fatal when invoked outside a Next.js request context (e.g. background job / CLI)
+  }
 
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
 
