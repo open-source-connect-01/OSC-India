@@ -171,13 +171,16 @@ export async function syncGitHubContribution(
             const rawMerger = (pr.merged_by?.login || "").toLowerCase();
             const isMergedByThisAdmin = rawMerger === lowerHandle;
 
-            // Project admin gets points if they own the repo OR if they merged the PR
-            if (isOwner || isMergedByThisAdmin) {
+            // Project admin gets credit only for PRs they personally merged.
+            // We do NOT count "all PRs in repos they own" because those are contributor
+            // contributions — counting them would inflate the admin's merged_prs with work they
+            // did not perform themselves.
+            if (isMergedByThisAdmin) {
               const key = `${repoSlug}#${pr.number}`;
               if (!seenPrKeys.has(key)) {
                 seenPrKeys.add(key);
 
-                // Detect difficulty (Easy: 10, Medium: 20, Hard: 30, Expert: 50)
+          // Detect difficulty (Easy: 10, Medium: 20, Hard: 30, Expert: 50)
                 let prDifficulty = detectDifficulty({
                   title: pr.title,
                   body: pr.body,
@@ -340,9 +343,10 @@ export async function syncGitHubContribution(
       let page = 1;
 
       while (page <= 10) {
-        // Match active PRs (open or merged) in official competition repositories
+        // Only fetch truly merged PRs — 'is:merged' is the correct GitHub Search qualifier.
+        // '-is:unmerged' incorrectly also matches open PRs (anything that is "not unmerged").
         const prQuery = encodeURIComponent(
-          `author:${handle} type:pr -is:unmerged ${repoFilter}`
+          `author:${handle} type:pr is:merged ${repoFilter}`
         );
         const prResponse = await fetch(
           `https://api.github.com/search/issues?q=${prQuery}&per_page=100&page=${page}`,
@@ -497,7 +501,8 @@ export async function syncGitHubContribution(
             project_id: projectId,
             type: "pr",
             github_url: pr.item.html_url,
-            status: pr.item.closed_at ? "merged" : "open",
+            // Always 'merged' — the search query ('is:merged') only returns merged PRs
+            status: "merged",
             points_awarded: pr.points,
             contributed_at: pr.item.closed_at || pr.item.created_at || new Date().toISOString(),
           });
@@ -1084,26 +1089,14 @@ export async function syncAllProjectsAndContributors() {
       }
     }
 
-    // Aggregate all PRs this admin gets credit for:
-    // 1. All PRs in repositories owned/managed by this admin (including registered repos)
-    // 2. All PRs merged by this admin in any competition repo
+    // Aggregate PRs this admin gets credit for:
+    // ONLY PRs they explicitly merged (tracked in mergerMap) across any competition repo.
+    // We intentionally do NOT include "all PRs in repos they own" — those are contributor
+    // contributions and must not be double-counted as admin merge activity.
+    // The admin's merged_prs reflects their personal review+merge work, not ownership.
     const mergedByAdmin = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
-    const registeredRepos = (userEmail && PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail]) || [];
 
-    // Check all competition repo PRs
-    for (const [slug, prs] of repoPrMap.entries()) {
-      const slugLower = slug.toLowerCase();
-      const repoOwner = slugLower.split("/")[0];
-      const isOwner = userHandles.has(repoOwner) || registeredRepos.some((r) => r.toLowerCase() === slugLower);
-      if (isOwner) {
-        for (const p of prs) {
-          const key = `${p.repoSlug}#${p.prNumber}`;
-          if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, p);
-        }
-      }
-    }
-
-    // Also check PRs explicitly merged by this admin's handles
+    // PRs explicitly merged by this admin's GitHub handle(s)
     for (const handle of userHandles) {
       for (const m of mergerMap.get(handle) || []) {
         const key = `${m.repoSlug}#${m.prNumber}`;

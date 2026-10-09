@@ -48,10 +48,11 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
     const startTime = Date.now();
 
+    // Fetch ONLY merged contributions and exclude admin merge-marker rows (github_url starts with 'merged:')
     const { data: contributions, error: contribError } = await admin
       .from("contributions")
-      .select("user_id, project_id, points_awarded")
-      .in("status", ["merged", "open"]);
+      .select("user_id, project_id, points_awarded, status, github_url")
+      .eq("status", "merged");
 
     if (contribError) {
       throw new Error(`Failed to read contributions: ${contribError.message}`);
@@ -66,6 +67,9 @@ export async function GET(request: Request) {
     const userAggMap = new Map<string, UserAggregation>();
     for (const c of contributions || []) {
       if (!c.user_id) continue;
+      // Skip admin merge-marker rows — they use a 'merged:https://...' prefix and must never
+      // inflate contributor merged_prs counts or scores.
+      if ((c.github_url || "").startsWith("merged:")) continue;
       if (!userAggMap.has(c.user_id)) {
         userAggMap.set(c.user_id, {
           score: 0,
