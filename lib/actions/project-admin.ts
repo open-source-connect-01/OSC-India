@@ -622,7 +622,7 @@ export async function getProjectAdminData(
   const adminMergeRows = allContributions.filter(
     (c) => (c.github_url || "").startsWith("merged:") && c.user_id === callerUserId
   );
-  const adminMergedPRs = adminMergeRows.length;
+  const adminMergedPRs = adminMergeRows.length > 0 ? adminMergeRows.length : pullRequests.length;
 
   const metrics: ProjectAdminMetrics = {
     totalRepos: managedProjects.length,

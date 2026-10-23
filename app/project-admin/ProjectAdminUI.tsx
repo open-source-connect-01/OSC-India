@@ -821,12 +821,12 @@ export default function ProjectAdminUI({ initialData }: ProjectAdminUIProps) {
               </div>
             </div>
             <div style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
-              {data.metrics.totalPRs}
+              {data.metrics.adminMergedPRs || data.metrics.totalPRs}
             </div>
             <span style={{ fontSize: "12px", color: "#6b7280" }}>
-              Contributor submissions
-              {data.metrics.adminMergedPRs > 0 && (
-                <> &middot; <span style={{ color: "#10b981" }}>{data.metrics.adminMergedPRs} merged by you</span></>
+              Verified merged PRs in managed repos
+              {data.metrics.totalContributors > 0 && (
+                <> &middot; <span style={{ color: "#10b981" }}>{data.metrics.totalContributors} contributors</span></>
               )}
             </span>
           </div>
