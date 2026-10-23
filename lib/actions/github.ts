@@ -171,11 +171,8 @@ export async function syncGitHubContribution(
             const rawMerger = (pr.merged_by?.login || "").toLowerCase();
             const isMergedByThisAdmin = rawMerger === lowerHandle;
 
-            // Project admin gets credit only for PRs they personally merged.
-            // We do NOT count "all PRs in repos they own" because those are contributor
-            // contributions — counting them would inflate the admin's merged_prs with work they
-            // did not perform themselves.
-            if (isMergedByThisAdmin) {
+            // Project admin gets credit if they own/manage the repo OR if they explicitly merged the PR
+            if (isOwner || isMergedByThisAdmin) {
               const key = `${repoSlug}#${pr.number}`;
               if (!seenPrKeys.has(key)) {
                 seenPrKeys.add(key);
@@ -768,14 +765,24 @@ export async function syncAllProjectsAndContributors() {
     }
   }
 
-  // 4. Primary Pass: Fast repo-centric sweep of all competition projects via REST API
-  for (const repoSlug of Array.from(allowedSlugs)) {
+  // 4. Primary Pass: Concurrent repo-centric sweep of all competition projects via REST API
+  // Using concurrency of 2 with 60ms spacing to prevent GitHub secondary rate limits (abuse detection)
+  const repoList = Array.from(allowedSlugs);
+  const REPO_CONCURRENCY = 2;
+
+  async function sweepRepo(repoSlug: string) {
     try {
       const maxPages = 5;
       let page = 1;
       while (page <= maxPages) {
         const url = `https://api.github.com/repos/${repoSlug}/pulls?state=closed&per_page=100&page=${page}&sort=updated&direction=desc`;
-        const res = await fetch(url, { headers, next: { revalidate: 0 } });
+        let res = await fetch(url, { headers, next: { revalidate: 0 } });
+
+        if (!res.ok && (res.status === 403 || res.status === 429)) {
+          // Automatic retry using fresh OAuth credentials fallback
+          const oauthHeaders = getGitHubAuthHeaders(true);
+          res = await fetch(url, { headers: oauthHeaders, next: { revalidate: 0 } });
+        }
 
         if (!res.ok) {
           if (res.status === 403 || res.status === 429) {
@@ -788,6 +795,8 @@ export async function syncAllProjectsAndContributors() {
         if (!Array.isArray(pulls) || pulls.length === 0) {
           break;
         }
+
+        await new Promise((resolve) => setTimeout(resolve, 60));
 
         totalPrsFetched += pulls.length;
 
@@ -807,63 +816,53 @@ export async function syncAllProjectsAndContributors() {
             labels: pr.labels,
           });
 
-          // Check linked issues
-          const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
-          for (const num of linkedNumbers) {
-            const cacheKey = `${repoSlug}#${num}`;
-            const cached = linkedIssuesCache.get(cacheKey);
-            let linkedIssue: GitHubIssueItem | null = cached ?? null;
+          // Check linked issues (capped to 150 unique issues to prevent rate limits and timeouts)
+          if (prDifficulty !== "expert" && linkedIssuesCache.size < 150) {
+            const linkedNumbers = extractLinkedIssueNumbers(`${pr.title} ${pr.body || ""}`);
+            for (const num of linkedNumbers) {
+              const cacheKey = `${repoSlug}#${num}`;
+              const cached = linkedIssuesCache.get(cacheKey);
+              let linkedIssue: GitHubIssueItem | null = cached ?? null;
 
-            if (cached === undefined) {
-              try {
-                const issueRes = await fetch(
-                  `https://api.github.com/repos/${repoSlug}/issues/${num}`,
-                  { headers, next: { revalidate: 0 } }
-                );
-                if (issueRes.ok) {
-                  linkedIssue = await issueRes.json();
-                  linkedIssuesCache.set(cacheKey, linkedIssue);
-                } else {
+              if (cached === undefined && linkedIssuesCache.size < 150) {
+                try {
+                  const issueRes = await fetch(
+                    `https://api.github.com/repos/${repoSlug}/issues/${num}`,
+                    { headers, next: { revalidate: 0 } }
+                  );
+                  if (issueRes.ok) {
+                    linkedIssue = await issueRes.json();
+                    linkedIssuesCache.set(cacheKey, linkedIssue);
+                  } else {
+                    linkedIssuesCache.set(cacheKey, null);
+                  }
+                } catch {
                   linkedIssuesCache.set(cacheKey, null);
                 }
-              } catch {
-                linkedIssuesCache.set(cacheKey, null);
               }
-            }
 
-            if (linkedIssue) {
-              const issueDifficulty = detectDifficulty(linkedIssue);
-              if (DIFFICULTY_RANK[issueDifficulty] > DIFFICULTY_RANK[prDifficulty]) {
-                prDifficulty = issueDifficulty;
+              if (linkedIssue) {
+                const issueDifficulty = detectDifficulty(linkedIssue);
+                if (DIFFICULTY_RANK[issueDifficulty] > DIFFICULTY_RANK[prDifficulty]) {
+                  prDifficulty = issueDifficulty;
+                }
               }
             }
           }
 
-          // Fetch PR additions + deletions if available to refine difficulty by code changes
-          let additions = (pr as { additions?: number }).additions;
-          let deletions = (pr as { deletions?: number }).deletions;
-          if (additions === undefined || deletions === undefined) {
-            try {
-              const detailRes = await fetch(`https://api.github.com/repos/${repoSlug}/pulls/${pr.number}`, { headers, next: { revalidate: 0 } });
-              if (detailRes.ok) {
-                const detail = await detailRes.json();
-                additions = detail.additions || 0;
-                deletions = detail.deletions || 0;
-              }
-            } catch {
-              additions = 0;
-              deletions = 0;
+          // If additions/deletions are present in payload, refine difficulty by lines of code
+          const additions = (pr as { additions?: number }).additions;
+          const deletions = (pr as { deletions?: number }).deletions;
+          if (additions !== undefined && deletions !== undefined) {
+            const totalLines = (additions || 0) + (deletions || 0);
+            let diffBasedDifficulty: DifficultyLevel = "easy";
+            if (totalLines >= 800) diffBasedDifficulty = "expert";
+            else if (totalLines >= 250) diffBasedDifficulty = "hard";
+            else if (totalLines >= 50) diffBasedDifficulty = "medium";
+
+            if (DIFFICULTY_RANK[diffBasedDifficulty] > DIFFICULTY_RANK[prDifficulty]) {
+              prDifficulty = diffBasedDifficulty;
             }
-          }
-
-          const totalLines = (additions || 0) + (deletions || 0);
-          let diffBasedDifficulty: DifficultyLevel = "easy";
-          if (totalLines >= 800) diffBasedDifficulty = "expert";
-          else if (totalLines >= 250) diffBasedDifficulty = "hard";
-          else if (totalLines >= 50) diffBasedDifficulty = "medium";
-
-          if (DIFFICULTY_RANK[diffBasedDifficulty] > DIFFICULTY_RANK[prDifficulty]) {
-            prDifficulty = diffBasedDifficulty;
           }
 
           const prMergedAt = pr.merged_at || pr.closed_at || new Date().toISOString();
@@ -882,6 +881,11 @@ export async function syncAllProjectsAndContributors() {
     } catch (repoErr: unknown) {
       console.error(`Error fetching PRs for repo ${repoSlug}:`, repoErr instanceof Error ? repoErr.message : "Unknown error");
     }
+  }
+
+  for (let i = 0; i < repoList.length; i += REPO_CONCURRENCY) {
+    const chunk = repoList.slice(i, i + REPO_CONCURRENCY);
+    await Promise.all(chunk.map((slug) => sweepRepo(slug)));
   }
 
   let updatedCount = 0;
@@ -1089,14 +1093,40 @@ export async function syncAllProjectsAndContributors() {
       }
     }
 
-    // Aggregate PRs this admin gets credit for:
-    // ONLY PRs they explicitly merged (tracked in mergerMap) across any competition repo.
-    // We intentionally do NOT include "all PRs in repos they own" — those are contributor
-    // contributions and must not be double-counted as admin merge activity.
-    // The admin's merged_prs reflects their personal review+merge work, not ownership.
-    const mergedByAdmin = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
+    const isProjAdminHandle = Array.from(userHandles).some((h) => isOfficialProjectAdminHandle(h));
+    // Only process project-admins
+    if (role !== "project-admin" && !isProjAdminEmail && !isProjAdminHandle) continue;
 
-    // PRs explicitly merged by this admin's GitHub handle(s)
+    // Aggregate all PRs this admin gets credit for:
+    // 1. All PRs in repositories owned/managed by this admin (including registered repos)
+    // 2. All PRs merged by this admin in any competition repo
+    const mergedByAdmin = new Map<string, { repoSlug: string; prNumber: number; difficulty: DifficultyLevel; points: number; htmlUrl: string; mergedAt: string }>();
+    const registeredRepos: string[] = [];
+    if (userEmail && PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail]) {
+      registeredRepos.push(...PROJECT_ADMIN_REPO_MAP_BY_EMAIL[userEmail]);
+    }
+    for (const h of userHandles) {
+      const reg = OFFICIAL_PROJECT_ADMIN_REGISTRATIONS.find((r) => r.github.toLowerCase() === h);
+      if (reg) {
+        registeredRepos.push(...reg.repos);
+      }
+    }
+    const registeredReposLower = registeredRepos.map((r) => r.toLowerCase());
+
+    // 1. Check all competition repo PRs in repositories owned/managed by this admin
+    for (const [slug, prs] of repoPrMap.entries()) {
+      const slugLower = slug.toLowerCase();
+      const repoOwner = slugLower.split("/")[0];
+      const isOwner = userHandles.has(repoOwner) || registeredReposLower.some((r) => r === slugLower);
+      if (isOwner) {
+        for (const p of prs) {
+          const key = `${p.repoSlug}#${p.prNumber}`;
+          if (!mergedByAdmin.has(key)) mergedByAdmin.set(key, p);
+        }
+      }
+    }
+
+    // 2. Also check PRs explicitly merged by this admin's handles
     for (const handle of userHandles) {
       for (const m of mergerMap.get(handle) || []) {
         const key = `${m.repoSlug}#${m.prNumber}`;
@@ -1207,27 +1237,33 @@ export async function syncAllProjectsAndContributors() {
     await chunkedBatchUpsert("leaderboard_stats", dedupedLeaderboardStats, "user_id", 500);
   }
 
-  // Directly update profiles in public.profiles by id / user_id
+  // Directly update profiles in public.profiles by id / user_id in parallel batches of 25
   if (allProfileUpdates.length > 0) {
-    for (const pUp of allProfileUpdates) {
-      const updateData: Record<string, unknown> = {
-        score: pUp.score,
-        merged_prs: pUp.merged_prs,
-        projects_count: pUp.projects_count,
-      };
-      if (pUp.github) updateData.github = pUp.github;
+    const BATCH_SIZE = 25;
+    for (let i = 0; i < allProfileUpdates.length; i += BATCH_SIZE) {
+      const batch = allProfileUpdates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (pUp) => {
+          const updateData: Record<string, unknown> = {
+            score: pUp.score,
+            merged_prs: pUp.merged_prs,
+            projects_count: pUp.projects_count,
+          };
+          if (pUp.github) updateData.github = pUp.github;
 
-      try {
-        const { error: pErr } = await admin
-          .from("profiles")
-          .update(updateData)
-          .or(`id.eq.${pUp.id},user_id.eq.${pUp.user_id}`);
-        if (pErr) {
-          console.warn(`Notice: profile update for ${pUp.id} error:`, pErr.message);
-        }
-      } catch (err: unknown) {
-        console.warn(`Notice: profile update for ${pUp.id} failed:`, err instanceof Error ? err.message : "Unknown error");
-      }
+          try {
+            const { error: pErr } = await admin
+              .from("profiles")
+              .update(updateData)
+              .or(`id.eq.${pUp.id},user_id.eq.${pUp.user_id}`);
+            if (pErr) {
+              console.warn(`Notice: profile update for ${pUp.id} error:`, pErr.message);
+            }
+          } catch (err: unknown) {
+            console.warn(`Notice: profile update for ${pUp.id} failed:`, err instanceof Error ? err.message : "Unknown error");
+          }
+        })
+      );
     }
   }
 

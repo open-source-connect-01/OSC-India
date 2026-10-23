@@ -515,23 +515,32 @@ export function getTokenPool(): string[] {
  * to multiply the 5,000 req/hr API quota across available tokens.
  * Falls back automatically to GitHub OAuth App Basic Auth (AUTH_GITHUB_ID/SECRET).
  */
-export function getGitHubAuthHeaders(): Record<string, string> {
+export function getGitHubAuthHeaders(forceOAuth = false): Record<string, string> {
   const pool = getTokenPool();
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "OSC-India-Sync-Engine",
   };
 
-  if (pool.length > 0) {
-    const token = pool[tokenRotationIndex % pool.length];
-    tokenRotationIndex = (tokenRotationIndex + 1) % pool.length;
-    headers.Authorization = `Bearer ${token}`;
-  } else {
-    const clientId = process.env.GITHUB_ID || process.env.AUTH_GITHUB_ID;
-    const clientSecret = process.env.GITHUB_SECRET || process.env.AUTH_GITHUB_SECRET;
-    if (clientId && clientSecret) {
-      headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
-    }
+  const clientId = process.env.GITHUB_ID || process.env.AUTH_GITHUB_ID;
+  const clientSecret = process.env.GITHUB_SECRET || process.env.AUTH_GITHUB_SECRET;
+  const hasOAuth = Boolean(clientId && clientSecret);
+
+  if (forceOAuth && hasOAuth) {
+    headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
+    return headers;
   }
+
+  const authMethods: string[] = pool.map((t) => `Bearer ${t}`);
+  if (hasOAuth) {
+    authMethods.push(`Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`);
+  }
+
+  if (authMethods.length > 0) {
+    const authHeader = authMethods[tokenRotationIndex % authMethods.length];
+    tokenRotationIndex = (tokenRotationIndex + 1) % authMethods.length;
+    headers.Authorization = authHeader;
+  }
+
   return headers;
 }

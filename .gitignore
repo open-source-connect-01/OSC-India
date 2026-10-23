@@ -45,3 +45,7 @@ next-env.d.ts
 
 linkedin_ids.txt
 linkedin_urls.txt
+
+# Local automation & sync pipelines (never pushed to GitHub)
+/scripts/local/
+/local-pipelines/
