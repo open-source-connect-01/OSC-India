@@ -411,60 +411,6 @@ export default function TimelinePage() {
 
         </div>
 
-        {/* Timeline FAQs & Guidelines Section */}
-        <div style={{ marginTop: "80px", width: "100%", maxWidth: "840px" }}>
-          
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "white", marginBottom: "8px" }}>
-              Frequently Asked Questions
-            </h2>
-            <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-              Essential details regarding program participation, scoring, and evaluations
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-            
-            <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--orange)", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
-                <span></span> How is leaderboard merit scored?
-              </div>
-              <p style={{ color: "#9ca3af", fontSize: "13px", lineHeight: "1.6", margin: 0 }}>
-                Merit points are awarded based on merged pull requests in participating repositories, commit consistency, issue complexity, and code quality reviews by maintainers.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--orange)", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
-                <span></span> Can I contribute to multiple projects?
-              </div>
-              <p style={{ color: "#9ca3af", fontSize: "13px", lineHeight: "1.6", margin: 0 }}>
-                Yes! You are encouraged to explore any repository listed in the Projects directory across AI/ML, Cloud Native, Web, and DevTools domains.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--orange)", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
-                <span></span> When are swag kits and prizes awarded?
-              </div>
-              <p style={{ color: "#9ca3af", fontSize: "13px", lineHeight: "1.6", margin: 0 }}>
-                Top 10 contributors and featured teams receive physical swag boxes following the National Demo Day and Finale in late October 2026.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--orange)", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
-                <span></span> How do I get my verified contributor badge?
-              </div>
-              <p style={{ color: "#9ca3af", fontSize: "13px", lineHeight: "1.6", margin: 0 }}>
-                You can personalize and download your official OSCI 2026 digital badge anytime via the Badge Studio to share your participation across LinkedIn and Twitter.
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-
       </main>
 
       <Footer />
